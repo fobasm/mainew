@@ -18,7 +18,7 @@
 <link rel="icon" id="favicon" href="">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Big+Shoulders+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Google Sign-In: replace YOUR_GOOGLE_CLIENT_ID below with a real OAuth client ID from
      Google Cloud Console (with this page's own domain added as an authorized origin) once
      this file is hosted on your own site. accounts.google.com is not reachable from inside
@@ -27,22 +27,19 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
-  --bg:#100418; --bg2:#0b0212; --panel:#1c0a28; --panel2:#2a0f3a;
-  --line:rgba(255,140,20,.4); --line2:rgba(255,140,20,.75);
-  --ink:#fff7ec; --dim:#cda9c9; --faint:#9b7797;
-  --gold:#fff200; --gold-d:#c25b00; --teal:#ff8a00; --teal-d:#c25b00;
-  --up:#39ff8c; --down:#ff2d6e; --cup:#29e0ff;
-  --pitch:#1c7a4c; --pitch2:#1a7046;
-  --r:6px;
-  --head:'Big Shoulders Display',Impact,'Arial Narrow',sans-serif;
-  --body:'Barlow','Segoe UI',system-ui,sans-serif;
+  --bg:#0d1b1d; --bg2:#123033; --panel:#173c40; --panel2:#1e4a4f;
+  --line:#2c6066; --line2:#3d8188;
+  --ink:#f3fbfa; --dim:#a9d3d0; --faint:#79aeab;
+  --gold:#D8B039; --gold-d:#b8912a; --teal:#23B09D; --teal-d:#1a8a7b;
+  --up:#2fcf8e; --down:#ff6b57; --cup:#5fd0c7;
+  --pitch:#0f5c3f; --pitch2:#0d4f37;
+  --r:10px;
+  --head:'Saira Condensed',Impact,'Arial Narrow',sans-serif;
+  --body:'Public Sans','Segoe UI',system-ui,sans-serif;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
-     .att{display:grid;grid-template-columns:34px 1fr 26px;gap:5px 8px;align-items:center;font-size:13px}
-.att b{color:var(--faint);font-weight:600}
-.bar.g>i{background:var(--up)}
 @media (prefers-color-scheme: light){
   :root:not([data-theme="dark"]){
     --bg:#eee8da; --bg2:#e4dccb; --panel:#fffdf7; --panel2:#f5efe1;
@@ -61,7 +58,7 @@
 }
 *,*::before,*::after{box-sizing:inherit}
 html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
-body{margin:0;color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased; background:  radial-gradient(60% 50% at 12% -6%,rgba(255,242,0,.35),transparent 60%),  radial-gradient(55% 46% at 108% 6%,rgba(255,90,0,.3),transparent 62%),  radial-gradient(60% 55% at 100% 100%,rgba(255,20,120,.25),transparent 60%),  radial-gradient(50% 45% at -4% 96%,rgba(255,150,0,.25),transparent 60%),  linear-gradient(180deg,var(--bg2),var(--bg) 55%,var(--bg)); background-attachment:fixed}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
 h1,h2,h3,h4{font-family:var(--head);font-weight:700;margin:0;line-height:1.05}
 button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
 button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
@@ -2746,19 +2743,13 @@ function crestHTML(t, size) {
     return `<span class="crest img" style="width:${s}px;height:${s}px;background-image:url('${IMG_BRIGHT}')"></span>`;
   }
   if (t.icon) return crestCustomHTML(t, s);
-  const id = ++CREST_UID;
   const initials = t.s.replace(/[^A-Za-z ]/g, '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const dark = isDark(t.c1);
-  const h = Math.round(s * 1.15);
-  return `<span class="crest" style="width:${s}px;height:${h}px;border:none;border-radius:0;background:none">
-    <svg viewBox="0 0 40 46" width="${s}" height="${h}">
-      <defs><clipPath id="cb${id}"><path d="M20 1L38 7V22C38 33 30 41 20 45C10 41 2 33 2 22V7Z"/></clipPath></defs>
-      <path d="M20 1L38 7V22C38 33 30 41 20 45C10 41 2 33 2 22V7Z" fill="${t.c1}"/>
-      <g clip-path="url(#cb${id})"><rect x="0" y="27" width="40" height="20" fill="${t.c2}"/></g>
-      <path d="M20 1L38 7V22C38 33 30 41 20 45C10 41 2 33 2 22V7Z" fill="none" stroke="${t.c2}" stroke-width="2"/>
-      <text x="20" y="24" text-anchor="middle" font-family="Big Shoulders Display,Impact,Arial Narrow,sans-serif" font-weight="800" font-size="${initials.length > 2 ? 12 : 15}" fill="${dark ? '#fff' : '#111'}">${initials}</text>
-    </svg>
-  </span>`;
+  return `<span class="crest" style="width:${s}px;height:${s * 1.16}px;
+    background:linear-gradient(104deg,${t.c1} 0 50%,${t.c2} 50% 100%);
+    box-shadow:inset 0 ${Math.max(1, s * 0.05)}px ${s * 0.12}px rgba(255,255,255,.35), inset 0 -${s * 0.1}px ${s * 0.18}px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.4);
+    display:inline-grid;place-items:center;font-family:var(--head);font-size:${Math.max(7, s * 0.42)}px;font-weight:700;
+    color:${dark ? '#fff' : '#111'};text-shadow:0 1px 1px rgba(0,0,0,.45)">${initials}</span>`;
 }
 
 /* ---------------- kits ---------------- */
@@ -3795,15 +3786,6 @@ function viewSquad() {
 }
 
 /* ---------------- player profile ---------------- */
-/* ---------------- player profile ---------------- */
-const hashS = s => { let h = 2166136261; for (let i = 0; i < String(s).length; i++) { h ^= String(s).charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
-const ATTR_PROFILE = { ST:[3,8,-6,2,-25,2], CF:[0,6,-2,4,-25,0], RM:[6,0,2,7,-18,-6], LM:[6,0,2,7,-18,-6], CM:[-2,-2,7,3,-6,0], CDM:[-4,-8,4,-2,8,6], CB:[-5,-25,-8,-14,10,8], RB:[4,-15,-2,0,4,2], LB:[4,-15,-2,0,4,2], GK:[0,0,0,0,0,0] };
-function playerAttrBars(p) {
-  const gk = p.pos === 'GK';
-  const L = gk ? ['DIV','HAN','KIC','REF','SPD','POS'] : ['PAC','SHO','PAS','DRI','DEF','PHY'];
-  const prof = ATTR_PROFILE[p.pos] || ATTR_PROFILE.CM;
-  return L.map((l, i) => [l, clamp(Math.round(p.rating + prof[i] + (hashS(p.id + '_' + i) - 0.5) * 10), 18, 97)]);
-}
 function playerModal(pid) {
   const found = findPlayer(G, pid) || (G.freeAgents.find(p => p.id === pid) ? { p: G.freeAgents.find(p => p.id === pid), t: null } : null)
     || (me().youth.find(p => p.id === pid) ? { p: me().youth.find(p => p.id === pid), t: me() } : null);
@@ -3830,37 +3812,27 @@ function playerModal(pid) {
   }
   const body = `
     <div style="display:flex;gap:14px;align-items:center;margin-bottom:12px">
-      ${faceSVG(p, 84, t ? t.c1 : null)}
-      <div style="min-width:0;flex:1">
+      ${faceSVG(p, 72, t ? t.c1 : null)}
+      <div style="min-width:0">
         <h3 style="font-size:23px">${esc(p.name)}${isCaptain ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">C</span>' : isVice ? ' <span class="tag">VC</span>' : ''}</h3>
-        <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          ${posTag(p.pos)}<span>${flagSVG(p.nat)} ${natName(p.nat)}</span><span class="hint">Age ${p.age}${p.dob ? ', born ' + esc(p.dob) : ''}</span>
+        <div style="color:var(--dim);font-size:13px">${flagSVG(p.nat)} ${natName(p.nat)} · ${p.age} years old${p.dob ? ' · born ' + esc(p.dob) : ''}${t ? ' · ' + crestHTML(t, 15) + ' ' + esc(t.n) : ' · free agent'}</div>
+        <div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          ${ratingTag(p.rating)} ${posTag(p.pos)} <span class="hint">potential ${p.pot}</span> ${growthHtml(p)} ${potGrowthHtml(p)}
+          ${legend ? '<span class="tag" style="color:var(--gold);border-color:var(--gold)">Club legend</span>' : ''}
+          ${p.reserve ? '<span class="tag">reserve</span>' : ''}
+          ${p.wantsOut ? '<span class="tag out">wants a move</span>' : ''}${p.inj > 0 ? `<span class="tag inj">out ${p.inj} games</span>` : ''}
         </div>
-        <div style="margin-top:6px;font-size:13px">
-          ${t ? crestHTML(t, 18) + ' ' + esc(t.n) : '<span class="hint">Free agent</span>'}
-          ${legend ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">Club legend</span>' : ''}
-          ${p.reserve ? ' <span class="tag">reserve</span>' : ''}
-          ${p.wantsOut ? ' <span class="tag out">wants a move</span>' : ''}${p.inj > 0 ? ` <span class="tag inj">out ${p.inj} games</span>` : ''}
-        </div>
-      </div>
-      <div style="text-align:center;flex:0 0 auto">
-        <div style="font-family:var(--head);font-size:44px;line-height:1">${Math.round(p.rating)}</div>
-        <div class="hint">rating</div>
-        <div class="hint">potential ${p.pot}</div>
       </div>
     </div>
     ${devLine ? `<p style="margin:0 0 6px;font-size:13px;color:var(--teal)">${devLine}</p>` : ''}
     ${loanLine ? `<p style="margin:0 0 10px;font-size:13px;color:var(--gold)">${loanLine}</p>` : ''}
-    <div class="cols">
-      <div class="panel"><h3>Attributes</h3><div class="pad"><div class="att">${playerAttrBars(p).map(([l, v]) => `<b>${l}</b><div class="bar${v >= 70 ? ' g' : ''}"><i style="width:${v}%"></i></div><span>${v}</span>`).join('')}</div></div></div>
-      <div class="panel"><h3>Contract and value</h3><dl class="kv" style="padding:11px 13px">
-        <dt>Market value</dt><dd>${money(p.value)}</dd>
-        <dt>Wage a season</dt><dd>${money(p.wage)} <span class="hint">(${money(p.wage / 12)}/mo)</span></dd>
-        <dt>Contract left</dt><dd>${p.contract}y</dd>
-        <dt>Career earnings</dt><dd>${money(p.earned || 0)}</dd>
-        <dt>Career apps</dt><dd>${p.cApps}</dd>
-        <dt>Career goals / assists</dt><dd>${p.cG}/${p.cA}</dd>
-      </dl></div>
+    <div class="attr">
+      <div><b>${money(p.value)}</b><small>market value</small></div>
+      <div><b>${money(p.wage)}</b><small>wage a season <span class="hint">(${money(p.wage / 12)}/mo)</span></small></div>
+      <div><b>${p.contract}y</b><small>contract left</small></div>
+      <div><b>${money(p.earned || 0)}</b><small>career earnings</small></div>
+      <div><b>${p.cApps}</b><small>career apps</small></div>
+      <div><b>${p.cG}/${p.cA}</b><small>career goals / assists</small></div>
     </div>
     <p style="margin:12px 0 4px;color:var(--faint);font-size:12.5px">This season: ${p.apps} apps, ${p.goals} goals, ${p.assists} assists${POS_GROUP[p.pos] === 'GK' ? `, ${p.cs} clean sheets` : ''}.</p>
     <p style="margin:2px 0 10px;font-size:13px">Clubs: ${clubs}</p>
@@ -3991,10 +3963,10 @@ function viewTransfers() {
   const listings = G.market.map(m => { const f = findPlayer(G, m.pid); return f ? { ...m, p: f.p, club: f.t } : null; })
     .filter(Boolean).filter(x => posOk(x.p) && searchOk(x.p) && ageOk(x.p)).sort((a, b) => sorter(a.p, b.p));
 
- const winOpen = inTransferWindow(G);
+  const winOpen = inTransferWindow(G);
   let html = `<div class="panel" style="border-color:${winOpen ? 'var(--up)' : 'var(--down)'}">
     <div class="pad" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <b  style="font-family:var(--head);font-size:18px;color:${winOpen ? 'var(--up)' : 'var(--down)'}">${winOpen ? currentWindowName(G) + ' is open' : 'Transfer window shut'}</b>
+      <b style="font-family:var(--head);font-size:18px;color:${winOpen ? 'var(--up)' : 'var(--down)'}">${winOpen ? currentWindowName(G) + ' is open' : 'Transfer window shut'}</b>
       <span class="hint">${winOpen ? `Closes in ${windowCloses(G)} matchday${windowCloses(G) === 1 ? '' : 's'}.` : `Reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.`}</span>
       ${!winOpen ? `<button class="btn ghost sm" id="skipWindow" style="margin-left:auto">Skip to next window</button>` : ''}
     </div></div>
@@ -4002,15 +3974,14 @@ function viewTransfers() {
     <div class="pad"><div style="font-family:var(--head);font-size:34px;line-height:1">${money(t.budget)}</div>
     <p class="hint" style="margin:4px 0 0">Prize money and sponsorship land at the end of the season. Sell or release to raise more now.</p></div></div>`;
 
-  const winOpen = inTransferWindow(G);
-  const foreignN = t.squad.filter(p => p.nat !== 'ZA').length;
-  let html = `<div class="rbox">
-    <div><b>${money(t.budget)}</b><span>Transfer budget</span></div>
-    <div><b style="color:${winOpen ? 'var(--up)' : 'var(--down)'}">${winOpen ? windowCloses(G) + (windowCloses(G) === 1 ? ' matchday' : ' matchdays') : roundsToNextWindow(G) + (roundsToNextWindow(G) === 1 ? ' matchday' : ' matchdays')}</b><span>${winOpen ? currentWindowName(G) + ' left' : 'Until window opens'}</span></div>
-    <div><b>${t.squad.length} / 32</b><span>Squad size</span></div>
-    <div><b style="${foreignN < 1 || foreignN > MAX_FOREIGN ? 'color:var(--down)' : ''}">${foreignN} / ${MAX_FOREIGN}</b><span>Foreign players</span></div>
-  </div>
-  ${!winOpen ? `<div class="panel"><div class="pad" style="display:flex;justify-content:flex-end"><button class="btn ghost sm" id="skipWindow">Skip to next window</button></div></div>` : ''}`;
+  const bids = G.pendingBids || [];
+  if (bids.length) {
+    html += `<div class="panel"><h3>Offers for your players</h3>` + bids.map((b, i) =>
+      `<div class="prow" style="grid-template-columns:auto 1fr auto auto">${ratingTag(b.rating)}
+        <span class="who"><b>${esc(b.name)} ${flagSVG(b.nat)}</b><small>${b.pos} · bid from ${esc(G.teams[b.from].s)}</small></span>
+        <span class="val">${money(b.fee)}</span>
+        <span style="display:flex;gap:6px"><button class="btn sm" data-accept="${i}">Accept</button>
+        <button class="btn ghost sm" data-reject="${i}">Reject</button></span></div>`).join('') + `</div>`;
   }
 
   const sections = [['listed','Transfer Listed'], ['all','All Players'], ['free','Free Agents'], ['loans','Loans'], ['top','Leaderboards']];
