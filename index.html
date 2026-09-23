@@ -88,7 +88,14 @@ img{max-width:100%}
 .club b{display:block;font-family:var(--head);font-size:17px;font-weight:600;line-height:1.1}
 .club small{color:var(--faint);font-size:11.5px}
 .crest{flex:0 0 auto;display:inline-block;border-radius:3px 3px 50% 50%/3px 3px 34% 34%;border:1px solid rgba(0,0,0,.4)}
+.rbox{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:13px}
+.rbox>div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);text-align:center;padding:9px 4px}
+.rbox b{display:block;font-family:var(--head);font-size:24px;line-height:1;color:var(--gold)}
+.rbox span{font-size:12px;color:var(--faint)}
 .crest.img{border:none;border-radius:50%;background-size:contain;background-repeat:no-repeat;background-position:center}
+.att{display:grid;grid-template-columns:34px 1fr 26px;gap:5px 8px;align-items:center;font-size:13px}
+.att b{color:var(--faint);font-weight:600}
+.bar.g>i{background:var(--up)}
 .avpick{display:flex;gap:8px;flex-wrap:wrap}
 .avbtn{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;line-height:0}
 .avbtn[aria-pressed="true"]{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
@@ -3798,6 +3805,15 @@ function viewSquad() {
 }
 
 /* ---------------- player profile ---------------- */
+/* ---------------- player profile ---------------- */
+const hashS = s => { let h = 2166136261; for (let i = 0; i < String(s).length; i++) { h ^= String(s).charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
+const ATTR_PROFILE = { ST:[3,8,-6,2,-25,2], CF:[0,6,-2,4,-25,0], RM:[6,0,2,7,-18,-6], LM:[6,0,2,7,-18,-6], CM:[-2,-2,7,3,-6,0], CDM:[-4,-8,4,-2,8,6], CB:[-5,-25,-8,-14,10,8], RB:[4,-15,-2,0,4,2], LB:[4,-15,-2,0,4,2], GK:[0,0,0,0,0,0] };
+function playerAttrBars(p) {
+  const gk = p.pos === 'GK';
+  const L = gk ? ['DIV','HAN','KIC','REF','SPD','POS'] : ['PAC','SHO','PAS','DRI','DEF','PHY'];
+  const prof = ATTR_PROFILE[p.pos] || ATTR_PROFILE.CM;
+  return L.map((l, i) => [l, clamp(Math.round(p.rating + prof[i] + (hashS(p.id + '_' + i) - 0.5) * 10), 18, 97)]);
+}
 function playerModal(pid) {
   const found = findPlayer(G, pid) || (G.freeAgents.find(p => p.id === pid) ? { p: G.freeAgents.find(p => p.id === pid), t: null } : null)
     || (me().youth.find(p => p.id === pid) ? { p: me().youth.find(p => p.id === pid), t: me() } : null);
@@ -3824,27 +3840,37 @@ function playerModal(pid) {
   }
   const body = `
     <div style="display:flex;gap:14px;align-items:center;margin-bottom:12px">
-      ${faceSVG(p, 72, t ? t.c1 : null)}
-      <div style="min-width:0">
+      ${faceSVG(p, 84, t ? t.c1 : null)}
+      <div style="min-width:0;flex:1">
         <h3 style="font-size:23px">${esc(p.name)}${isCaptain ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">C</span>' : isVice ? ' <span class="tag">VC</span>' : ''}</h3>
-        <div style="color:var(--dim);font-size:13px">${flagSVG(p.nat)} ${natName(p.nat)} · ${p.age} years old${p.dob ? ' · born ' + esc(p.dob) : ''}${t ? ' · ' + crestHTML(t, 15) + ' ' + esc(t.n) : ' · free agent'}</div>
-        <div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          ${ratingTag(p.rating)} ${posTag(p.pos)} <span class="hint">potential ${p.pot}</span> ${growthHtml(p)} ${potGrowthHtml(p)}
-          ${legend ? '<span class="tag" style="color:var(--gold);border-color:var(--gold)">Club legend</span>' : ''}
-          ${p.reserve ? '<span class="tag">reserve</span>' : ''}
-          ${p.wantsOut ? '<span class="tag out">wants a move</span>' : ''}${p.inj > 0 ? `<span class="tag inj">out ${p.inj} games</span>` : ''}
+        <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${posTag(p.pos)}<span>${flagSVG(p.nat)} ${natName(p.nat)}</span><span class="hint">Age ${p.age}${p.dob ? ', born ' + esc(p.dob) : ''}</span>
         </div>
+        <div style="margin-top:6px;font-size:13px">
+          ${t ? crestHTML(t, 18) + ' ' + esc(t.n) : '<span class="hint">Free agent</span>'}
+          ${legend ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">Club legend</span>' : ''}
+          ${p.reserve ? ' <span class="tag">reserve</span>' : ''}
+          ${p.wantsOut ? ' <span class="tag out">wants a move</span>' : ''}${p.inj > 0 ? ` <span class="tag inj">out ${p.inj} games</span>` : ''}
+        </div>
+      </div>
+      <div style="text-align:center;flex:0 0 auto">
+        <div style="font-family:var(--head);font-size:44px;line-height:1">${Math.round(p.rating)}</div>
+        <div class="hint">rating</div>
+        <div class="hint">potential ${p.pot}</div>
       </div>
     </div>
     ${devLine ? `<p style="margin:0 0 6px;font-size:13px;color:var(--teal)">${devLine}</p>` : ''}
     ${loanLine ? `<p style="margin:0 0 10px;font-size:13px;color:var(--gold)">${loanLine}</p>` : ''}
-    <div class="attr">
-      <div><b>${money(p.value)}</b><small>market value</small></div>
-      <div><b>${money(p.wage)}</b><small>wage a season <span class="hint">(${money(p.wage / 12)}/mo)</span></small></div>
-      <div><b>${p.contract}y</b><small>contract left</small></div>
-      <div><b>${money(p.earned || 0)}</b><small>career earnings</small></div>
-      <div><b>${p.cApps}</b><small>career apps</small></div>
-      <div><b>${p.cG}/${p.cA}</b><small>career goals / assists</small></div>
+    <div class="cols">
+      <div class="panel"><h3>Attributes</h3><div class="pad"><div class="att">${playerAttrBars(p).map(([l, v]) => `<b>${l}</b><div class="bar${v >= 70 ? ' g' : ''}"><i style="width:${v}%"></i></div><span>${v}</span>`).join('')}</div></div></div>
+      <div class="panel"><h3>Contract and value</h3><dl class="kv" style="padding:11px 13px">
+        <dt>Market value</dt><dd>${money(p.value)}</dd>
+        <dt>Wage a season</dt><dd>${money(p.wage)} <span class="hint">(${money(p.wage / 12)}/mo)</span></dd>
+        <dt>Contract left</dt><dd>${p.contract}y</dd>
+        <dt>Career earnings</dt><dd>${money(p.earned || 0)}</dd>
+        <dt>Career apps</dt><dd>${p.cApps}</dd>
+        <dt>Career goals / assists</dt><dd>${p.cG}/${p.cA}</dd>
+      </dl></div>
     </div>
     <p style="margin:12px 0 4px;color:var(--faint);font-size:12.5px">This season: ${p.apps} apps, ${p.goals} goals, ${p.assists} assists${POS_GROUP[p.pos] === 'GK' ? `, ${p.cs} clean sheets` : ''}.</p>
     <p style="margin:2px 0 10px;font-size:13px">Clubs: ${clubs}</p>
