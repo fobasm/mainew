@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-<head> 
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mzansi Manager 2026 — South African Football Career Sim</title>
@@ -3440,37 +3440,18 @@ function startLive() {
   const m = G.fixtures[tier][G.round][idx];
   const ctx = createMatch(G, m.h, m.a, false);
   const mySide = m.h === G.myTeam ? 'h' : 'a';
-  liveState = { ctx, m, tier, mySide, minute: 0, shown: 0, half: 1, speed: 1, timer: null, ballX: 50, ballY: 75, done: false };
+  liveState = {
+    ctx, m, tier, mySide, minute: 0, half: 1,
+    speed: 1, paused: false, started: false, ft: false,
+    timer: null, raf: null,
+    ballX: 50, ballY: 75, ball: { tx: 50, ty: 75 },
+    pos: {}, flash: null
+  };
   ctx.evAll = [];
   runPeriod(G, ctx, 1, 45);
   liveState.firstHalf = ctx.ev.slice();
   renderLive();
-  runClock();
-}
-
-function livePitchSVG() {
-  const ls = liveState, ctx = ls.ctx;
-  const slotsH = ctx.slotsH, slotsA = ctx.slotsA;
-  const H = G.teams[ctx.h], A = G.teams[ctx.a];
-  const coordsH = FORM_COORDS[H.formation] || FORM_COORDS['4-4-2'];
-  const coordsA = FORM_COORDS[A.formation] || FORM_COORDS['4-4-2'];
-  const dots = [];
-  coordsH.forEach((c, i) => dots.push({ id: 'h' + i, x: c[0], y: 150 - c[1] * 0.72, col: H.c1, ring: H.c2 }));
-  coordsA.forEach((c, i) => dots.push({ id: 'a' + i, x: 100 - c[0], y: c[1] * 0.72, col: A.c1 === H.c1 ? A.c2 : A.c1, ring: A.c2 }));
-  ls.dots = dots;
-  return `<svg class="pitch" viewBox="0 0 100 150" id="pitchSvg" aria-label="Live match">
-    <rect width="100" height="150" fill="var(--pitch)"/>
-    ${[0,1,2,3,4,5,6,7].map(i => `<rect y="${i * 18.75}" width="100" height="9.4" fill="#ffffff" opacity=".035"/>`).join('')}
-    <rect x="4" y="4" width="92" height="142" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".7"/>
-    <line x1="4" y1="75" x2="96" y2="75" stroke="#fff" stroke-opacity=".5" stroke-width=".7"/>
-    <circle cx="50" cy="75" r="13" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".7"/>
-    <rect x="26" y="4" width="48" height="19" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".7"/>
-    <rect x="26" y="127" width="48" height="19" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".7"/>
-    <rect x="38" y="4" width="24" height="8" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width=".6"/>
-    <rect x="38" y="138" width="24" height="8" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width=".6"/>
-    ${dots.map(d => `<circle id="${d.id}" cx="${d.x}" cy="${d.y}" r="2.6" fill="${d.col}" stroke="${d.ring}" stroke-width=".7"/>`).join('')}
-    <circle id="ball" cx="50" cy="75" r="1.7" fill="#fff" stroke="#111" stroke-width=".4"/>
-  </svg>`;
+  requestAnimationFrame(liveDraw);
 }
 
 function renderLive() {
@@ -3479,34 +3460,66 @@ function renderLive() {
   const v = $('#v-match');
   v.innerHTML = `<div class="livewrap">
     <div class="livebar">
-      <div class="nm">${crestHTML(H, 20)} ${esc(H.s)}</div>
-      <div class="sc"><span id="liveScore">0–0</span><span class="clock" id="liveClock">0'</span></div>
-      <div class="nm a">${esc(A.s)} ${crestHTML(A, 20)}</div>
+      <div class="nm">${crestHTML(H, 24)} ${esc(H.s)}</div>
+      <div class="sc"><span id="liveScore">0–0</span><span class="clock" id="liveClock">Kick-off</span></div>
+      <div class="nm a">${esc(A.s)} ${crestHTML(A, 24)}</div>
     </div>
-    ${livePitchSVG()}
-    <div class="chipbar" id="liveCtl">
-      <button class="chip" data-sp="2" aria-pressed="false">Slow</button>
-      <button class="chip" data-sp="1" aria-pressed="true">Normal</button>
-      <button class="chip" data-sp="0.4" aria-pressed="false">Fast</button>
-      <button class="chip" id="liveSkip">Skip to result</button>
-    </div>
-    <div class="ticker" id="ticker"></div>
+    <canvas id="livePitch" class="pitch" width="360" height="540" aria-label="Live match view"></canvas>
+    <div id="liveBanner"></div>
+    <div class="chipbar" id="liveCtl"></div>
+    <div class="ticker" id="ticker"><div class="hint" style="padding:8px 12px">Kick-off is moments away.</div></div>
   </div>`;
   $('#actions').innerHTML = '';
-  document.querySelectorAll('#liveCtl [data-sp]').forEach(b => b.onclick = () => {
-    liveState.speed = +b.dataset.sp;
-    document.querySelectorAll('#liveCtl [data-sp]').forEach(x => x.setAttribute('aria-pressed', x === b));
-  });
-  $('#liveSkip').onclick = skipLive;
+  liveControls();
   updateLiveScore();
 }
+
+function liveControls() {
+  const ls = liveState, c = $('#liveCtl'); if (!c) return;
+  let h = '';
+  if (ls.ft) h = `<button class="chip" id="liveDone">Full time — see the report</button>`;
+  else if (!ls.started) h = `<button class="chip" id="liveGo">Kick off</button>`;
+  else h = `<button class="chip" id="livePause">${ls.paused ? 'Resume' : 'Pause'}</button>`;
+  if (!ls.ft) {
+    h += [1, 2, 4, 8].map(s => `<button class="chip" data-sp="${s}" aria-pressed="${ls.speed === s}">${s}x</button>`).join('');
+    h += `<button class="chip" id="liveSkip">Skip to result</button>`;
+  }
+  c.innerHTML = h;
+  const go = $('#liveGo'); if (go) go.onclick = liveGo;
+  const pa = $('#livePause'); if (pa) pa.onclick = livePause;
+  const done = $('#liveDone'); if (done) done.onclick = endLive;
+  c.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { ls.speed = +b.dataset.sp; liveControls(); if (ls.timer) liveSchedule(); });
+  const sk = $('#liveSkip'); if (sk) sk.onclick = skipLive;
+}
+
+function liveGo() {
+  const ls = liveState;
+  ls.started = true; ls.paused = false;
+  liveBanner('');
+  liveControls();
+  liveSchedule();
+}
+
+function livePause() {
+  const ls = liveState;
+  ls.paused = !ls.paused;
+  if (ls.paused) { clearTimeout(ls.timer); ls.timer = null; } else liveSchedule();
+  liveControls();
+}
+
+function liveBanner(txt) {
+  const b = $('#liveBanner'); if (b) b.innerHTML = txt ? `<div class="banner">${txt}</div>` : '';
+}
+
 function updateLiveScore() {
   const ls = liveState;
   const goals = ls.ctx.ev.filter(e => e.type === 'goal' && e.min <= ls.minute);
   const hg = goals.filter(e => e.side === 'h').length, ag = goals.filter(e => e.side === 'a').length;
   const sc = $('#liveScore'); if (sc) sc.textContent = `${hg}–${ag}`;
-  const ck = $('#liveClock'); if (ck) ck.textContent = ls.minute + "'";
+  const ck = $('#liveClock');
+  if (ck) ck.textContent = ls.ft ? 'Full time' : !ls.started ? (ls.minute > 0 ? 'Half-time' : 'Kick-off') : ls.minute + "'";
 }
+
 function pushTick(e) {
   if (e.type === 'goal') playSound('goal');
   else if (e.type === 'card') playSound('card');
@@ -3518,59 +3531,105 @@ function pushTick(e) {
   else if (e.type === 'card') txt = `${esc(e.sName)} (${esc(team.s)}) is booked`;
   else if (e.type === 'injury') txt = `${esc(e.sName)} (${esc(team.s)}) goes down injured`;
   else txt = `${esc(team.s)} bring on ${esc(e.sName)}`;
-  const row = el('div', 'tick', `<span class="m">${e.min}'</span><span>${icon}</span><span>${txt}</span>`);
+  const row = el('div', 'tick' + (e.type === 'goal' ? ' goal' : ''), `<span class="m">${e.min}'</span><span>${icon}</span><span>${txt}</span>`);
   t.insertBefore(row, t.firstChild);
 }
 
-function moveDots() {
-  const ls = liveState, svg = $('#pitchSvg'); if (!svg) return;
-  const bx = ls.ballX, by = ls.ballY;
-  const ball = svg.querySelector('#ball');
-  if (ball) { ball.setAttribute('cx', bx.toFixed(1)); ball.setAttribute('cy', by.toFixed(1)); }
-  ls.dots.forEach(d => {
-    const node = svg.querySelector('#' + d.id); if (!node) return;
-    const pull = d.id[0] === 'h' ? 0.26 : 0.26;
-    const tx = d.x + (bx - d.x) * pull * (0.5 + Math.random() * 0.5);
-    const ty = d.y + (by - d.y) * pull * (0.5 + Math.random() * 0.5);
-    node.setAttribute('cx', (tx + (Math.random() - 0.5) * 2).toFixed(1));
-    node.setAttribute('cy', (ty + (Math.random() - 0.5) * 2).toFixed(1));
-  });
+function liveSchedule() {
+  const ls = liveState;
+  clearTimeout(ls.timer);
+  ls.timer = setTimeout(liveTick, 460 / ls.speed);
 }
 
-function runClock() {
+function liveTick() {
   const ls = liveState;
-  const endAt = ls.half === 1 ? 45 : 92;
-  ls.timer = setInterval(() => {
-    ls.minute++;
-    /* ball drifts, biased by who is on top */
-    const s = ls.ctx.sh.att - ls.ctx.sa.att;
-    const bias = clamp(s * 0.14, -1.6, 1.6);
-    ls.ballY = clamp(ls.ballY - bias + (Math.random() - 0.5) * 26, 10, 140);
-    ls.ballX = clamp(ls.ballX + (Math.random() - 0.5) * 30, 8, 92);
-    moveDots();
-    ls.ctx.ev.forEach(e => {
-      if (!e._shown && e.min <= ls.minute) {
-        e._shown = true; pushTick(e);
-        if (e.type === 'goal') ls.ballY = e.side === 'h' ? 12 : 138;
+  if (!ls || ls.paused) return;
+  ls.minute++;
+  const s = ls.ctx.sh.att - ls.ctx.sa.att;
+  const bias = clamp(s * 0.14, -1.6, 1.6);
+  ls.ball.ty = clamp(ls.ballY - bias + (Math.random() - 0.5) * 26, 10, 140);
+  ls.ball.tx = clamp(ls.ballX + (Math.random() - 0.5) * 30, 8, 92);
+  ls.ctx.ev.forEach(e => {
+    if (!e._shown && e.min <= ls.minute) {
+      e._shown = true; pushTick(e);
+      if (e.type === 'goal') {
+        ls.flash = { t: performance.now(), txt: 'GOAL! ' + e.sName };
+        ls.ball.ty = e.side === 'h' ? 12 : 138;
       }
-    });
-    updateLiveScore();
-    if (ls.minute >= endAt) { clearInterval(ls.timer); ls.timer = null; ls.half === 1 ? halfTime() : endLive(); }
-  }, 240 * ls.speed);
+    }
+  });
+  updateLiveScore();
+  const endAt = ls.half === 1 ? 45 : 92;
+  if (ls.minute >= endAt) {
+    ls.timer = null;
+    if (ls.half === 1) { liveBanner('Half-time'); liveControls(); halfTime(); }
+    else { ls.ft = true; liveBanner('Full time'); liveControls(); }
+    return;
+  }
+  liveSchedule();
 }
 
 function skipLive() {
   const ls = liveState;
-  if (ls.timer) { clearInterval(ls.timer); ls.timer = null; }
+  if (ls.timer) { clearTimeout(ls.timer); ls.timer = null; }
   if (ls.half === 1) {
     aiSubs(G, ls.ctx);
     runPeriod(G, ls.ctx, 46, 92);
     ls.half = 2;
   }
   ls.minute = 92;
+  ls.started = true;
   ls.ctx.ev.forEach(e => { if (!e._shown) { e._shown = true; pushTick(e); } });
   updateLiveScore();
-  endLive();
+  ls.ft = true;
+  liveBanner('Full time');
+  liveControls();
+}
+
+function liveDraw() {
+  const ls = liveState;
+  if (!ls) return;
+  const cv = $('#livePitch');
+  if (!cv) { requestAnimationFrame(liveDraw); return; }
+  const c = cv.getContext('2d'), W = cv.width, Hh = cv.height;
+  const H = G.teams[ls.ctx.h], A = G.teams[ls.ctx.a];
+  ls.ballX += (ls.ball.tx - ls.ballX) * 0.08;
+  ls.ballY += (ls.ball.ty - ls.ballY) * 0.08;
+  c.fillStyle = '#1c7a4c'; c.fillRect(0, 0, W, Hh);
+  c.fillStyle = 'rgba(0,0,0,.06)';
+  for (let i = 0; i < 8; i += 2) c.fillRect(0, i * Hh / 8, W, Hh / 8);
+  c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 2;
+  c.strokeRect(6, 6, W - 12, Hh - 12);
+  c.beginPath(); c.moveTo(6, Hh / 2); c.lineTo(W - 6, Hh / 2); c.stroke();
+  c.beginPath(); c.arc(W / 2, Hh / 2, W * 0.13, 0, Math.PI * 2); c.stroke();
+  c.strokeRect(W * 0.24, 6, W * 0.52, Hh * 0.12);
+  c.strokeRect(W * 0.24, Hh - 6 - Hh * 0.12, W * 0.52, Hh * 0.12);
+  const coordsH = FORM_COORDS[H.formation] || FORM_COORDS['4-4-2'];
+  const coordsA = FORM_COORDS[A.formation] || FORM_COORDS['4-4-2'];
+  const drawSide = (coords, prefix, col1, col2, away) => {
+    coords.forEach((cc, i) => {
+      const bx = away ? 100 - cc[0] : cc[0];
+      const by = away ? cc[1] * 0.72 : 150 - cc[1] * 0.72;
+      const key = prefix + i;
+      const tx = bx + (ls.ballX - bx) * 0.22, ty = by + (ls.ballY - by) * 0.22;
+      const q = ls.pos[key] || (ls.pos[key] = { x: bx, y: by });
+      q.x += (tx - q.x) * 0.06; q.y += (ty - q.y) * 0.06;
+      const px = q.x / 100 * W, py = q.y / 150 * Hh;
+      c.beginPath(); c.arc(px, py, Math.max(5, W * 0.017), 0, Math.PI * 2);
+      c.fillStyle = col1; c.fill(); c.lineWidth = 1.5; c.strokeStyle = col2; c.stroke();
+    });
+  };
+  drawSide(coordsH, 'h', H.c1, H.c2, false);
+  drawSide(coordsA, 'a', A.c1 === H.c1 ? A.c2 : A.c1, A.c2, true);
+  c.beginPath(); c.arc(ls.ballX / 100 * W, ls.ballY / 150 * Hh, Math.max(4, W * 0.01), 0, Math.PI * 2);
+  c.fillStyle = '#fff'; c.fill(); c.lineWidth = 1.2; c.strokeStyle = '#111'; c.stroke();
+  if (ls.flash && performance.now() - ls.flash.t < 1800) {
+    c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(0, Hh / 2 - 28, W, 56);
+    c.fillStyle = '#fff200'; c.font = `800 ${Math.round(W * 0.075)}px "Big Shoulders Display",Impact,sans-serif`;
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(ls.flash.txt, W / 2, Hh / 2);
+  }
+  requestAnimationFrame(liveDraw);
 }
 
 function halfTime() {
@@ -3594,7 +3653,9 @@ function halfTime() {
     ls.half = 2; ls.minute = 45;
     aiSubs(G, ls.ctx);
     runPeriod(G, ls.ctx, 46, 92);
-    runClock();
+    ls.started = true; ls.paused = false;
+    liveControls();
+    liveSchedule();
   };
   $('#modal .x').onclick = resume;
   let selOut = null;
