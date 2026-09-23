@@ -3469,6 +3469,7 @@ function renderLive() {
     <canvas id="livePitch" class="pitch" width="560" height="360" aria-label="Live match view"></canvas>
     <div id="liveBanner"></div>
     <div class="chipbar" id="liveCtl"></div>
+    <div id="liveSpot"></div>
     <div class="ticker" id="ticker"><div class="hint" style="padding:8px 12px">Kick-off is moments away.</div></div>
   </div>`;
   $('#actions').innerHTML = '';
@@ -3558,6 +3559,14 @@ function liveTick() {
         ls.flash = { t: performance.now(), txt: 'GOAL! ' + e.sName };
         ls.ball.ty = e.side === 'h' ? 12 : 138;
       }
+      if (e.scorer) {
+        const xi = e.side === 'h' ? ls.ctx.xiH : ls.ctx.xiA;
+        const slots = e.side === 'h' ? ls.ctx.slotsH : ls.ctx.slotsA;
+        const pi = xi.findIndex(pl => pl.id === e.scorer);
+        const p = pi >= 0 ? xi[pi] : null;
+        const spot = $('#liveSpot');
+        if (p && spot) spot.innerHTML = `<div class="spot">${faceSVG(p, 46, G.teams[e.team].c1)}<div><b>${esc(p.name)}</b><span class="hint">#${pi + 1} · ${slots[pi] || p.pos} · ${esc(G.teams[e.team].s)}</span></div></div>`;
+      }
     }
   });
   updateLiveScore();
@@ -3609,7 +3618,7 @@ function liveDraw() {
   const coordsH = FORM_COORDS[H.formation] || FORM_COORDS['4-4-2'];
   const coordsA = FORM_COORDS[A.formation] || FORM_COORDS['4-4-2'];
   const ballCX = (1 - ls.ballY / 150) * W, ballCY = ls.ballX / 100 * Hh;
-  const drawSide = (coords, prefix, col1, col2, away) => {
+  const drawSide = (coords, prefix, col1, col2, away, xi, slots) => {
     coords.forEach((cc, i) => {
       const advX = cc[1] * 0.72 / 150 * W;
       const bx = away ? (W - advX) : advX;
@@ -3618,12 +3627,23 @@ function liveDraw() {
       const tx = bx + (ballCX - bx) * 0.22, ty = by + (ballCY - by) * 0.22;
       const q = ls.pos[key] || (ls.pos[key] = { x: bx, y: by });
       q.x += (tx - q.x) * 0.06; q.y += (ty - q.y) * 0.06;
-      c.beginPath(); c.arc(q.x, q.y, Math.max(5, Hh * 0.025), 0, Math.PI * 2);
+      const r = Math.max(7, Hh * 0.032);
+      c.beginPath(); c.arc(q.x, q.y, r, 0, Math.PI * 2);
       c.fillStyle = col1; c.fill(); c.lineWidth = 1.5; c.strokeStyle = col2; c.stroke();
+      const num = i + 1, slot = (slots && slots[i]) || (xi && xi[i] && xi[i].pos) || '';
+      c.fillStyle = isDark(col1) ? '#fff' : '#111';
+      c.font = `700 ${Math.max(7, r * 0.9)}px sans-serif`;
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(String(num), q.x, q.y + 0.5);
+      c.font = `600 ${Math.max(6, r * 0.62)}px sans-serif`;
+      c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = 2;
+      c.strokeText(slot, q.x, q.y + r + Hh * 0.028);
+      c.fillStyle = 'rgba(255,255,255,.92)';
+      c.fillText(slot, q.x, q.y + r + Hh * 0.028);
     });
   };
-  drawSide(coordsH, 'h', H.c1, H.c2, false);
-  drawSide(coordsA, 'a', A.c1 === H.c1 ? A.c2 : A.c1, A.c2, true);
+  drawSide(coordsH, 'h', H.c1, H.c2, false, ls.ctx.xiH, ls.ctx.slotsH);
+  drawSide(coordsA, 'a', A.c1 === H.c1 ? A.c2 : A.c1, A.c2, true, ls.ctx.xiA, ls.ctx.slotsA);
   c.beginPath(); c.arc(ballCX, ballCY, Math.max(4, Hh * 0.015), 0, Math.PI * 2);
   c.fillStyle = '#fff'; c.fill(); c.lineWidth = 1.2; c.strokeStyle = '#111'; c.stroke();
   if (ls.flash && performance.now() - ls.flash.t < 1800) {
