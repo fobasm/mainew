@@ -3602,55 +3602,67 @@ function liveDraw() {
   if (!ls) return;
   const cv = $('#livePitch');
   if (!cv) { requestAnimationFrame(liveDraw); return; }
-  const c = cv.getContext('2d'), W = cv.width, Hh = cv.height;
-  const H = G.teams[ls.ctx.h], A = G.teams[ls.ctx.a];
-  ls.ballX += (ls.ball.tx - ls.ballX) * 0.08;
-  ls.ballY += (ls.ball.ty - ls.ballY) * 0.08;
-  c.fillStyle = '#1c7a4c'; c.fillRect(0, 0, W, Hh);
-  c.fillStyle = 'rgba(0,0,0,.06)';
-  for (let i = 0; i < 8; i += 2) c.fillRect(i * W / 8, 0, W / 8, Hh);
-  c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 2;
-  c.strokeRect(6, 6, W - 12, Hh - 12);
-  c.beginPath(); c.moveTo(W / 2, 6); c.lineTo(W / 2, Hh - 6); c.stroke();
-  c.beginPath(); c.arc(W / 2, Hh / 2, Hh * 0.19, 0, Math.PI * 2); c.stroke();
-  c.strokeRect(6, Hh * 0.24, W * 0.12, Hh * 0.52);
-  c.strokeRect(W - 6 - W * 0.12, Hh * 0.24, W * 0.12, Hh * 0.52);
-  const coordsH = FORM_COORDS[H.formation] || FORM_COORDS['4-4-2'];
-  const coordsA = FORM_COORDS[A.formation] || FORM_COORDS['4-4-2'];
-  const ballCX = (1 - ls.ballY / 150) * W, ballCY = ls.ballX / 100 * Hh;
-  const drawSide = (coords, prefix, col1, col2, away, xi, slots) => {
-    coords.forEach((cc, i) => {
-      const advX = cc[1] * 0.72 / 150 * W;
-      const bx = away ? (W - advX) : advX;
-      const by = (away ? (100 - cc[0]) : cc[0]) / 100 * Hh;
-      const key = prefix + i;
-      const tx = bx + (ballCX - bx) * 0.22, ty = by + (ballCY - by) * 0.22;
-      const q = ls.pos[key] || (ls.pos[key] = { x: bx, y: by });
-      q.x += (tx - q.x) * 0.06; q.y += (ty - q.y) * 0.06;
-      const r = Math.max(7, Hh * 0.032);
-      c.beginPath(); c.arc(q.x, q.y, r, 0, Math.PI * 2);
-      c.fillStyle = col1; c.fill(); c.lineWidth = 1.5; c.strokeStyle = col2; c.stroke();
-      const num = i + 1, slot = (slots && slots[i]) || (xi && xi[i] && xi[i].pos) || '';
-      c.fillStyle = isDark(col1) ? '#fff' : '#111';
-      c.font = `700 ${Math.max(7, r * 0.9)}px sans-serif`;
+  try {
+    const W = 560, Hh = 360;
+    const dpr = window.devicePixelRatio || 1;
+    if (cv.dataset.scaled !== String(dpr)) {
+      cv.width = W * dpr; cv.height = Hh * dpr;
+      cv.style.width = W + 'px'; cv.style.height = 'auto';
+      cv.dataset.scaled = String(dpr);
+    }
+    const c = cv.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const H = G.teams[ls.ctx.h], A = G.teams[ls.ctx.a];
+    ls.ballX += (ls.ball.tx - ls.ballX) * 0.14;
+    ls.ballY += (ls.ball.ty - ls.ballY) * 0.14;
+    c.fillStyle = '#1c7a4c'; c.fillRect(0, 0, W, Hh);
+    c.fillStyle = 'rgba(0,0,0,.06)';
+    for (let i = 0; i < 8; i += 2) c.fillRect(i * W / 8, 0, W / 8, Hh);
+    c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 2;
+    c.strokeRect(6, 6, W - 12, Hh - 12);
+    c.beginPath(); c.moveTo(W / 2, 6); c.lineTo(W / 2, Hh - 6); c.stroke();
+    c.beginPath(); c.arc(W / 2, Hh / 2, Hh * 0.19, 0, Math.PI * 2); c.stroke();
+    c.strokeRect(6, Hh * 0.24, W * 0.12, Hh * 0.52);
+    c.strokeRect(W - 6 - W * 0.12, Hh * 0.24, W * 0.12, Hh * 0.52);
+    const coordsH = FORM_COORDS[H.formation] || FORM_COORDS['4-4-2'];
+    const coordsA = FORM_COORDS[A.formation] || FORM_COORDS['4-4-2'];
+    const ballCX = (1 - ls.ballY / 150) * W, ballCY = ls.ballX / 100 * Hh;
+    const drawSide = (coords, prefix, col1, col2, away, xi, slots) => {
+      coords.forEach((cc, i) => {
+        const advX = cc[1] * 0.72 / 150 * W;
+        const bx = away ? (W - advX) : advX;
+        const by = (away ? (100 - cc[0]) : cc[0]) / 100 * Hh;
+        const key = prefix + i;
+        const tx = bx + (ballCX - bx) * 0.3, ty = by + (ballCY - by) * 0.3;
+        const q = ls.pos[key] || (ls.pos[key] = { x: bx, y: by });
+        q.x += (tx - q.x) * 0.12; q.y += (ty - q.y) * 0.12;
+        const r = Math.max(7, Hh * 0.032);
+        c.beginPath(); c.arc(q.x, q.y, r, 0, Math.PI * 2);
+        c.fillStyle = col1; c.fill(); c.lineWidth = 1.5; c.strokeStyle = col2; c.stroke();
+        const num = i + 1, slot = (slots && slots[i]) || (xi && xi[i] && xi[i].pos) || '';
+        c.fillStyle = isDark(col1) ? '#fff' : '#111';
+        c.font = `700 ${Math.max(7, r * 0.9)}px sans-serif`;
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText(String(num), q.x, q.y + 0.5);
+        c.font = `600 ${Math.max(6, r * 0.62)}px sans-serif`;
+        c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = 2;
+        c.strokeText(slot, q.x, q.y + r + Hh * 0.028);
+        c.fillStyle = 'rgba(255,255,255,.92)';
+        c.fillText(slot, q.x, q.y + r + Hh * 0.028);
+      });
+    };
+    drawSide(coordsH, 'h', H.c1, H.c2, false, ls.ctx.xiH, ls.ctx.slotsH);
+    drawSide(coordsA, 'a', A.c1 === H.c1 ? A.c2 : A.c1, A.c2, true, ls.ctx.xiA, ls.ctx.slotsA);
+    c.beginPath(); c.arc(ballCX, ballCY, Math.max(4, Hh * 0.015), 0, Math.PI * 2);
+    c.fillStyle = '#fff'; c.fill(); c.lineWidth = 1.2; c.strokeStyle = '#111'; c.stroke();
+    if (ls.flash && performance.now() - ls.flash.t < 1800) {
+      c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(0, Hh / 2 - 28, W, 56);
+      c.fillStyle = '#fff200'; c.font = `800 ${Math.round(Hh * 0.13)}px "Big Shoulders Display",Impact,sans-serif`;
       c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText(String(num), q.x, q.y + 0.5);
-      c.font = `600 ${Math.max(6, r * 0.62)}px sans-serif`;
-      c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = 2;
-      c.strokeText(slot, q.x, q.y + r + Hh * 0.028);
-      c.fillStyle = 'rgba(255,255,255,.92)';
-      c.fillText(slot, q.x, q.y + r + Hh * 0.028);
-    });
-  };
-  drawSide(coordsH, 'h', H.c1, H.c2, false, ls.ctx.xiH, ls.ctx.slotsH);
-  drawSide(coordsA, 'a', A.c1 === H.c1 ? A.c2 : A.c1, A.c2, true, ls.ctx.xiA, ls.ctx.slotsA);
-  c.beginPath(); c.arc(ballCX, ballCY, Math.max(4, Hh * 0.015), 0, Math.PI * 2);
-  c.fillStyle = '#fff'; c.fill(); c.lineWidth = 1.2; c.strokeStyle = '#111'; c.stroke();
-  if (ls.flash && performance.now() - ls.flash.t < 1800) {
-    c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(0, Hh / 2 - 28, W, 56);
-    c.fillStyle = '#fff200'; c.font = `800 ${Math.round(Hh * 0.13)}px "Big Shoulders Display",Impact,sans-serif`;
-    c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText(ls.flash.txt, W / 2, Hh / 2);
+      c.fillText(ls.flash.txt, W / 2, Hh / 2);
+    }
+  } catch (err) {
+    console.error('liveDraw error', err);
   }
   requestAnimationFrame(liveDraw);
 }
