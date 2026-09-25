@@ -2960,15 +2960,28 @@ function crowdRoar() {
   const g = liveState.crowd.g, now = ctx.currentTime;
   g.gain.cancelScheduledValues(now);
   g.gain.setValueAtTime(g.gain.value, now);
-  g.gain.linearRampToValueAtTime(0.22, now + 0.15);
-  g.gain.linearRampToValueAtTime(0.05, now + 2.2);
+  g.gain.linearRampToValueAtTime(0.32, now + 0.12);
+  g.gain.linearRampToValueAtTime(0.028, now + 2.6);
 }
-  function shoutGoal() {
+let goalVoice = null;
+function pickGoalVoice() {
+  if (!window.speechSynthesis) return null;
+  const voices = window.speechSynthesis.getVoices();
+  return voices.find(v => /male|david|daniel|alex|fred|mark|george|james|guy|ryan/i.test(v.name) && !/female/i.test(v.name))
+    || voices.find(v => v.lang && v.lang.startsWith('en'))
+    || voices[0] || null;
+}
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = () => { goalVoice = pickGoalVoice(); };
+  goalVoice = pickGoalVoice();
+}
+function shoutGoal() {
   if (!soundOn || !window.speechSynthesis) return;
   try {
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance('Goal!');
-    u.pitch = 1.25; u.rate = 0.85; u.volume = 1;
+    const u = new SpeechSynthesisUtterance('GOOOOOAL!');
+    if (goalVoice) u.voice = goalVoice;
+    u.pitch = 0.55; u.rate = 1.2; u.volume = 1;
     window.speechSynthesis.speak(u);
   } catch (e) { }
 }
@@ -3119,9 +3132,14 @@ function save(n) {
     localStorage.setItem(slotKey(k), JSON.stringify({ G, seed: SEED, pid: PID, saved: Date.now() }));
     localStorage.setItem(LAST_SLOT_KEY, String(k));
   } catch (e) {
-    console.error('save() failed:', e && e.name, e && e.message);
-    if (e && e.name === 'QuotaExceededError') toastWarn('Storage is full — delete an old save slot to free up space.');
-    else toastWarn('This browser is blocking saves. Check your privacy settings, or turn off private/incognito browsing for this site.');
+    let size = -1;
+    try { size = JSON.stringify({ G, seed: SEED, pid: PID }).length; } catch (_) { }
+    console.error('save() failed:', e && e.name, e && e.message, 'approx size (KB):', size > 0 ? (size / 1024).toFixed(0) : '?');
+    if (Date.now() - (window._saveWarnT || 0) > 15000) {
+      window._saveWarnT = Date.now();
+      if (e && e.name === 'QuotaExceededError' && size > 4 * 1024 * 1024) toastWarn(`Storage is full (save is ~${(size / 1024 / 1024).toFixed(1)}MB) — delete an old save slot to free up space.`);
+      else toastWarn('This browser is blocking saves — likely a private/incognito window, not a full disk. Try a normal window, or check this site\u2019s storage permission.');
+    }
   }
 }
 function slotNameKey(n) { return SLOTNAME_PREFIX + n; }
@@ -3987,11 +4005,65 @@ function viewSquad() {
 /* ---------------- player profile ---------------- */
 const hashS = s => { let h = 2166136261; for (let i = 0; i < String(s).length; i++) { h ^= String(s).charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
 const ATTR_PROFILE = { ST:[3,8,-6,2,-25,2], CF:[0,6,-2,4,-25,0], RM:[6,0,2,7,-18,-6], LM:[6,0,2,7,-18,-6], CM:[-2,-2,7,3,-6,0], CDM:[-4,-8,4,-2,8,6], CB:[-5,-25,-8,-14,10,8], RB:[4,-15,-2,0,4,2], LB:[4,-15,-2,0,4,2], GK:[0,0,0,0,0,0] };
-function playerAttrBars(p) {
-  const gk = p.pos === 'GK';
-  const L = gk ? ['DIV','HAN','KIC','REF','SPD','POS'] : ['PAC','SHO','PAS','DRI','DEF','PHY'];
-  const prof = ATTR_PROFILE[p.pos] || ATTR_PROFILE.CM;
-  return L.map((l, i) => [l, clamp(Math.round(p.rating + prof[i] + (hashS(p.id + '_' + i) - 0.5) * 10), 18, 97)]);
+function starterRatingAt(t, pos) {
+  const same = t.squad.filter(pl => pl.pos === pos);
+  const pool = same.length ? same : t.squad.filter(pl => POS_GROUP[pl.pos] === POS_GROUP[pos]);
+  return pool.length ? Math.max(...pool.map(pl => pl.rating)) : 0;
+}
+function interestedClubs(p, ownerId, n) {
+  n = n || 4;
+  const ptier = ownerId != null ? G.teams[ownerId].tier : 3;
+  const out = [];
+  for (const t of G.teams) {
+    if (t.id === ownerId || t.squad.length >= 31) continue;
+    if (t.tier > ptier + 1 || t.tier < ptier - 2) continue;
+    if (t.budget < p.value * 0.5) continue;
+    const d = p.rating - starterRatingAt(t, p.pos);
+    if (d < 1) continue;
+    if (p.nat !== 'ZA' && t.squad.filter(pl => pl.nat !== 'ZA').length >= MAX_FOREIGN) continue;
+    if (p.rating - clubLevel(t) >= 15) continue;
+    out.push({ t, s: d + (t.tier < ptier ? 2 : 0) - (t.tier > ptier ? 3 : 0) + hashS(p.id + '_' + t.id) });
+  }
+  return out.sort((a, b) => b.s - a.s).slice(0, n).map(x => x.t);
+}
+function sparkChart(p) {
+  const hist = (p.career || []).map(c => [seasonLabel(c.season), c.rating]);
+  hist.push([seasonLabel(G.season), Math.round(p.rating)]);
+  const pts = hist.map(h => h[1]);
+  const w = 280, h = 84, pad = 8;
+  const all = pts.concat([p.pot]);
+  const mn = Math.min(...all) - 3, mx = Math.max(...all) + 3;
+  const n = pts.length + 1;
+  const X = i => pad + i * (w - 2 * pad) / Math.max(1, n);
+  const Y = v => h - pad - (v - mn) / (mx - mn) * (h - 2 * pad);
+  const line = pts.map((v, i) => X(i).toFixed(1) + ',' + Y(v).toFixed(1)).join(' ');
+  const li = pts.length - 1;
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto" role="img" aria-label="Overall rating by season">
+    <polyline points="${line}" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linejoin="round"/>
+    <line x1="${X(li)}" y1="${Y(pts[li])}" x2="${X(n)}" y2="${Y(p.pot)}" stroke="var(--faint)" stroke-width="2" stroke-dasharray="4 4"/>
+    ${pts.map((v, i) => `<circle cx="${X(i)}" cy="${Y(v)}" r="3" fill="var(--gold)"/>`).join('')}
+    <circle cx="${X(n)}" cy="${Y(p.pot)}" r="4" fill="none" stroke="var(--faint)" stroke-width="2"/>
+    <text x="${X(0)}" y="${h - 1}" fill="var(--faint)" font-size="9">${esc(hist[0][0])}</text>
+    <text x="${X(li) - 10}" y="${Y(pts[li]) - 8}" fill="var(--ink)" font-size="10" font-weight="700">${pts[li]}</text>
+    <text x="${X(n) - 16}" y="${Y(p.pot) - 8}" fill="var(--faint)" font-size="10">${p.pot}</text>
+  </svg>`;
+}
+function shopAround(pid) {
+  const found = findPlayer(G, pid);
+  if (!found || !found.t || found.t.id !== G.myTeam) return { ok: false, msg: 'You can only shop around your own players.' };
+  const p = found.p, t = found.t;
+  if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
+  const cands = interestedClubs(p, t.id, 4).filter(x => x.budget >= p.value * 0.7);
+  if (!cands.length) return { ok: false, msg: `No clubs are interested in ${p.name} right now.` };
+  G.pendingBids = G.pendingBids || [];
+  let n = 0;
+  cands.forEach(buyer => {
+    if (G.pendingBids.some(b => b.pid === pid && b.from === buyer.id)) return;
+    G.pendingBids.push({ pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: buyer.id, fee: Math.round(p.value * (0.95 + rnd() * 0.35) * 100) / 100 });
+    n++;
+  });
+  G.pendingBids = G.pendingBids.slice(-6);
+  return { ok: true, msg: `${n} club${n === 1 ? '' : 's'} made an offer for ${p.name}.` };
 }
 function playerModal(pid) {
   const found = findPlayer(G, pid) || (G.freeAgents.find(p => p.id === pid) ? { p: G.freeAgents.find(p => p.id === pid), t: null } : null)
@@ -4041,7 +4113,10 @@ function playerModal(pid) {
     ${devLine ? `<p style="margin:0 0 6px;font-size:13px;color:var(--teal)">${devLine}</p>` : ''}
     ${loanLine ? `<p style="margin:0 0 10px;font-size:13px;color:var(--gold)">${loanLine}</p>` : ''}
     <div class="cols">
+      <div class="panel"><h3>Growth</h3><div class="pad">${sparkChart(p)}</div></div>
       <div class="panel"><h3>Attributes</h3><div class="pad"><div class="att">${playerAttrBars(p).map(([l, v]) => `<b>${l}</b><div class="bar${v >= 70 ? ' g' : ''}"><i style="width:${v}%"></i></div><span>${v}</span>`).join('')}</div></div></div>
+    </div>
+    <div class="cols" style="margin-top:13px">
       <div class="panel"><h3>Contract and value</h3><dl class="kv" style="padding:11px 13px">
         <dt>Market value</dt><dd>${money(p.value)}</dd>
         <dt>Wage a season</dt><dd>${money(p.wage)} <span class="hint">(${money(p.wage / 12)}/mo)</span></dd>
@@ -4050,6 +4125,7 @@ function playerModal(pid) {
         <dt>Career apps</dt><dd>${p.cApps}</dd>
         <dt>Career goals / assists</dt><dd>${p.cG}/${p.cA}</dd>
       </dl></div>
+      <div class="panel"><h3>Interested clubs</h3><div class="pad">${interestedClubs(p, t ? t.id : null, 4).map(x => `<div style="margin-bottom:5px">${crestHTML(x, 16)} ${esc(x.s)} <span class="hint">${TIER_SHORT[x.tier]}</span></div>`).join('') || '<span class="hint">No clubs are showing interest right now.</span>'}</div></div>
     </div>
     <p style="margin:12px 0 4px;color:var(--faint);font-size:12.5px">This season: ${p.apps} apps, ${p.goals} goals, ${p.assists} assists${POS_GROUP[p.pos] === 'GK' ? `, ${p.cs} clean sheets` : ''}.</p>
     <p style="margin:2px 0 10px;font-size:13px">Clubs: ${clubs}</p>
@@ -4059,7 +4135,7 @@ function playerModal(pid) {
   let footer = `<button class="btn ghost sm" onclick="closeModal()">Close</button>`;
   if (isMine && !inYouth && !p.loan) {
     footer = `<button class="btn ghost sm" id="pmNeg">${p.wantsOut ? 'Persuade to stay' : 'Negotiate contract'}</button>
-              <button class="btn ghost sm" id="pmSell">Sell</button>
+              <button class="btn ghost sm" id="pmSell">Sell</button>               <button class="btn ghost sm" id="pmShop">Shop around</button>
               <button class="btn ghost sm" id="pmLoanOut">Loan out</button>
               <button class="btn ghost sm" id="pmClauseSet">Release clause</button>
               <button class="btn ghost sm" id="pmSquadMove">${p.reserve ? 'Move to first team' : 'Move to reserves'}</button>
@@ -4075,7 +4151,7 @@ function playerModal(pid) {
   }
   openModal('Player profile', body, footer);
   const r = $('#pmNeg'); if (r) r.onclick = () => { closeModal(); negotiateModal(p.id); };
-  const s = $('#pmSell'); if (s) s.onclick = () => { closeModal(); sellModal(p.id); };
+  const s = $('#pmSell'); if (s) s.onclick = () => { closeModal(); sellModal(p.id); };   const shop = $('#pmShop'); if (shop) shop.onclick = () => { const res = shopAround(p.id); toast(res.msg); if (res.ok) { save(); closeModal(); render(); } };
   const lo = $('#pmLoanOut'); if (lo) lo.onclick = () => {
     const res = loanOut(G, p.id, 1); toast(res.msg); if (res.ok) { save(); closeModal(); render(); }
   };
