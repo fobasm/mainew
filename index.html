@@ -133,7 +133,7 @@ header.top{position:sticky;top:0;z-index:30;background:var(--bg2);border-bottom:
 .myclub small{display:block;color:var(--faint);font-size:11px;font-family:var(--body)}
 .topstats{margin-left:auto;display:flex;gap:16px;text-align:right}
 .topstats b{display:block;font-family:var(--head);font-size:18px;line-height:1.1}
-.topstats small{color:var(--faint);font-size:10.5px} .applogo{width:34px;height:34px;flex:0 0 34px;display:block;border-radius:6px} .tmgr{display:flex;align-items:center;gap:8px;padding-left:12px;margin-left:4px;border-left:1px solid var(--line)} .tmgr small{display:block;color:var(--faint);font-size:11px} .tmgr b{font-family:var(--head);font-size:15px} .ticker{overflow:hidden;background:var(--bg2);border-bottom:1px solid var(--line);font-size:13px;padding:6px 0;white-space:nowrap} .tk-track{display:inline-block;padding-left:100%;animation:tk 55s linear infinite} .ticker:hover .tk-track{animation-play-state:paused} @keyframes tk{to{transform:translateX(-100%)}} .tk-item{display:inline-block;padding-right:44px;color:var(--dim)} .tk-item b{color:var(--teal);font-family:var(--head);font-weight:700;margin-right:6px}
+.topstats small{color:var(--faint);font-size:10.5px} .applogo{width:34px;height:34px;flex:0 0 34px;display:block;border-radius:6px} .tmgr{display:flex;align-items:center;gap:8px;padding-left:12px;margin-left:4px;border-left:1px solid var(--line)} .tmgr small{display:block;color:var(--faint);font-size:11px} .tmgr b{font-family:var(--head);font-size:15px} .winpill{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:12px;white-space:nowrap;margin-left:8px} .winpill.open{border-color:var(--up);color:var(--up)} .winpill.shut{color:var(--faint)} .shellbody{display:flex;align-items:flex-start;max-width:1300px;margin:0 auto} .side{flex:0 0 200px;background:var(--panel);border-right:1px solid var(--line);padding:10px 6px;display:flex;flex-direction:column;gap:1px} .side h4{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;font-family:var(--head);padding:12px 10px 3px;margin:0} .side h4:first-child{padding-top:4px} .navlink{display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left;background:none;border:none;border-left:3px solid transparent;padding:8px 10px;border-radius:0 8px 8px 0;font-family:var(--head);font-size:15px;color:var(--dim);cursor:pointer} .navlink:hover{background:var(--panel2);color:var(--ink)} .navlink.on{background:var(--panel2);color:var(--teal);border-left-color:var(--teal);font-weight:700} @media (max-width:900px){   .shellbody{display:block}   .side{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);padding:6px 8px;gap:4px}   .side h4{display:none}   .navlink{border-left:0;border-radius:6px;padding:6px 10px;font-size:13.5px}   .navlink.on{border-left-color:transparent;background:var(--panel2);color:var(--teal)} } .ticker{overflow:hidden;background:var(--bg2);border-bottom:1px solid var(--line);font-size:13px;padding:6px 0;white-space:nowrap} .tk-track{display:inline-block;padding-left:100%;animation:tk 80s linear infinite} .ticker:hover .tk-track{animation-play-state:paused} @keyframes tk{to{transform:translateX(-100%)}} .tk-item{display:inline-block;padding-right:44px;color:var(--dim)} .tk-item b{color:var(--teal);font-family:var(--head);font-weight:700;margin-right:6px}
 nav.tabs{background:var(--bg2);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
 nav.tabs::-webkit-scrollbar{display:none}
 .tabsin{max-width:1200px;margin:0 auto;display:flex;gap:2px;padding:0 10px}
@@ -430,7 +430,6 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
   <header class="top">
     <div class="topin">
       <img class="applogo" id="appLogo" alt="Mzansi Manager">
-      <button class="hamburger" id="menuBtn" title="Menu" aria-label="Open menu"><span></span><span></span><span></span></button>
       <button class="navbtn" id="backBtn" title="Back" aria-label="Back" disabled>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
@@ -463,11 +462,12 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
     </div>
   </header>
   <div class="ticker" id="ticker"><div class="tk-track" id="tickerTrack"></div></div>
-  <nav class="tabs"><div class="tabsin" id="tabs"></div></nav>
 <!-- Ad slot 2 (provided by you). Same note as above — loads on your own hosted domain only. -->
 <div class="adslot" aria-hidden="true">
 <script src="https://pl31426052.profitableratecpmnetwork.com/1c/cd/9f/1ccd9f5a66e4ef63c69bee73673ed5ed.js"></script>
 </div>
+  <div class="shellbody">
+  <nav class="side" id="sideNav"></nav>
   <main>
     <div class="view on" id="v-match"></div>
     <div class="view" id="v-table"></div>
@@ -488,6 +488,8 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
     <div class="view" id="v-otherclubs"></div>
     <div class="view" id="v-club"></div>
   </main>
+  </main>
+  </div>
 <!-- Ad slot 3 (provided by you). Same note as above — loads on your own hosted domain only. -->
 <div class="adslot" aria-hidden="true">
 <script>
@@ -510,8 +512,6 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
   <div class="actionbar"><div class="actionin" id="actions"></div></div>
 </div>
 
-<div class="drawer-scrim" id="drawerScrim"></div>
-<div class="drawer" id="drawer"></div>
 <div class="scrim" id="scrim" hidden><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
 <div id="toast-root"></div>
 
@@ -3131,8 +3131,6 @@ $('#homeBtn').onclick = () => {
   const yes = $('#homeYes');
   if (yes) yes.onclick = () => { leavingApp = true; try { localStorage.removeItem(LAST_SLOT_KEY); } catch (e) { } location.reload(); };
 };
-$('#menuBtn').onclick = () => openDrawer();
-$('#drawerScrim').onclick = () => closeDrawer();
 $('#backBtn').onclick = navBack;
 $('#fwdBtn').onclick = navFwd;
 $('#careerBtn').onclick = openCareerModal;
@@ -3142,7 +3140,7 @@ window.addEventListener('beforeunload', e => {
   if (liveState) { e.preventDefault(); e.returnValue = ''; return ''; }
 });
 
-function enterApp() { $('#start').style.display = 'none'; $('#app').style.display = 'block'; $('#appLogo').src = IMG_LOGO; buildTabs(); render(); window.scrollTo(0, 0); } function renderTicker() {   const t = $('#tickerTrack'); if (!t || !G || !G.news) return;   const items = G.news.slice(0, 12);   if (!items.length) { $('#ticker').style.display = 'none'; return; }   $('#ticker').style.display = '';   const html = items.map(n => `<span class="tk-item"><b>MD${n.round + 1}</b>${esc(n.text)}</span>`).join('');   t.innerHTML = html + html; }
+function enterApp() { $('#start').style.display = 'none'; $('#app').style.display = 'block'; $('#appLogo').src = IMG_LOGO; buildTabs(); render(); window.scrollTo(0, 0); } function renderTicker() {   const t = $('#tickerTrack'); if (!t || !G || !G.news) return;   const items = G.news.slice(0, 12);   if (!items.length) { $('#ticker').style.display = 'none'; return; }   $('#ticker').style.display = '';   const NEWS_ICON = { match: '⚽', transfer: '🔁', contract: '📝', youth: '🌱', retire: '👋', cup: '🏆', nation: '🌍', season: '📅', career: '📣' };   const html = items.map(n => `<span class="tk-item">${NEWS_ICON[n.kind] || '📰'} <b>MD${n.round + 1}</b>${esc(n.text)}</span>`).join('');   t.innerHTML = html + html; }
 
 /* ---------------- save slots ---------------- */
 function slotKey(n) { return SAVE_PREFIX + n; }
@@ -3223,17 +3221,20 @@ function buildSlots() {
 }
 
 /* ---------------- tabs ---------------- */
-const TABS = [
-  ['match','Matchday'], ['calendar','Calendar'], ['table','Log'], ['squad','Squad'],
-  ['transfers','Transfers'], ['manager','Manager'], ['otherclubs','Other Clubs'], ['club','Club']
+const MENU_SECTIONS = [
+  ['Career', [['match','Matchday'],['calendar','Calendar'],['table','Log'],['fixtures','Fixtures']]],
+  ['Squad', [['squad','Squad'],['tactics','Team talk'],['youth','Academy'],['transfers','Transfers'],['otherclubs','Other Clubs']]],
+  ['Competitions', [['cups','Cups'],['africa','Africa'],['nations','Nations'],['stats','Stats']]],
+  ['Club', [['club','Club'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
+  ['More', [['info','How to play']]]
 ];
-function buildTabs() {
-  const c = $('#tabs'); c.innerHTML = '';
-  TABS.forEach(([id, label]) => {
-    const b = el('button', 'tab', label);
-    b.onclick = () => goTo(id);
-    c.appendChild(b);
-  });
+function buildSideNav() {
+  const c = $('#sideNav'); if (!c) return;
+  c.innerHTML = MENU_SECTIONS.map(([label, items]) =>
+    `<h4>${label}</h4>` + items.map(([id, name]) =>
+      `<button class="navlink" data-tab="${id}"><span>${esc(name)}</span></button>`).join('')
+  ).join('');
+  c.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => goTo(b.dataset.tab));
 }
 function goTo(id) {
   if (liveState) { toast('The match is still running — skip to the result first.'); return; }
@@ -3243,7 +3244,6 @@ function goTo(id) {
     navIdx = navStack.length - 1;
   }
   tab = id; render(); window.scrollTo({ top: 0 });
-  closeDrawer();
 }
 function navBack() {
   if (navIdx <= 0) return;
@@ -3260,25 +3260,6 @@ function renderHistoryBtns() {
   if (b) { b.disabled = navIdx <= 0; if (navIdx <= 0) b.setAttribute('disabled', ''); else b.removeAttribute('disabled'); }
   if (f) { f.disabled = navIdx >= navStack.length - 1; if (navIdx >= navStack.length - 1) f.setAttribute('disabled', ''); else f.removeAttribute('disabled'); }
 }
-const MENU_SECTIONS = [
-  ['Career', [['match','Matchday'],['calendar','Calendar'],['table','Log'],['fixtures','Fixtures']]],
-  ['Squad', [['squad','Squad'],['tactics','Team talk'],['youth','Academy'],['transfers','Transfers'],['otherclubs','Other Clubs']]],
-  ['Competitions', [['cups','Cups'],['africa','Africa'],['nations','Nations'],['stats','Stats']]],
-  ['Club', [['club','Club'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
-  ['More', [['info','How to play']]]
-];
-function buildDrawer() {
-  const d = $('#drawer'); if (!d) return;
-  let html = `<div class="dhead"><b>Menu</b></div>`;
-  MENU_SECTIONS.forEach(([label, items]) => {
-    html += `<h4>${label}</h4>` + items.map(([id, name]) =>
-      `<button class="item" data-go="${id}" aria-current="${tab === id}">${esc(name)}</button>`).join('');
-  });
-  d.innerHTML = html;
-  d.querySelectorAll('[data-go]').forEach(b => b.onclick = () => goTo(b.dataset.go));
-}
-function openDrawer() { buildDrawer(); $('#drawer').classList.add('on'); $('#drawerScrim').classList.add('on'); }
-function closeDrawer() { const d = $('#drawer'), s = $('#drawerScrim'); if (d) d.classList.remove('on'); if (s) s.classList.remove('on'); }
 document.addEventListener('click', e => {}, false);
 
 /* ---------------- render ---------------- */
@@ -3291,7 +3272,7 @@ function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 30);
   $('#statPos').textContent = ordinal(posOfTeam(G, G.myTeam));
   $('#statSquad').textContent = `${t.squad.length}/32`;
   $('#statBudget').textContent = money(t.budget);
-  document.querySelectorAll('.tab').forEach((b, i) => b.setAttribute('aria-selected', TABS[i][0] === tab));
+  document.querySelectorAll('.navlink').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
   const active = $('#v-' + tab);
   if (active) active.classList.add('on');
