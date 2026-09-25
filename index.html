@@ -3232,7 +3232,7 @@ const MENU_SECTIONS = [
   ['Squad', [['squad','Squad'],['tactics','Team talk'],['youth','Academy'],['transfers','Transfers'],['otherclubs','Other Clubs']]],
   ['Competitions', [['cups','Cups'],['africa','Africa'],['nations','Nations'],['stats','Stats']]],
   ['Club', [['club','Club'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
-  ['More', [['info','How to play']]]
+  ['More', [['careerfile','Career file'],['info','How to play']]]
 ];
 function buildSideNav() {
   const c = $('#sideNav'); if (!c) return;
@@ -3240,7 +3240,7 @@ function buildSideNav() {
     `<h4>${label}</h4>` + items.map(([id, name]) =>
       `<button class="navlink" data-tab="${id}"><span>${esc(name)}</span></button>`).join('')
   ).join('');
-  c.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => goTo(b.dataset.tab));
+  c.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => {     if (b.dataset.tab === 'careerfile') { openCareerModal(); return; }     goTo(b.dataset.tab);   });
 }
 function goTo(id) {
   if (liveState) { toast('The match is still running — skip to the result first.'); return; }
