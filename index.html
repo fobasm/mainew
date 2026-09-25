@@ -251,7 +251,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .livebar .sc{font-family:var(--head);font-size:26px;font-weight:700;text-align:center;min-width:86px}
 .livebar .clock{display:block;font-family:var(--body);font-size:11.5px;color:var(--gold);font-weight:600}
 .pitch{display:block;width:100%;height:auto;background:var(--pitch);margin:0 auto}
-.ticker{max-height:180px;overflow:auto;border-top:1px solid var(--line)}
+.liveticker{max-height:180px;overflow:auto;border-top:1px solid var(--line)}
 .tick{display:grid;grid-template-columns:38px 20px 1fr;gap:8px;padding:6px 12px;border-bottom:1px solid var(--line);font-size:13.5px;align-items:baseline}
 .tick .m{font-family:var(--head);color:var(--gold)}
 .tick:last-child{border-bottom:none}
@@ -3002,7 +3002,7 @@ function shoutGoal() {
   if (!soundOn || !window.speechSynthesis) return;
   try {
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance('GOOOOOAL!');
+    const u = new SpeechSynthesisUtterance('Goaaal!');
     if (goalVoice) u.voice = goalVoice;
     u.pitch = 0.55; u.rate = 1.2; u.volume = 1;
     window.speechSynthesis.speak(u);
@@ -3559,7 +3559,7 @@ function renderLive() {
     <div id="liveBanner"></div>
     <div class="chipbar" id="liveCtl"></div>
     <div id="liveSpot"></div>
-    <div class="ticker" id="ticker"><div class="hint" style="padding:8px 12px">Kick-off is moments away.</div></div>
+    <div class="liveticker" id="liveTicker"><div class="hint" style="padding:8px 12px">Kick-off is moments away.</div></div>
   </div>`;
   $('#actions').innerHTML = '';
   liveControls();
@@ -3615,7 +3615,7 @@ function updateLiveScore() {
 function pushTick(e) {
   if (e.type === 'goal') playSound('goal');
   else if (e.type === 'card') playSound('card');
-  const t = $('#ticker'); if (!t) return;
+  const t = $('#liveTicker'); if (!t) return;
   const icon = e.type === 'goal' ? '⚽' : e.type === 'card' ? '🟨' : e.type === 'injury' ? '＋' : '⇄';
   const team = G.teams[e.team];
   let txt;
