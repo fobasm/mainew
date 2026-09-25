@@ -2939,7 +2939,7 @@ function potGrowthHtml(p) {
 }
 
 /* ---------------- sound ---------------- */
-let audioCtx = null, soundOn = true;
+let audioCtx = null, soundOn = true, musicOn = true;
 function ac() {
   if (!soundOn) return null;
   try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; } catch (e) { return null; }
@@ -2965,7 +2965,7 @@ function playSound(name) {
 }
   let bgMusic = null;
 function startBgMusic() {
-  if (bgMusic || !soundOn) return;
+  if (bgMusic || !musicOn) return;
   try {
     bgMusic = new Audio('menu.mp3');
     bgMusic.loop = true; bgMusic.volume = 0.25;
@@ -3256,7 +3256,7 @@ const MENU_SECTIONS = [
   ['Squad', [['squad','Squad'],['tactics','Team talk'],['youth','Academy'],['transfers','Transfers'],['otherclubs','Other Clubs']]],
   ['Competitions', [['cups','Cups'],['africa','Africa'],['nations','Nations'],['stats','Stats']]],
   ['Club', [['club','Club'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
-  ['More', [['careerfile','Career file'],['info','How to play']]]
+  ['More', [['careerfile','Career file'],['soundsettings','Music & sound effects'],['info','How to play']]]
 ];
 function buildSideNav() {
   const c = $('#sideNav'); if (!c) return;
@@ -3264,7 +3264,11 @@ function buildSideNav() {
     `<h4>${label}</h4>` + items.map(([id, name]) =>
       `<button class="navlink" data-tab="${id}"><span>${esc(name)}</span></button>`).join('')
   ).join('');
-  c.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => {     if (b.dataset.tab === 'careerfile') { openCareerModal(); return; }     goTo(b.dataset.tab);   });
+  c.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => {
+    if (b.dataset.tab === 'careerfile') { openCareerModal(); return; }
+    if (b.dataset.tab === 'soundsettings') { openSoundModal(); return; }
+    goTo(b.dataset.tab);
+  });
 }
 function goTo(id) {
   if (liveState) { toast('The match is still running — skip to the result first.'); return; }
@@ -3352,6 +3356,19 @@ function openCareerModal() {
       `<button class="btn ghost sm" onclick="closeModal()">Cancel</button><button class="btn sm" id="switchYes2">Go to selection</button>`);
     $('#switchYes2').onclick = () => { leavingApp = true; try { localStorage.removeItem(LAST_SLOT_KEY); } catch (e) { } location.reload(); };
   };
+}
+function openSoundModal() {
+  const body = `<div style="display:flex;flex-direction:column;gap:12px">
+      <label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="musicChk" ${musicOn ? 'checked' : ''}> Background music</label>
+      <label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="sfxChk" ${soundOn ? 'checked' : ''}> Sound effects</label>
+    </div>`;
+  openModal('Music & sound effects', body, `<button class="btn ghost sm" onclick="closeModal()">Close</button>`);
+  $('#musicChk').onchange = e => {
+    musicOn = e.target.checked;
+    if (musicOn) { startBgMusic(); if (bgMusic) bgMusic.play().catch(() => { }); }
+    else if (bgMusic) bgMusic.pause();
+  };
+  $('#sfxChk').onchange = e => { soundOn = e.target.checked; if (soundOn) playSound('click'); };
 }
 function renderActions() {
   const a = $('#actions'); a.innerHTML = '';
@@ -4873,7 +4890,7 @@ function viewClub() {
     </div>
     <p class="hint" style="padding:0 13px 13px;margin:0">Saved in this browser only, across four slots. Clearing site data wipes it.</p></div>`;
   $('#saveNow').onclick = () => { save(); toast('Career saved in this browser.'); };
-  $('#soundChk').onchange = e => {     soundOn = e.target.checked;     if (soundOn) { playSound('click'); startBgMusic(); if (bgMusic) bgMusic.play().catch(() => { }); }     else if (bgMusic) bgMusic.pause();   };
+  $('#soundChk').onchange = e => { soundOn = e.target.checked; if (soundOn) playSound('click'); };
   $('#shareBtn').onclick = shareSeason;
   $('#switchSlot').onclick = () => {
     save();
