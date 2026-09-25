@@ -300,7 +300,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .modal .body{padding:14px 15px}
 .modal footer{padding:11px 15px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;position:sticky;bottom:0;background:var(--panel)}
 #toast-root{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:70;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;max-width:92vw}
-.toast{background:var(--panel);border:1px solid var(--line2);border-radius:8px;padding:10px 15px;font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:92vw;animation:toastIn .18s ease-out}
+.toast{background:color-mix(in srgb,var(--cup) 22%,var(--panel));border:1px solid var(--cup);color:#fff;font-weight:600;border-radius:8px;padding:10px 15px;font-size:13.5px;box-shadow:0 0 0 1px var(--cup),0 8px 24px rgba(0,0,0,.45);max-width:92vw;animation:toastIn .18s ease-out}
 .toast.warn{background:color-mix(in srgb,var(--down) 22%,var(--panel));border-color:var(--down);color:#fff;font-weight:600;box-shadow:0 0 0 1px var(--down),0 8px 24px rgba(0,0,0,.5)}
 .toast.big{background:color-mix(in srgb,var(--gold) 20%,var(--panel));border-color:var(--gold);font-weight:600;font-size:14.5px;box-shadow:0 0 0 1px var(--gold),0 8px 26px rgba(0,0,0,.5)}
 .toast.good{background:color-mix(in srgb,var(--up) 20%,var(--panel));border-color:var(--up);color:#fff;font-weight:600;box-shadow:0 0 0 1px var(--up),0 8px 24px rgba(0,0,0,.5)}
@@ -2927,16 +2927,24 @@ function playSound(name) {
     else if (name === 'card') { tone(ctx, 220, 0, .18, 'sawtooth', .06); }
   } catch (e) { }
 }
-  function startCrowd() {
+function startCrowd() {
   const ctx = ac(); if (!ctx || !liveState) return;
   try {
-    const buf = ctx.createBuffer(1, 2 * ctx.sampleRate, ctx.sampleRate);
+    const dur = 4, n = dur * ctx.sampleRate;
+    const buf = ctx.createBuffer(1, n, ctx.sampleRate);
     const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const fade = Math.round(ctx.sampleRate * 0.25);
+    for (let i = 0; i < n; i++) {
+      let v = Math.random() * 2 - 1;
+      if (i < fade) v *= i / fade;
+      else if (i > n - fade) v *= (n - i) / fade;
+      d[i] = v;
+    }
     const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
-    const filt = ctx.createBiquadFilter(); filt.type = 'bandpass'; filt.frequency.value = 900; filt.Q.value = 0.6;
-    const g = ctx.createGain(); g.gain.value = 0.05;
-    src.connect(filt); filt.connect(g); g.connect(ctx.destination);
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 160;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100; lp.Q.value = 0.4;
+    const g = ctx.createGain(); g.gain.value = 0.028;
+    src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(ctx.destination);
     src.start();
     liveState.crowd = { src, g };
   } catch (e) { }
@@ -2954,6 +2962,15 @@ function crowdRoar() {
   g.gain.setValueAtTime(g.gain.value, now);
   g.gain.linearRampToValueAtTime(0.22, now + 0.15);
   g.gain.linearRampToValueAtTime(0.05, now + 2.2);
+}
+  function shoutGoal() {
+  if (!soundOn || !window.speechSynthesis) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance('Goal!');
+    u.pitch = 1.25; u.rate = 0.85; u.volume = 1;
+    window.speechSynthesis.speak(u);
+  } catch (e) { }
 }
 
 /* ---------------- toast / modal ---------------- */
@@ -3101,7 +3118,11 @@ function save(n) {
   try {
     localStorage.setItem(slotKey(k), JSON.stringify({ G, seed: SEED, pid: PID, saved: Date.now() }));
     localStorage.setItem(LAST_SLOT_KEY, String(k));
-  } catch (e) { toast('This browser is blocking saves, so progress will not be kept.'); }
+  } catch (e) {
+    console.error('save() failed:', e && e.name, e && e.message);
+    if (e && e.name === 'QuotaExceededError') toastWarn('Storage is full — delete an old save slot to free up space.');
+    else toastWarn('This browser is blocking saves. Check your privacy settings, or turn off private/incognito browsing for this site.');
+  }
 }
 function slotNameKey(n) { return SLOTNAME_PREFIX + n; }
 function getSlotName(n) { try { return localStorage.getItem(slotNameKey(n)) || ''; } catch (e) { return ''; } }
@@ -3608,7 +3629,8 @@ function liveTick() {
       if (e.type === 'goal') {
         ls.flash = { t: performance.now(), txt: 'GOAL! ' + e.sName };
         ls.ball.ty = e.side === 'h' ? 12 : 138;
-        crowdRoar();
+        crowdRoar(        crowdRoar();
+        shoutGoal(););
       }
       if (e.scorer) {
         const xi = e.side === 'h' ? ls.ctx.xiH : ls.ctx.xiA;
