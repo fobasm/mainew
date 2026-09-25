@@ -3643,9 +3643,18 @@ function liveDraw() {
         const bx = away ? (W - advX) : advX;
         const by = (away ? (100 - cc[0]) : cc[0]) / 100 * Hh;
         const key = prefix + i;
-        const tx = bx + (ballCX - bx) * 0.3, ty = by + (ballCY - by) * 0.3;
+        const isGK = i === 0, role = cc[1] / 100;
+        const pull = isGK ? 0.03 : 0.14 + role * 0.55;
+        let tx = bx + (ballCX - bx) * pull, ty = by + (ballCY - by) * pull;
+        const now = performance.now();
+        tx += Math.sin(now / 850 + i * 1.9 + (prefix === 'a' ? 3 : 0)) * (isGK ? 1 : 4 + role * 5);
+        ty += Math.cos(now / 760 + i * 2.3) * (isGK ? 1 : 3 + role * 4);
+        if (isGK) {
+          tx = Math.max(bx - 14, Math.min(bx + 14, tx));
+          ty = Math.max(by - Hh * 0.1, Math.min(by + Hh * 0.1, ty));
+        }
         const q = ls.pos[key] || (ls.pos[key] = { x: bx, y: by });
-        q.x += (tx - q.x) * 0.12; q.y += (ty - q.y) * 0.12;
+        q.x += (tx - q.x) * 0.1; q.y += (ty - q.y) * 0.1;
         const r = Math.max(7, Hh * 0.032);
         c.beginPath(); c.arc(q.x, q.y, r, 0, Math.PI * 2);
         c.fillStyle = col1; c.fill(); c.lineWidth = 1.5; c.strokeStyle = col2; c.stroke();
