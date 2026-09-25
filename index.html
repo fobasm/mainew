@@ -3574,7 +3574,7 @@ function liveTick() {
         const pi = xi.findIndex(pl => pl.id === e.scorer);
         const p = pi >= 0 ? xi[pi] : null;
         const spot = $('#liveSpot');
-        if (p && spot) spot.innerHTML = `<div class="spot">${faceSVG(p, 46, G.teams[e.team].c1)}<div><b>${esc(p.name)}</b><span class="hint">#${pi + 1} · ${slots[pi] || p.pos} · ${esc(G.teams[e.team].s)}</span></div></div>`;
+                if (p && spot) spot.innerHTML = `<div class="livespot">${faceSVG(p, 46, G.teams[e.team].c1)}<div><b>${esc(p.name)}</b><span class="hint">#${pi + 1} · ${slots[pi] || p.pos} · ${esc(G.teams[e.team].s)}</span></div></div>`;
       }
     }
   });
