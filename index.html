@@ -454,11 +454,14 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
         <div><b id="mgrName">—</b><small>Manager</small></div>
       </div>
       <div class="topstats">
+        <div class="hide-s"><b id="statDate">—</b><small id="statSeason">—</small></div>
         <div><b id="statOvr">—</b><small>team rating</small></div>
         <div class="hide-s"><b id="statPos">—</b><small>position</small></div>
         <div><b id="statSquad">—</b><small>squad</small></div>
         <div><b id="statBudget">—</b><small>transfer budget</small></div>
       </div>
+      <span class="winpill" id="winPill">—</span>
+      <button class="btn sm" id="contBtn">Continue</button>
     </div>
   </header>
   <div class="ticker" id="ticker"><div class="tk-track" id="tickerTrack"></div></div>
@@ -3133,14 +3136,14 @@ $('#homeBtn').onclick = () => {
 };
 $('#backBtn').onclick = navBack;
 $('#fwdBtn').onclick = navFwd;
-$('#careerBtn').onclick = openCareerModal;
+$('#careerBtn').onclick = openCareerModal; function headerContinue() {   if (liveState) { goTo('match'); return; }   if (G.finished) { doEndSeason(); return; }   goTo('match');   if (G.liveMode) startLive(); else simRounds(1); } $('#contBtn').onclick = headerContinue;
 window.addEventListener('beforeunload', e => {
   if (!G || leavingApp) return;
   save();
   if (liveState) { e.preventDefault(); e.returnValue = ''; return ''; }
 });
 
-function enterApp() { $('#start').style.display = 'none'; $('#app').style.display = 'block'; $('#appLogo').src = IMG_LOGO; buildTabs(); render(); window.scrollTo(0, 0); } function renderTicker() {   const t = $('#tickerTrack'); if (!t || !G || !G.news) return;   const items = G.news.slice(0, 12);   if (!items.length) { $('#ticker').style.display = 'none'; return; }   $('#ticker').style.display = '';   const NEWS_ICON = { match: '⚽', transfer: '🔁', contract: '📝', youth: '🌱', retire: '👋', cup: '🏆', nation: '🌍', season: '📅', career: '📣' };   const html = items.map(n => `<span class="tk-item">${NEWS_ICON[n.kind] || '📰'} <b>MD${n.round + 1}</b>${esc(n.text)}</span>`).join('');   t.innerHTML = html + html; }
+function enterApp() { $('#start').style.display = 'none'; $('#app').style.display = 'block'; $('#appLogo').src = IMG_LOGO; buildSideNav(); render(); window.scrollTo(0, 0); } function renderTicker() {   const t = $('#tickerTrack'); if (!t || !G || !G.news) return;   const items = G.news.slice(0, 12);   if (!items.length) { $('#ticker').style.display = 'none'; return; }   $('#ticker').style.display = '';   const NEWS_ICON = { match: '⚽', transfer: '🔁', contract: '📝', youth: '🌱', retire: '👋', cup: '🏆', nation: '🌍', season: '📅', career: '📣' };   const html = items.map(n => `<span class="tk-item">${NEWS_ICON[n.kind] || '📰'} <b>MD${n.round + 1}</b>${esc(n.text)}</span>`).join('');   t.innerHTML = html + html; }
 
 /* ---------------- save slots ---------------- */
 function slotKey(n) { return SAVE_PREFIX + n; }
@@ -3263,7 +3266,7 @@ function renderHistoryBtns() {
 document.addEventListener('click', e => {}, false);
 
 /* ---------------- render ---------------- */
-function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 30);   $('#mgrName').textContent = G.manager.name;   renderTicker();
+function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 30);   $('#mgrName').textContent = G.manager.name;   renderTicker();   const { m: hdrM, y: hdrY } = roundToMonth(G.round, G.season);   $('#statDate').textContent = `${MONTH_NAMES[hdrM]} ${hdrY}`;   $('#statSeason').textContent = `Season ${seasonLabel(G.season)}`;   const winOpen = inTransferWindow(G), winPill = $('#winPill');   if (winPill) {     winPill.className = 'winpill ' + (winOpen ? 'open' : 'shut');     winPill.textContent = winOpen       ? `${currentWindowName(G)} open, ${windowCloses(G)} ${windowCloses(G) === 1 ? 'matchday' : 'matchdays'} left`       : `${currentWindowName(G)} opens in ${roundsToNextWindow(G)} ${roundsToNextWindow(G) === 1 ? 'matchday' : 'matchdays'}`;   }   const contBtn = $('#contBtn');   if (contBtn) {     contBtn.textContent = G.finished ? `Start ${seasonLabel(G.season + 1)}` : 'Continue';     contBtn.disabled = !!liveState;   }
   const t = me();
   $('#myCrest').innerHTML = crestHTML(t, 30);
   $('#myName').textContent = t.n;
