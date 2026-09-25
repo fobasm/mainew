@@ -411,6 +411,30 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
     <div class="grid" id="clubGrid"></div>
   </div>
 
+  <div class="step" id="createClubStep">
+    <h2>Or create your own club</h2>
+    <p class="note">Not feeling any of the 80? Design a badge and found a brand-new club instead.</p>
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap" id="lccPreview"></div>
+    <div class="field">
+      <input type="text" id="lccNameI" placeholder="Club name" maxlength="26" value="">
+      <input type="text" id="lccCityI" placeholder="Home city" maxlength="20" value="">
+    </div>
+    <p class="hint" style="margin:8px 0 6px">Badge icon</p>
+    <div class="chipbar" style="border:none;padding:0 0 10px" id="lccIconBar"></div>
+    <p class="hint" style="margin:0 0 6px">Badge shape</p>
+    <div class="chipbar" style="border:none;padding:0 0 10px" id="lccShapeBar"></div>
+    <p class="hint" style="margin:0 0 6px">Colours</p>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <label class="hint">Primary <input type="color" id="lccC1I" value="#D8B039"></label>
+      <label class="hint">Secondary <input type="color" id="lccC2I" value="#111111"></label>
+    </div>
+    <p class="hint" style="margin:0 0 6px">Starting division</p>
+    <div class="chipbar" style="border:none;padding:0 0 12px" id="lccTierBar"></div>
+    <button class="btn" id="lccGoBtn">Found the club and start career</button>
+  </div>
+
+  <div class="step" id="slotStep">
+
   <div class="step" id="slotStep">
     <h2>Saved careers</h2>
     <p class="note">Four slots. The game saves after every matchday, and picks up where you left off when you come back.</p>
@@ -5172,6 +5196,45 @@ function viewOtherClubs() {
   bindPlayerRows(v);
 }
 
+/* ---------------- create a club (landing) ---------------- */
+let lccName = '', lccCity = '', lccTier = 2, lccC1 = '#D8B039', lccC2 = '#111111', lccIcon = 'ball', lccShape = 'shield';
+function renderLandingCreateClub() {
+  const prev = $('#lccPreview'); if (!prev) return;
+  const preview = { s: (lccName || 'Your Club').slice(0, 3).toUpperCase(), n: lccName || 'Your Club', c1: lccC1, c2: lccC2, icon: lccIcon, shape: lccShape };
+  prev.innerHTML = crestCustomHTML(preview, 64);
+  const iconBar = $('#lccIconBar');
+  if (iconBar) {
+    iconBar.innerHTML = CC_ICONS.map(i => `<button class="chip" data-licon="${i}" aria-pressed="${lccIcon === i}">${i}</button>`).join('');
+    iconBar.querySelectorAll('[data-licon]').forEach(b => b.onclick = () => { lccIcon = b.dataset.licon; renderLandingCreateClub(); });
+  }
+  const shapeBar = $('#lccShapeBar');
+  if (shapeBar) {
+    shapeBar.innerHTML = ['shield', 'circle', 'diamond'].map(s => `<button class="chip" data-lshape="${s}" aria-pressed="${lccShape === s}">${s}</button>`).join('');
+    shapeBar.querySelectorAll('[data-lshape]').forEach(b => b.onclick = () => { lccShape = b.dataset.lshape; renderLandingCreateClub(); });
+  }
+  const tierBar = $('#lccTierBar');
+  if (tierBar) {
+    tierBar.innerHTML = [2, 3, 4].map(tr => `<button class="chip" data-ltier="${tr}" aria-pressed="${lccTier === tr}">${TIER_SHORT[tr]}</button>`).join('');
+    tierBar.querySelectorAll('[data-ltier]').forEach(b => b.onclick = () => { lccTier = +b.dataset.ltier; renderLandingCreateClub(); });
+  }
+}
+const lccNameI = $('#lccNameI'), lccCityI = $('#lccCityI'), lccC1I = $('#lccC1I'), lccC2I = $('#lccC2I'), lccGoBtn = $('#lccGoBtn');
+if (lccNameI) lccNameI.oninput = e => { lccName = e.target.value; renderLandingCreateClub(); };
+if (lccCityI) lccCityI.oninput = e => { lccCity = e.target.value; };
+if (lccC1I) lccC1I.oninput = e => { lccC1 = e.target.value; renderLandingCreateClub(); };
+if (lccC2I) lccC2I.oninput = e => { lccC2 = e.target.value; renderLandingCreateClub(); };
+if (lccGoBtn) lccGoBtn.onclick = () => {
+  if (!lccName.trim()) { toast('Give your new club a name first.'); return; }
+  const nm = ($('#mgrName').value || '').trim() || 'Coach';
+  const nat = ($('#mgrNat') && $('#mgrNat').value) || 'ZA';
+  if (slotInfo(slot)) slot = firstFreeSlot();
+  G = newGame(pickClub, { name: nm, avatar: pickAvatar, nat });
+  const idx = foundClub(G, { name: lccName.trim(), city: lccCity.trim() || 'Mzansi', tier: lccTier, c1: lccC1, c2: lccC2, icon: lccIcon, shape: lccShape });
+  G.myTeam = idx;
+  enterApp(); save();
+  toast(`Welcome to ${G.teams[idx].n}.`);
+};
+renderLandingCreateClub();
 </script>
 </body>
 </html>
