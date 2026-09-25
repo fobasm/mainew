@@ -250,7 +250,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .livebar .nm.a{text-align:right}
 .livebar .sc{font-family:var(--head);font-size:26px;font-weight:700;text-align:center;min-width:86px}
 .livebar .clock{display:block;font-family:var(--body);font-size:11.5px;color:var(--gold);font-weight:600}
-.pitch{display:block;width:100%;height:auto;background:var(--pitch)}
+.pitch{display:block;width:100%;height:auto;background:var(--pitch);margin:0 auto}
 .ticker{max-height:180px;overflow:auto;border-top:1px solid var(--line)}
 .tick{display:grid;grid-template-columns:38px 20px 1fr;gap:8px;padding:6px 12px;border-bottom:1px solid var(--line);font-size:13.5px;align-items:baseline}
 .tick .m{font-family:var(--head);color:var(--gold)}
@@ -2924,6 +2924,34 @@ function playSound(name) {
     else if (name === 'card') { tone(ctx, 220, 0, .18, 'sawtooth', .06); }
   } catch (e) { }
 }
+  function startCrowd() {
+  const ctx = ac(); if (!ctx || !liveState) return;
+  try {
+    const buf = ctx.createBuffer(1, 2 * ctx.sampleRate, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const filt = ctx.createBiquadFilter(); filt.type = 'bandpass'; filt.frequency.value = 900; filt.Q.value = 0.6;
+    const g = ctx.createGain(); g.gain.value = 0.05;
+    src.connect(filt); filt.connect(g); g.connect(ctx.destination);
+    src.start();
+    liveState.crowd = { src, g };
+  } catch (e) { }
+}
+function stopCrowd() {
+  if (liveState && liveState.crowd) {
+    try { liveState.crowd.src.stop(); } catch (e) { }
+    liveState.crowd = null;
+  }
+}
+function crowdRoar() {
+  const ctx = ac(); if (!ctx || !liveState || !liveState.crowd) return;
+  const g = liveState.crowd.g, now = ctx.currentTime;
+  g.gain.cancelScheduledValues(now);
+  g.gain.setValueAtTime(g.gain.value, now);
+  g.gain.linearRampToValueAtTime(0.22, now + 0.15);
+  g.gain.linearRampToValueAtTime(0.05, now + 2.2);
+}
 
 /* ---------------- toast / modal ---------------- */
 let toastT;
@@ -3464,6 +3492,7 @@ function startLive() {
   liveState.firstHalf = ctx.ev.slice();
   renderLive();
   requestAnimationFrame(liveDraw);
+  startCrowd();
 }
 
 function renderLive() {
@@ -3568,6 +3597,7 @@ function liveTick() {
       if (e.type === 'goal') {
         ls.flash = { t: performance.now(), txt: 'GOAL! ' + e.sName };
         ls.ball.ty = e.side === 'h' ? 12 : 138;
+        crowdRoar();
       }
       if (e.scorer) {
         const xi = e.side === 'h' ? ls.ctx.xiH : ls.ctx.xiA;
@@ -3742,6 +3772,7 @@ function halfTime() {
 
 function endLive() {
   const ls = liveState;
+  stopCrowd();
   finishMatch(G, ls.ctx);
   commitMatch(G, ls.tier, ls.m, ls.ctx);
   const res = playRound(G, true);
