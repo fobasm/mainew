@@ -133,7 +133,7 @@ header.top{position:sticky;top:0;z-index:30;background:var(--bg2);border-bottom:
 .myclub small{display:block;color:var(--faint);font-size:11px;font-family:var(--body)}
 .topstats{margin-left:auto;display:flex;gap:16px;text-align:right}
 .topstats b{display:block;font-family:var(--head);font-size:18px;line-height:1.1}
-.topstats small{color:var(--faint);font-size:10.5px}
+.topstats small{color:var(--faint);font-size:10.5px} .applogo{width:34px;height:34px;flex:0 0 34px;display:block;border-radius:6px} .tmgr{display:flex;align-items:center;gap:8px;padding-left:12px;margin-left:4px;border-left:1px solid var(--line)} .tmgr small{display:block;color:var(--faint);font-size:11px} .tmgr b{font-family:var(--head);font-size:15px} .ticker{overflow:hidden;background:var(--bg2);border-bottom:1px solid var(--line);font-size:13px;padding:6px 0;white-space:nowrap} .tk-track{display:inline-block;padding-left:100%;animation:tk 55s linear infinite} .ticker:hover .tk-track{animation-play-state:paused} @keyframes tk{to{transform:translateX(-100%)}} .tk-item{display:inline-block;padding-right:44px;color:var(--dim)} .tk-item b{color:var(--teal);font-family:var(--head);font-weight:700;margin-right:6px}
 nav.tabs{background:var(--bg2);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
 nav.tabs::-webkit-scrollbar{display:none}
 .tabsin{max-width:1200px;margin:0 auto;display:flex;gap:2px;padding:0 10px}
@@ -429,6 +429,7 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
 <div id="app">
   <header class="top">
     <div class="topin">
+      <img class="applogo" id="appLogo" alt="Mzansi Manager">
       <button class="hamburger" id="menuBtn" title="Menu" aria-label="Open menu"><span></span><span></span><span></span></button>
       <button class="navbtn" id="backBtn" title="Back" aria-label="Back" disabled>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -449,6 +450,10 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
           <small id="mySub">—</small>
         </div>
       </div>
+      <div class="tmgr">
+        <span id="mgrFace"></span>
+        <div><b id="mgrName">—</b><small>Manager</small></div>
+      </div>
       <div class="topstats">
         <div><b id="statOvr">—</b><small>team rating</small></div>
         <div class="hide-s"><b id="statPos">—</b><small>position</small></div>
@@ -457,6 +462,7 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
       </div>
     </div>
   </header>
+  <div class="ticker" id="ticker"><div class="tk-track" id="tickerTrack"></div></div>
   <nav class="tabs"><div class="tabsin" id="tabs"></div></nav>
 <!-- Ad slot 2 (provided by you). Same note as above — loads on your own hosted domain only. -->
 <div class="adslot" aria-hidden="true">
@@ -3136,7 +3142,7 @@ window.addEventListener('beforeunload', e => {
   if (liveState) { e.preventDefault(); e.returnValue = ''; return ''; }
 });
 
-function enterApp() { $('#start').style.display = 'none'; $('#app').style.display = 'block'; buildTabs(); render(); window.scrollTo(0, 0); }
+function enterApp() { $('#start').style.display = 'none'; $('#app').style.display = 'block'; $('#appLogo').src = IMG_LOGO; buildTabs(); render(); window.scrollTo(0, 0); } function renderTicker() {   const t = $('#tickerTrack'); if (!t || !G || !G.news) return;   const items = G.news.slice(0, 12);   if (!items.length) { $('#ticker').style.display = 'none'; return; }   $('#ticker').style.display = '';   const html = items.map(n => `<span class="tk-item"><b>MD${n.round + 1}</b>${esc(n.text)}</span>`).join('');   t.innerHTML = html + html; }
 
 /* ---------------- save slots ---------------- */
 function slotKey(n) { return SAVE_PREFIX + n; }
@@ -3276,7 +3282,7 @@ function closeDrawer() { const d = $('#drawer'), s = $('#drawerScrim'); if (d) d
 document.addEventListener('click', e => {}, false);
 
 /* ---------------- render ---------------- */
-function render() {
+function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 30);   $('#mgrName').textContent = G.manager.name;   renderTicker();
   const t = me();
   $('#myCrest').innerHTML = crestHTML(t, 30);
   $('#myName').textContent = t.n;
