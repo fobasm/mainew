@@ -3629,8 +3629,8 @@ function liveTick() {
       if (e.type === 'goal') {
         ls.flash = { t: performance.now(), txt: 'GOAL! ' + e.sName };
         ls.ball.ty = e.side === 'h' ? 12 : 138;
-        crowdRoar(        crowdRoar();
-        shoutGoal(););
+        crowdRoar();
+        shoutGoal();
       }
       if (e.scorer) {
         const xi = e.side === 'h' ? ls.ctx.xiH : ls.ctx.xiA;
