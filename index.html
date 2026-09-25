@@ -263,7 +263,10 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 
 /* ---------- pitch / lineup editor ---------- */
 .formpitch{position:relative;width:100%;aspect-ratio:3/4;max-width:420px;margin:0 auto;
-  background:repeating-linear-gradient(0deg,var(--pitch) 0 8%,var(--pitch2) 8% 16%);border-radius:8px;border:1px solid var(--line2)}
+  background:repeating-linear-gradient(0deg,var(--pitch) 0 8%,var(--pitch2) 8% 16%);border-radius:8px;border:2px solid var(--gold);
+  box-shadow:0 0 24px -4px color-mix(in srgb,var(--gold) 45%,transparent);overflow:hidden}
+.formpitch::before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#0000 49.6%,rgba(255,255,255,.55) 49.6% 50.4%,#0000 50.4%)}
+.formpitch::after{content:"";position:absolute;left:50%;top:50%;width:26%;aspect-ratio:1;border:2px solid rgba(255,255,255,.55);border-radius:50%;transform:translate(-50%,-50%)}
 .spot{position:absolute;transform:translate(-50%,-50%);width:58px;text-align:center;cursor:pointer;background:none;border:none;padding:0}
 .spot .shirt{width:30px;height:30px;margin:0 auto;border-radius:6px;border:1px solid rgba(0,0,0,.5);display:grid;place-items:center;font-family:var(--head);font-size:12px;font-weight:700}
 .spot .nm{display:block;font-size:10px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -3900,7 +3903,7 @@ function miniTable(rows, tier) {
 function viewTable() {
   const v = $('#v-table'), st = sortTable(G, tableTier);
   v.innerHTML = `<div class="panel">
-    <div class="chipbar">${[0,1,2].map(i => `<button class="chip" data-tt="${i}" aria-pressed="${tableTier === i}">${TIER_SHORT[i]}</button>`).join('')}</div>
+    <div class="chipbar" style="overflow-x:auto;flex-wrap:nowrap">${[0,1,2,3,4].map(i => `<button class="chip" data-tt="${i}" aria-pressed="${tableTier === i}">${TIER_SHORT[i]}</button>`).join('')}</div>
     <table class="tbl"><thead><tr><th class="pos">#</th><th>Club</th><th>Ovr</th><th>P</th><th>W</th><th>D</th><th>L</th>
       <th class="hide-s">GF</th><th class="hide-s">GA</th><th>GD</th><th>Pts</th><th class="hide-s">Form</th></tr></thead><tbody>` +
     st.map((r, i) => {
@@ -3918,7 +3921,7 @@ function viewTable() {
       ? '<span><i style="background:var(--up)"></i>Champions</span><span><i style="background:var(--cup)"></i>CAF places</span><span><i style="background:var(--down)"></i>Relegated</span>'
       : tableTier === 1
         ? '<span><i style="background:var(--up)"></i>Promoted</span><span><i style="background:var(--down)"></i>Relegated to the Motsepe League</span>'
-        : '<span><i style="background:var(--up)"></i>Promoted to the Championship</span>'}</div></div>`;
+        : `<span><i style="background:var(--up)"></i>Promoted to the ${TIER_SHORT[tableTier - 1]}</span>`}</div></div>`;
   v.querySelectorAll('[data-tt]').forEach(b => b.onclick = () => { tableTier = +b.dataset.tt; viewTable(); });
 }
 
