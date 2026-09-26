@@ -515,7 +515,7 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
     <div class="view" id="v-info"></div>
     <div class="view" id="v-createclub"></div>
     <div class="view" id="v-manager"></div>
-    <div class="view" id="v-otherclubs"></div>
+    <div class="view" id="v-otherclubs"></div>     <div class="view" id="v-watchlist"></div>
     <div class="view" id="v-club"></div>
   </main>
   </main>
@@ -1208,8 +1208,8 @@ function newGame(clubIndex, manager, seed) {
     v: 2, season, teams, myTeam: clubIndex,
     manager: manager || { name: 'Coach', avatar: 'blank' },
     tables: [], fixtures: [], round: 0, cup: null,
-    news: [], market: [], freeAgents: [], transferLog: [], pendingBids: [], watchlist: [],
-    records: { seasons: [] }, finished: false, liveMode: true
+    news: [], market: [], freeAgents: [], transferLog: [], pendingBids: [],
+    records: { seasons: [] }, finished: false, liveMode: true, watchlist: []
   };
   G.manager.rep = 40; G.manager.seasons = 0; G.manager.trophies = 0;
   G.manager.wage = Math.max(0.3, teams[clubIndex].rep * 1.1);
@@ -3205,7 +3205,7 @@ function load(n) {
     G = d.G; SEED = d.seed; PID = d.pid; slot = n || slot;
     G.teams.forEach(t => { t.fin = t.fin || newFin(); t.youth = t.youth || []; ensureLineup(t); });     G.watchlist = G.watchlist || []; G.pendingBids = G.pendingBids || [];
     if (!G.africa) { initAfrica(G); initAfcon(G); buildCAF(G); }
-    if (!G.super8) buildExtraCups(G);
+    if (!G.super8) buildExtraCups(G);     if (!G.watchlist) G.watchlist = [];
     G.manager.rep = G.manager.rep || 40;
     try { localStorage.setItem(LAST_SLOT_KEY, String(slot)); } catch (e) { }
     return true;
@@ -3253,7 +3253,7 @@ function buildSlots() {
 /* ---------------- tabs ---------------- */
 const MENU_SECTIONS = [
   ['Career', [['match','Matchday'],['calendar','Calendar'],['table','Log'],['fixtures','Fixtures']]],
-  ['Squad', [['squad','Squad'],['tactics','Team talk'],['youth','Academy'],['transfers','Transfers'],['otherclubs','Other Clubs']]],
+  ['Squad', [['squad','Squad'],['tactics','Team talk'],['youth','Academy'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist']]],
   ['Competitions', [['cups','Cups'],['africa','Africa'],['nations','Nations'],['stats','Stats']]],
   ['Club', [['club','Club'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
   ['More', [['careerfile','Career file'],['soundsettings','Music & sound effects'],['info','How to play']]]
@@ -3312,7 +3312,7 @@ function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 30);
   if (active) active.classList.add('on');
   const dispatch = { match: viewMatch, table: viewTable, fixtures: viewFixtures, squad: viewSquad, tactics: viewTactics,
      transfers: viewTransfers, youth: viewYouth, stats: viewStats, news: viewNews,
-     cups: viewCups, africa: viewAfrica, nations: viewNations, calendar: viewCalendar,
+      cups: viewCups, africa: viewAfrica, nations: viewNations, calendar: viewCalendar, watchlist: viewWatchlist,
      info: viewInfo, createclub: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub };
   try {
     (dispatch[tab] || viewMatch)();
@@ -4116,14 +4116,27 @@ function shopAround(pid) {
   G.pendingBids = G.pendingBids.slice(-6);
   return { ok: true, msg: `${n} club${n === 1 ? '' : 's'} made an offer for ${p.name}.` };
 }
-function playerModal(pid) {
+function isWatched(pid) { return (G.watchlist || []).includes(pid); } function toggleWatch(pid) {   if (!G.watchlist) G.watchlist = [];   const i = G.watchlist.indexOf(pid);   if (i >= 0) { G.watchlist.splice(i, 1); return false; }   G.watchlist.push(pid); return true; } function playerModal(pid) {
+  function viewWatchlist() {
+  const v = $('#v-watchlist');
+  const list = (G.watchlist || []).map(pid => findPlayer(G, pid)).filter(x => x && x.p);
+  v.innerHTML = `<div class="panel"><h3>Shortlist<span class="sub">${list.length} player${list.length === 1 ? '' : 's'} you're keeping an eye on</span></h3>
+    ${list.length ? list.map(({ p, t }) => `<button class="prow" data-pid="${p.id}">
+        ${faceSVG(p, 34, t ? t.c1 : null)}
+        ${ratingTag(p.rating)}
+        <span class="who"><b>${esc(p.name)} ${flagSVG(p.nat)}</b>
+          <small>${p.pos} · ${p.age} · ${t ? esc(t.n) : 'Free agent'}</small></span>
+        <span class="val">${money(p.value)}</span></button>`).join('')
+      : `<div class="empty">You're not keeping an eye on anyone yet. Open a player's profile and tap "Keep an eye on him" to add them here.</div>`}</div>`;
+  bindPlayerRows(v);
+}
   const found = findPlayer(G, pid) || (G.freeAgents.find(p => p.id === pid) ? { p: G.freeAgents.find(p => p.id === pid), t: null } : null)
     || (me().youth.find(p => p.id === pid) ? { p: me().youth.find(p => p.id === pid), t: me() } : null);
   if (!found) return;
   const p = found.p, t = found.t, isMine = t && t.id === G.myTeam;
   const inYouth = isMine && me().youth.some(y => y.id === p.id);
   const listing = G.market.find(m => m.pid === p.id);
-  const clubs = (p.clubs || []).map(c => `${esc(G.teams[c.id].s)}${c.loan ? ' (loan)' : ''} <span class="hint">(${c.from})</span>`).join(' → ') || '—';
+  const clubs = (p.clubs || []).map(c => `${esc(G.teams[c.id].s)}${c.loan ? ' (loan)' : ''} <span class="hint">(${c.from})</span>`).join(' → ') || '—';   const watched = isWatched(p.id);   const prevChips = (p.clubs || []).slice(0, -1).map(c => `<span class="chip">${esc(G.teams[c.id].s)}${c.loan ? ' (loan)' : ''} <span class="hint">${c.from}</span></span>`).join(' ');
   const careerRows = (p.career || []).slice().reverse().slice(0, 8).map(c =>
     `<tr><td>${seasonLabel(c.season)}</td><td>${esc(G.teams[c.club].s)}</td><td class="num">${c.apps}</td><td class="num">${c.g}</td><td class="num">${c.a}</td><td class="num">${c.rating}</td></tr>`).join('');
   const devId = developedBy(p);
@@ -4179,7 +4192,7 @@ function playerModal(pid) {
       <div class="panel"><h3>Interested clubs</h3><div class="pad">${interestedClubs(p, t ? t.id : null, 4).map(x => `<div style="margin-bottom:5px">${crestHTML(x, 16)} ${esc(x.s)} <span class="hint">${TIER_SHORT[x.tier]}</span></div>`).join('') || '<span class="hint">No clubs are showing interest right now.</span>'}</div></div>
     </div>
     <p style="margin:12px 0 4px;color:var(--faint);font-size:12.5px">This season: ${p.apps} apps, ${p.goals} goals, ${p.assists} assists${POS_GROUP[p.pos] === 'GK' ? `, ${p.cs} clean sheets` : ''}.</p>
-    <p style="margin:2px 0 10px;font-size:13px">Clubs: ${clubs}</p>
+  const b = $('#pmBid'); if (b) b.onclick = () => { closeModal(); bidModal(p.id, listing.ask); }; }
     ${p.releaseClause ? `<p style="font-size:13px;color:var(--dim)">Release clause: <b style="color:var(--ink)">${money(p.releaseClause)}</b>${!isMine ? ` <button class="btn sm" id="pmClause" style="margin-left:6px">Trigger clause</button>` : ''}</p>` : ''}
     ${listing ? `<p style="font-size:13px;color:var(--dim)">Listed at <b>${money(listing.ask)}</b>. Interested: ${listing.interest.map(i => esc(G.teams[i].s)).join(', ') || 'nobody yet'}.</p>` : ''}
     ${careerRows ? `<table class="tbl" style="margin-top:8px"><thead><tr><th>Season</th><th>Club</th><th>Apps</th><th>G</th><th>A</th><th>Rat</th></tr></thead><tbody>${careerRows}</tbody></table>` : ''}`;
