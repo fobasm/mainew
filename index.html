@@ -214,7 +214,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
 .chipbar{display:flex;gap:6px;padding:9px 13px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)}
 .chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--dim)}
-.chip[aria-pressed="true"]{background:var(--gold);color:#16180f;border-color:var(--gold);font-weight:600}
+.chip[aria-pressed="true"]{background:var(--gold);color:#16180f;border-color:var(--gold);font-weight:600} .txtabs{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 10px;border-bottom:1px solid var(--line)} .txtab{background:none;border:0;border-bottom:3px solid transparent;padding:8px 14px;cursor:pointer;color:var(--dim);font-family:var(--head);font-size:15px;font-weight:600} .txtab:hover{color:var(--ink)} .txtab.on{color:var(--gold);border-bottom-color:var(--gold)} .star{background:none;border:0;cursor:pointer;font-size:16px;line-height:1;color:var(--faint);padding:2px;transition:transform .12s} .star:hover{transform:scale(1.15)} .star.on{color:var(--gold)} .tw{overflow-x:auto;-webkit-overflow-scrolling:touch} .txtbl td.txp{display:flex;align-items:center;gap:8px;text-align:left} .txtbl td.txp div{min-width:0} .txtbl td.txp .hint{font-size:11px;color:var(--faint)} .txtbl tr.me td{background:color-mix(in srgb,var(--gold) 14%,transparent)}
 
 /* ---------- player bits ---------- */
 .rating{display:inline-grid;place-items:center;width:30px;height:24px;border-radius:5px;font-family:var(--head);font-weight:700;font-size:15px;color:#0c110e;background:var(--dim)}
@@ -1208,7 +1208,7 @@ function newGame(clubIndex, manager, seed) {
     v: 2, season, teams, myTeam: clubIndex,
     manager: manager || { name: 'Coach', avatar: 'blank' },
     tables: [], fixtures: [], round: 0, cup: null,
-    news: [], market: [], freeAgents: [], transferLog: [], pendingBids: [],
+    news: [], market: [], freeAgents: [], transferLog: [], pendingBids: [], watchlist: [],
     records: { seasons: [] }, finished: false, liveMode: true
   };
   G.manager.rep = 40; G.manager.seasons = 0; G.manager.trophies = 0;
@@ -3203,7 +3203,7 @@ function load(n) {
     const raw = localStorage.getItem(slotKey(n || slot)); if (!raw) return false;
     const d = JSON.parse(raw); if (!d.G || !d.G.teams) return false;
     G = d.G; SEED = d.seed; PID = d.pid; slot = n || slot;
-    G.teams.forEach(t => { t.fin = t.fin || newFin(); t.youth = t.youth || []; ensureLineup(t); });
+    G.teams.forEach(t => { t.fin = t.fin || newFin(); t.youth = t.youth || []; ensureLineup(t); });     G.watchlist = G.watchlist || []; G.pendingBids = G.pendingBids || [];
     if (!G.africa) { initAfrica(G); initAfcon(G); buildCAF(G); }
     if (!G.super8) buildExtraCups(G);
     G.manager.rep = G.manager.rep || 40;
@@ -4289,10 +4289,28 @@ function viewTactics() {
 }
 
 /* ---------------- transfers ---------------- */
-let txSection = 'listed', txAge = 'ALL', txSort = 'rating';
+let txSection = 'search', txAge = 'ALL', txSort = 'rating', txHistFilter = 'all';
+function txRow(p, club, opts) {
+  opts = opts || {};
+  const listing = G.market.find(m => m.pid === p.id);
+  const watched = (G.watchlist || []).includes(p.id);
+  const ask = opts.free ? null : (listing ? listing.ask : p.value);
+  return `<tr>
+    <td><button class="star ${watched ? 'on' : ''}" data-star="${p.id}" title="Keep an eye on him" aria-label="Keep an eye on him">${watched ? '★' : '☆'}</button></td>
+    <td class="txp">${faceSVG(p, 26, club ? club.c1 : null)}<div><b>${esc(p.name)} ${flagSVG(p.nat)}</b>${listing ? `<div class="hint">listed at ${money(listing.ask)}</div>` : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}</div></td>
+    <td>${posTag(p.pos)}</td>
+    <td class="num">${p.age}</td>
+    <td class="num">${ratingTag(p.rating)}</td>
+    <td class="num" style="color:var(--faint)">${p.pot}</td>
+    <td>${club ? `${crestHTML(club, 13)} ${esc(club.s)}` : '<span class="hint">Free agent</span>'}</td>
+    <td class="num">${opts.free ? '<span class="hint">free</span>' : money(ask)}</td>
+    <td>${opts.free
+      ? `<button class="btn sm" data-fa="${p.id}">Sign</button>`
+      : `<button class="btn ghost sm" data-pid="${p.id}">View</button> <button class="btn sm" data-buy="${p.id}" data-ask="${ask}" ${me().budget < ask * 0.6 ? 'disabled' : ''}>Bid</button>`}</td>
+  </tr>`;
+}
 function viewTransfers() {
   const v = $('#v-transfers'), t = me();
-  const inBudget = p => t.budget >= p.value * 0.5;
   const ageOk = p => txAge === 'ALL' || (txAge === 'U21' ? p.age <= 21 : txAge === '22-28' ? (p.age >= 22 && p.age <= 28) : p.age >= 29);
   const posOk = p => txFilter === 'ALL' || p.pos === txFilter || POS_GROUP[p.pos] === txFilter;
   const searchOk = p => !txSearch || p.name.toLowerCase().includes(txSearch.toLowerCase()) || natName(p.nat).toLowerCase().includes(txSearch.toLowerCase());
@@ -4303,12 +4321,10 @@ function viewTransfers() {
     if (txSort === 'fit') return Math.abs(clubLevel(t) - a.rating) - Math.abs(clubLevel(t) - b.rating);
     return b.rating - a.rating;
   };
-
-  const listings = G.market.map(m => { const f = findPlayer(G, m.pid); return f ? { ...m, p: f.p, club: f.t } : null; })
-    .filter(Boolean).filter(x => posOk(x.p) && searchOk(x.p) && ageOk(x.p)).sort((a, b) => sorter(a.p, b.p));
-
   const winOpen = inTransferWindow(G);
   const foreignN = t.squad.filter(p => p.nat !== 'ZA').length;
+  const bids = G.pendingBids || [];
+
   let html = `<div class="rbox">
     <div><b>${money(t.budget)}</b><span>Transfer budget</span></div>
     <div><b style="color:${winOpen ? 'var(--up)' : 'var(--down)'}">${winOpen ? windowCloses(G) + (windowCloses(G) === 1 ? ' matchday' : ' matchdays') : roundsToNextWindow(G) + (roundsToNextWindow(G) === 1 ? ' matchday' : ' matchdays')}</b><span>${winOpen ? currentWindowName(G) + ' left' : 'Until window opens'}</span></div>
@@ -4317,56 +4333,60 @@ function viewTransfers() {
   </div>
   ${!winOpen ? `<div class="panel"><div class="pad" style="display:flex;justify-content:flex-end"><button class="btn ghost sm" id="skipWindow">Skip to next window</button></div></div>` : ''}`;
 
-  const bids = G.pendingBids || [];
-  if (bids.length) {
-    html += `<div class="panel"><h3>Offers for your players</h3>` + bids.map((b, i) =>
-      `<div class="prow" style="grid-template-columns:auto 1fr auto auto">${ratingTag(b.rating)}
-        <span class="who"><b>${esc(b.name)} ${flagSVG(b.nat)}</b><small>${b.pos} · bid from ${esc(G.teams[b.from].s)}</small></span>
-        <span class="val">${money(b.fee)}</span>
-        <span style="display:flex;gap:6px"><button class="btn sm" data-accept="${i}">Accept</button>
-        <button class="btn ghost sm" data-reject="${i}">Reject</button></span></div>`).join('') + `</div>`;
-  }
+  const sections = [['search', 'Player search'], ['fa', 'Free agents'], ['bids', 'Offers' + (bids.length ? ' (' + bids.length + ')' : '')],
+    ['sell', 'Sell players'], ['watch', 'Shortlist' + ((G.watchlist || []).length ? ' (' + G.watchlist.length + ')' : '')],
+    ['loans', 'Loans'], ['hist', 'Transfer history'], ['top', 'Leaderboards']];
+  html += `<div class="txtabs">${sections.map(([k, l]) => `<button class="txtab ${txSection === k ? 'on' : ''}" data-txsec="${k}">${l}</button>`).join('')}</div>`;
 
-  const sections = [['listed','Transfer Listed'], ['all','All Players'], ['free','Free Agents'], ['loans','Loans'], ['top','Leaderboards']];
-  html += `<div class="panel"><div class="chipbar">${sections.map(([k, l]) => `<button class="chip" data-txsec="${k}" aria-pressed="${txSection === k}">${l}</button>`).join('')}</div>
-    <div class="chipbar">${['ALL','GK','DEF','MID','ATT'].map(p => `<button class="chip" data-tf="${p}" aria-pressed="${txFilter === p}">${p === 'ALL' ? 'Any position' : p}</button>`).join('')}
-      ${['ALL','U21','22-28','29+'].map(a => `<button class="chip" data-txage="${a}" aria-pressed="${txAge === a}">${a === 'ALL' ? 'Any age' : a}</button>`).join('')}
-      <select id="txSortSel">${[['rating','Highest rated'],['potential','Highest potential'],['value','Most valuable'],['age','Youngest'],['fit','Most likely to join you']]
+  if (txSection === 'search' || txSection === 'fa') {
+    html += `<div class="panel"><div class="chipbar">${['ALL', 'GK', 'DEF', 'MID', 'ATT'].map(p => `<button class="chip" data-tf="${p}" aria-pressed="${txFilter === p}">${p === 'ALL' ? 'Any position' : p}</button>`).join('')}
+      ${['ALL', 'U21', '22-28', '29+'].map(a => `<button class="chip" data-txage="${a}" aria-pressed="${txAge === a}">${a === 'ALL' ? 'Any age' : a}</button>`).join('')}
+      <select id="txSortSel">${[['rating', 'Highest rated'], ['potential', 'Highest potential'], ['value', 'Most valuable'], ['age', 'Youngest'], ['fit', 'Most likely to join you']]
         .map(([k, l]) => `<option value="${k}" ${txSort === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
-      <input type="search" id="txs" placeholder="Search name or country" value="${esc(txSearch)}" style="margin-left:auto;min-width:160px"></div></div>`;
+      <input type="search" id="txs" placeholder="Search name or country" value="${esc(txSearch)}" style="margin-left:auto;min-width:160px"></div>`;
 
-  if (txSection === 'listed') {
-    html += `<div class="panel"><h3>Transfer listed<span class="sub">${listings.length} available</span></h3>` +
-      (listings.length ? listings.slice(0, 70).map(x =>
-        `<div class="prow" style="grid-template-columns:auto auto 1fr auto auto">
-          ${faceSVG(x.p, 32, x.club.c1)}${ratingTag(x.p.rating)}
-          <span class="who"><b>${esc(x.p.name)} ${flagSVG(x.p.nat)}</b>
-            <small>${x.p.pos} · ${x.p.age} · ${crestHTML(x.club, 13)} ${esc(x.club.s)} · potential ${x.p.pot} · ${money(x.p.wage)}/season
-            ${x.p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}<br>
-            <span style="color:var(--faint)">Also watched by: ${x.interest.length ? x.interest.map(i => esc(G.teams[i].s)).join(', ') : 'nobody'}</span></small></span>
-          <span class="val">${money(x.ask)}</span>
-          <span style="display:flex;gap:6px"><button class="btn ghost sm" data-pid="${x.pid}">View</button>
-          <button class="btn sm" data-buy="${x.pid}" data-ask="${x.ask}" ${t.budget < x.ask * 0.6 ? 'disabled' : ''}>Bid</button></span></div>`).join('')
-        : `<div class="empty">Nobody matches that. Clear the filters, or wait — the list refreshes every season.</div>`) + `</div>`;
-  } else if (txSection === 'all') {
-    const all = [];
-    G.teams.forEach(c => { if (c.id !== G.myTeam) c.squad.forEach(p => { if (posOk(p) && searchOk(p) && ageOk(p)) all.push({ p, club: c }); }); });
-    all.sort((a, b) => sorter(a.p, b.p));
-    html += `<div class="panel"><h3>Every player in the game<span class="sub">${all.length} shown, best 80</span></h3>` +
-      all.slice(0, 80).map(x => `<div class="prow" style="grid-template-columns:auto auto 1fr auto">
-        ${faceSVG(x.p, 32, x.club.c1)}${ratingTag(x.p.rating)}
-        <span class="who"><b>${esc(x.p.name)} ${flagSVG(x.p.nat)}</b><small>${x.p.pos} · ${x.p.age} · ${crestHTML(x.club, 13)} ${esc(x.club.s)} · ${TIER_SHORT[x.club.tier]} · pot ${x.p.pot}</small></span>
-        <button class="btn ghost sm" data-pid="${x.p.id}">View</button></div>`).join('') + `</div>`;
-  } else if (txSection === 'free') {
-    const fa = G.freeAgents.filter(p => posOk(p) && searchOk(p) && ageOk(p)).slice().sort(sorter);
-    html += `<div class="panel"><h3>Free agents<span class="sub">no fee, just a contract</span></h3>` +
-      (fa.length ? fa.map(p =>
-        `<div class="prow" style="grid-template-columns:auto auto 1fr auto auto">${faceSVG(p, 32)}${ratingTag(p.rating)}
-          <span class="who"><b>${esc(p.name)} ${flagSVG(p.nat)}</b><small>${p.pos} · ${p.age} · potential ${p.pot} · ${money(p.wage)}/season</small></span>
-          <span class="val hint">free</span><button class="btn sm" data-fa="${p.id}">Sign</button></div>`).join('')
-        : '<div class="empty">No free agents match that right now.</div>') + `</div>`;
+    if (txSection === 'search') {
+      const all = [];
+      G.teams.forEach(c => { if (c.id !== t.id) c.squad.forEach(p => { if (!p.loan && posOk(p) && searchOk(p) && ageOk(p)) all.push({ p, club: c }); }); });
+      all.sort((a, b) => sorter(a.p, b.p));
+      html += `<h3 style="padding:10px 13px 0">Player search<span class="sub">${all.length} match, best 80 shown</span></h3>
+        ${all.length ? `<div class="tw"><table class="tbl txtbl"><thead><tr><th></th><th>Player</th><th>Pos</th><th>Age</th><th>Rat</th><th>Pot</th><th>Club</th><th>Value</th><th></th></tr></thead><tbody>${all.slice(0, 80).map(x => txRow(x.p, x.club)).join('')}</tbody></table></div>`
+        : '<div class="empty">Nobody matches those filters.</div>'}</div>`;
+    } else {
+      const fa = G.freeAgents.filter(p => posOk(p) && searchOk(p) && ageOk(p)).slice().sort(sorter);
+      html += `<h3 style="padding:10px 13px 0">Free agents<span class="sub">no fee, just a contract</span></h3>
+        ${fa.length ? `<div class="tw"><table class="tbl txtbl"><thead><tr><th></th><th>Player</th><th>Pos</th><th>Age</th><th>Rat</th><th>Pot</th><th>Wage</th><th></th><th></th></tr></thead><tbody>${fa.map(p => txRow(p, null, { free: true })).join('')}</tbody></table></div>`
+        : '<div class="empty">No free agents match that right now.</div>'}</div>`;
+    }
+  } else if (txSection === 'bids') {
+    html += `<div class="panel"><h3>Offers for your players<span class="sub">clubs bid for players who impress, or anyone you shop around</span></h3>` +
+      (bids.length ? bids.map((b, i) =>
+        `<div class="prow" style="grid-template-columns:auto 1fr auto auto">${ratingTag(b.rating)}
+          <span class="who"><b>${esc(b.name)} ${flagSVG(b.nat)}</b><small>${b.pos} · bid from ${esc(G.teams[b.from].s)}</small></span>
+          <span class="val">${money(b.fee)}</span>
+          <span style="display:flex;gap:6px"><button class="btn sm" data-accept="${i}">Accept</button>
+          <button class="btn ghost sm" data-reject="${i}">Reject</button></span></div>`).join('')
+        : '<div class="empty">No offers right now. Clubs bid for players who impress, and for anyone you shop around during a transfer window.</div>') + `</div>`;
+  } else if (txSection === 'sell') {
+    const squad = t.squad.filter(p => !p.loan).slice().sort((a, b) => b.value - a.value);
+    html += `<div class="panel"><h3>Your players<span class="sub">shop around to draw offers, or negotiate a sale yourself</span></h3>` +
+      (squad.length ? `<div class="tw"><table class="tbl txtbl"><thead><tr><th></th><th>Player</th><th>Pos</th><th>Age</th><th>Rat</th><th>Value</th><th>Contract</th><th></th></tr></thead><tbody>${
+        squad.map(p => `<tr><td></td><td class="txp"><b>${esc(p.name)}</b> ${flagSVG(p.nat)}</td><td>${posTag(p.pos)}</td><td class="num">${p.age}</td>
+          <td class="num">${ratingTag(p.rating)}</td><td class="num">${money(p.value)}</td><td class="num">${p.contract}y</td>
+          <td style="display:flex;gap:6px;justify-content:flex-end"><button class="btn ghost sm" data-shop="${p.id}">Shop around</button>
+          <button class="btn sm" data-sell="${p.id}">Sell</button><button class="btn danger sm" data-rel="${p.id}">Release</button></td></tr>`).join('')
+      }</tbody></table></div>` : '<div class="empty">No players to sell.</div>') + `</div>`;
+  } else if (txSection === 'watch') {
+    const list = (G.watchlist || []).map(pid => {
+      const f = findPlayer(G, pid); if (f) return { p: f.p, club: f.t };
+      const fa = G.freeAgents.find(x => x.id === pid); return fa ? { p: fa, club: null } : null;
+    }).filter(Boolean);
+    html += `<div class="panel"><h3>Shortlist<span class="sub">${list.length} player${list.length === 1 ? '' : 's'} you're keeping an eye on</span></h3>` +
+      (list.length ? `<div class="tw"><table class="tbl txtbl"><thead><tr><th></th><th>Player</th><th>Pos</th><th>Age</th><th>Rat</th><th>Pot</th><th>Club</th><th>Value</th><th></th></tr></thead><tbody>${
+        list.map(x => txRow(x.p, x.club, { free: !x.club })).join('')
+      }</tbody></table></div>` : '<div class="empty">Star a player from search or free agents to keep an eye on him.</div>') + `</div>`;
   } else if (txSection === 'loans') {
-    const loanedIn = G.teams.flatMap(c => c.squad.filter(p => p.loan && p.loan.from === G.myTeam));
+    const loanedIn = G.teams.flatMap(c => c.squad.filter(p => p.loan && p.loan.from === t.id));
     html += `<div class="panel"><h3>Loans<span class="sub">send players out or bring in loan cover</span></h3>` +
       (loanedIn.length ? `<p class="hint" style="padding:8px 13px 0">Out on loan</p>` + loanedIn.map(p => {
         const at = findPlayer(G, p.id).t;
@@ -4379,6 +4399,13 @@ function viewTransfers() {
         `<div class="prow" style="grid-template-columns:auto 1fr auto">${ratingTag(p.rating)}
           <span class="who"><b>${esc(p.name)}</b><small>${p.pos} · ${p.age}</small></span>
           <button class="btn ghost sm" data-loanout="${p.id}">Loan out</button></div>`).join('') + `</div>`;
+  } else if (txSection === 'hist') {
+    const L = G.transferLog.filter(x => txHistFilter === 'all' || x.from === t.id || x.to === t.id).slice(0, 70);
+    html += `<div class="panel"><div class="chipbar">${[['all', 'All clubs'], ['me', 'My club']].map(([k, l]) => `<button class="chip" data-txhist="${k}" aria-pressed="${txHistFilter === k}">${l}</button>`).join('')}</div>
+      <h3 style="padding:10px 13px 0">Transfer wire<span class="sub">every deal across all five divisions</span></h3>` +
+      (L.length ? `<div class="tw"><table class="tbl txtbl"><thead><tr><th>Season</th><th>Player</th><th>Pos</th><th>From</th><th>To</th><th>Fee</th></tr></thead><tbody>${
+        L.map(x => `<tr class="${x.from === t.id || x.to === t.id ? 'me' : ''}"><td>${seasonLabel(x.season)} MD${x.round}</td><td><b>${esc(x.name)}</b> ${flagSVG(x.nat)}</td><td>${posTag(x.pos)}</td><td>${esc(G.teams[x.from].s)}</td><td>${esc(G.teams[x.to].s)}</td><td class="num">${money(x.fee)}</td></tr>`).join('')
+      }</tbody></table></div>` : '<div class="empty">No business done yet.</div>') + `</div>`;
   } else if (txSection === 'top') {
     const everyone = [];
     G.teams.forEach(c => c.squad.forEach(p => everyone.push({ p, club: c })));
@@ -4394,26 +4421,26 @@ function viewTransfers() {
     </div>`;
   }
 
-  html += `<div class="panel"><h3>Your squad<span class="sub">tap a player to negotiate, sell or release</span></h3>` +
-    t.squad.filter(p => !p.loan).slice().sort((a, b) => b.value - a.value).map(p => playerRow(p, t)).join('') + `</div>`;
-
-  html += `<div class="panel"><h3>Transfer wire<span class="sub">every deal across all five divisions</span></h3>` +
-    (G.transferLog.length ? G.transferLog.slice(0, 25).map(x =>
-      `<div class="prow" style="grid-template-columns:auto 1fr auto">${ratingTag(x.rating)}
-        <span class="who"><b>${esc(x.name)} ${flagSVG(x.nat)}</b><small>${x.pos} · ${esc(G.teams[x.from].s)} → ${esc(G.teams[x.to].s)} · ${seasonLabel(x.season)} MD${x.round}</small></span>
-        <span class="val">${money(x.fee)}</span></div>`).join('')
-      : '<div class="empty">No business done yet.</div>') + `</div>`;
-
   v.innerHTML = html;
   v.querySelectorAll('[data-txsec]').forEach(b => b.onclick = () => { txSection = b.dataset.txsec; viewTransfers(); });
   const skipBtn = $('#skipWindow'); if (skipBtn) skipBtn.onclick = () => simRounds(roundsToNextWindow(G));
   v.querySelectorAll('[data-txage]').forEach(b => b.onclick = () => { txAge = b.dataset.txage; viewTransfers(); });
   const sortSel = v.querySelector('#txSortSel'); if (sortSel) sortSel.onchange = e => { txSort = e.target.value; viewTransfers(); };
   v.querySelectorAll('[data-tf]').forEach(b => b.onclick = () => { txFilter = b.dataset.tf; viewTransfers(); });
+  v.querySelectorAll('[data-txhist]').forEach(b => b.onclick = () => { txHistFilter = b.dataset.txhist; viewTransfers(); });
   const si = v.querySelector('#txs');
   if (si) si.oninput = () => { const pos = si.selectionStart; txSearch = si.value; viewTransfers(); const n = $('#txs'); n.focus(); n.setSelectionRange(pos, pos); };
+  v.querySelectorAll('[data-star]').forEach(b => b.onclick = () => {
+    const pid = +b.dataset.star; G.watchlist = G.watchlist || [];
+    const i = G.watchlist.indexOf(pid);
+    if (i >= 0) G.watchlist.splice(i, 1); else G.watchlist.push(pid);
+    save(); viewTransfers();
+  });
   v.querySelectorAll('[data-buy]').forEach(b => b.onclick = e => { e.stopPropagation(); bidModal(+b.dataset.buy, +b.dataset.ask); });
   v.querySelectorAll('[data-fa]').forEach(b => b.onclick = () => { const r = signFreeAgent(G, +b.dataset.fa); toast(r.msg); if (r.ok) { save(); render(); } });
+  v.querySelectorAll('[data-shop]').forEach(b => b.onclick = () => { const r = shopAround(+b.dataset.shop); toast(r.msg); if (r.ok) { save(); render(); } });
+  v.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => sellModal(+b.dataset.sell));
+  v.querySelectorAll('[data-rel]').forEach(b => b.onclick = () => txReleaseAsk(+b.dataset.rel));
   v.querySelectorAll('[data-accept]').forEach(b => b.onclick = () => {
     const i = +b.dataset.accept, bid = G.pendingBids[i];
     const r = sellPlayer(G, bid.pid, bid.fee, bid.from);
@@ -4423,6 +4450,12 @@ function viewTransfers() {
   v.querySelectorAll('[data-recall]').forEach(b => b.onclick = () => { const r = recallLoan(G, +b.dataset.recall); toast(r.msg); if (r.ok) { save(); render(); } });
   v.querySelectorAll('[data-loanout]').forEach(b => b.onclick = () => { const r = loanOut(G, +b.dataset.loanout, 1); toast(r.msg); if (r.ok) { save(); render(); } });
   bindPlayerRows(v);
+}
+function txReleaseAsk(pid) {
+  const p = me().squad.find(x => x.id === pid); if (!p) return;
+  openModal('Release ' + esc(p.name) + '?', `<p style="margin:0;color:var(--dim)">You pay up half of what is left on his deal and he becomes a free agent.</p>`,
+    `<button class="btn ghost sm" onclick="closeModal()">Cancel</button><button class="btn danger sm" id="txRelYes">Release him</button>`);
+  $('#txRelYes').onclick = () => { const res = releasePlayer(G, pid); toast(res.msg); closeModal(); if (res.ok) { save(); render(); } };
 }
 
 function negotiateModal(pid) {
