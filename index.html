@@ -4198,8 +4198,12 @@ function playerModal(pid) {
       </dl></div>
       <div class="panel"><h3>Interested clubs</h3><div class="pad">${interestedClubs(p, t ? t.id : null, 4).map(x => `<div style="margin-bottom:5px">${crestHTML(x, 16)} ${esc(x.s)} <span class="hint">${TIER_SHORT[x.tier]}</span></div>`).join('') || '<span class="hint">No clubs are showing interest right now.</span>'}</div></div>
     </div>
+    ${!isMine ? `<div class="panel"><h3>Keep an eye</h3><div class="pad">
+      <p class="hint" style="margin:0 0 10px">Add ${esc(p.name)} to your shortlist so you can find him again when you're ready to make a move.</p>
+      <button class="btn ${watched ? 'gold' : ''} sm" id="pmWatch">${watched ? '★ On your shortlist — remove' : '☆ Keep an eye on him'}</button>
+    </div></div>` : ''}
+    <div class="panel"><h3>Previous clubs</h3><div class="pad" style="display:flex;gap:6px;flex-wrap:wrap">${prevChips || '<span class="hint">No previous clubs — home-grown.</span>'}</div></div>
     <p style="margin:12px 0 4px;color:var(--faint);font-size:12.5px">This season: ${p.apps} apps, ${p.goals} goals, ${p.assists} assists${POS_GROUP[p.pos] === 'GK' ? `, ${p.cs} clean sheets` : ''}.</p>
-  const b = $('#pmBid'); if (b) b.onclick = () => { closeModal(); bidModal(p.id, listing.ask); }; }
     ${p.releaseClause ? `<p style="font-size:13px;color:var(--dim)">Release clause: <b style="color:var(--ink)">${money(p.releaseClause)}</b>${!isMine ? ` <button class="btn sm" id="pmClause" style="margin-left:6px">Trigger clause</button>` : ''}</p>` : ''}
     ${listing ? `<p style="font-size:13px;color:var(--dim)">Listed at <b>${money(listing.ask)}</b>. Interested: ${listing.interest.map(i => esc(G.teams[i].s)).join(', ') || 'nobody yet'}.</p>` : ''}
     ${careerRows ? `<table class="tbl" style="margin-top:8px"><thead><tr><th>Season</th><th>Club</th><th>Apps</th><th>G</th><th>A</th><th>Rat</th></tr></thead><tbody>${careerRows}</tbody></table>` : ''}`;
@@ -4255,6 +4259,11 @@ function playerModal(pid) {
     $('#relYes').onclick = () => { const res = releasePlayer(G, p.id); toast(res.msg); closeModal(); if (res.ok) { save(); render(); } };
   };
   const b = $('#pmBid'); if (b) b.onclick = () => { closeModal(); bidModal(p.id, listing.ask); };
+  const w = $('#pmWatch'); if (w) w.onclick = () => {
+    const on = toggleWatch(p.id); save();
+    toast(on ? p.name + ' added to your shortlist.' : p.name + ' removed from your shortlist.', on ? 'good' : '');
+    closeModal(); playerModal(p.id);
+  };
 }
 
 /* ---------------- tactics / lineup ---------------- */
