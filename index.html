@@ -4639,12 +4639,21 @@ function sellModal(pid) {
 function viewYouth() {
   const v = $('#v-youth'), t = me();
   const cost = [0, 6, 12, 22, 36][t.academy] || 0;
-  v.innerHTML = `<div class="panel"><h3>Youth academy<span class="sub">level ${t.academy} of 5${t.youthClub ? ' · a club built on youth' : ''}</span></h3>
+  const bestPot = t.youth.length ? Math.max(...t.youth.map(p => p.pot)) : null;
+  const wageBill = t.youth.reduce((s, p) => s + p.wage, 0);
+  v.innerHTML = `<div class="cols">
+    <div class="panel"><h3>Youth academy<span class="sub">level ${t.academy} of 5${t.youthClub ? ' · a club built on youth' : ''}</span></h3>
     <div class="pad">
       <div class="bar"><i style="width:${t.academy * 20}%"></i></div>
       <p class="hint" style="margin:8px 0 10px">A stronger academy produces more prospects, and better ones. Intake arrives at the start of each season.</p>
       ${t.academy < 5 ? `<button class="btn ghost sm" id="upAc">Upgrade to level ${t.academy + 1} — ${money(cost)}</button>` : '<span class="hint">Top of the range.</span>'}
     </div></div>
+    <div class="panel"><h3>Running cost</h3><dl class="kv" style="padding:11px 13px">
+      <dt>Prospects</dt><dd>${t.youth.length}</dd>
+      <dt>Best potential</dt><dd>${bestPot != null ? bestPot : '—'}</dd>
+      <dt>Wage bill</dt><dd>${money(wageBill)}/season</dd>
+    </dl></div>
+  </div>
   <div class="panel"><h3>This year's intake<span class="sub">${t.youth.length} prospect${t.youth.length === 1 ? '' : 's'}</span></h3>` +
     (t.youth.length ? t.youth.slice().sort((a, b) => b.pot - a.pot).map(p =>
       `<div class="prow" style="grid-template-columns:auto auto 1fr auto auto">
