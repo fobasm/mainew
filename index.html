@@ -1807,7 +1807,7 @@ function endSeason(G) {
       p.value = valueOf(p);
       if (p.lastGrowth >= 5 && p.age <= 21 && p.rating >= 66) {
         sum.breakout.push({ name: p.name, club: t.id, rating: p.rating, pot: p.pot });
-        news(G, 'youth', `${p.name} (${p.age}) has exploded at ${t.s} — now rated ${p.rating} with ${p.pot} potential.`, { pid: p.id, toId: t.id });`
+        news(G, 'youth', `${p.name} (${p.age}) has exploded at ${t.s} — now rated ${p.rating} with ${p.pot} potential.`, { pid: p.id, toId: t.id });
       }
     });
     const retiring = t.squad.filter(p => (p.age >= 34 && rnd() < (p.age - 32) * 0.28) || p.age >= 39);
@@ -1942,7 +1942,7 @@ function promoteYouth(G, pid) {
   p.clubs.push({ id: t.id, from: G.season });
   t.squad.push(p);
   t.wageBill = wageOf(t);
-  news(G, 'youth', `${t.s} promote ${p.name} from the academy.`, { pid: p.id, toId: t.id });`
+  news(G, 'youth', `${t.s} promote ${p.name} from the academy.`, { pid: p.id, toId: t.id });
   return { ok: true, msg: `${p.name} joins the senior squad.` };
 }
 function releaseYouth(G, pid) {
@@ -2100,7 +2100,7 @@ function buyPlayer(G, pid, fee, viaClause) {
   G.market = G.market.filter(m => m.pid !== pid);
   ensureLineup(me);
   logTransfer(G, f.p, f.t.id, me.id, fee);
-  news(G, 'transfer', `${f.p.name} signs for ${me.s} from ${f.t.s} for ${money(fee)}.`, { pid: f.p.id, fromId: f.t.id, toId: me.id });`
+  news(G, 'transfer', `${f.p.name} signs for ${me.s} from ${f.t.s} for ${money(fee)}.`, { pid: f.p.id, fromId: f.t.id, toId: me.id });
   return { ok: true, msg: `${f.p.name} signs for ${me.s}.` };
 }
 
@@ -2124,7 +2124,7 @@ function sellPlayer(G, pid, fee, buyerId) {
   me.wageBill = wageOf(me); buyer.wageBill = wageOf(buyer);
   ensureLineup(me); ensureLineup(buyer);
   logTransfer(G, p, me.id, buyer.id, fee);
-  news(G, 'transfer', `${p.name} leaves ${me.s} for ${buyer.s}. Fee: ${money(fee)}.`, { pid: p.id, fromId: me.id, toId: buyer.id });`
+  news(G, 'transfer', `${p.name} leaves ${me.s} for ${buyer.s}. Fee: ${money(fee)}.`, { pid: p.id, fromId: me.id, toId: buyer.id });
   return { ok: true, msg: `${p.name} sold to ${buyer.s} for ${money(fee)}.` };
 }
 
@@ -2205,7 +2205,7 @@ function signFreeAgent(G, pid) {
   me.squad.push(p);
   me.wageBill = wageOf(me);
   ensureLineup(me);
-  news(G, 'transfer', `${me.s} sign free agent ${p.name}.`, { pid: p.id, toId: me.id });`
+  news(G, 'transfer', `${me.s} sign free agent ${p.name}.`, { pid: p.id, toId: me.id });
   return { ok: true, msg: `${p.name} joins on a free transfer.` };
 }
 
@@ -2230,7 +2230,7 @@ function aiTransferTick(G) {
     ensureLineup(buyer); ensureLineup(f.t);
     G.market = G.market.filter(m => m.pid !== deal.pid);
     logTransfer(G, f.p, f.t.id, buyer.id, deal.ask);
-    news(G, 'transfer', `${f.p.name} moves from ${f.t.s} to ${buyer.s} for ${money(deal.ask)}.`, { pid: f.p.id, fromId: f.t.id, toId: buyer.id });`
+    news(G, 'transfer', `${f.p.name} moves from ${f.t.s} to ${buyer.s} for ${money(deal.ask)}.`, { pid: f.p.id, fromId: f.t.id, toId: buyer.id });
   }
 }
 
@@ -2676,7 +2676,7 @@ function loanOut(G, pid, seasons) {
   p.clubs.push({ id: club.id, from: G.season, loan: true });
   me.wageBill = wageOf(me); club.wageBill = wageOf(club);
   ensureLineup(me); ensureLineup(club);
-  news(G, 'transfer', `${p.name} joins ${club.s} on loan from ${me.s}.`, { pid: p.id, fromId: me.id, toId: club.id });`
+  news(G, 'transfer', `${p.name} joins ${club.s} on loan from ${me.s}.`, { pid: p.id, fromId: me.id, toId: club.id });
   return { ok: true, msg: `${p.name} goes out on loan to ${club.s}.` };
 }
 function recallLoan(G, pid) {
