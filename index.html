@@ -736,6 +736,28 @@ const SKINS = [
   { c:'#7d4f30', w:15 }, { c:'#96683f', w:8 },  { c:'#b0804f', w:5 },
   { c:'#d3a37a', w:3 },  { c:'#e6c29e', w:3 }
 ];
+/* nationality -> skin-tone pool, so faces match the player's name origin */
+const SKIN_GROUPS = {
+  black:  SKINS.filter(s => ['#4a2c17','#573320','#6a4028','#7d4f30','#96683f'].includes(s.c)),
+  latin:  SKINS.filter(s => ['#7d4f30','#96683f','#b0804f','#d3a37a','#e6c29e'].includes(s.c)),
+  white:  SKINS.filter(s => ['#b0804f','#d3a37a','#e6c29e'].includes(s.c)),
+  asian:  SKINS.filter(s => ['#d3a37a','#e6c29e'].includes(s.c)),
+  mena:   SKINS.filter(s => ['#96683f','#b0804f','#d3a37a'].includes(s.c))
+};
+const NAT_SKIN_GROUP = {
+  ZA:'sa', ZW:'black', ZM:'black', MZ:'black', MW:'black', LS:'black', SZ:'black', NA:'black', BW:'black',
+  CD:'black', GH:'black', NG:'black', CM:'black', SN:'black', CI:'black', BI:'black', RW:'black', TZ:'black',
+  KE:'black', UG:'black', AO:'black',
+  BR:'latin', AR:'latin', UY:'latin', CO:'latin', CL:'latin', VE:'latin', PY:'latin',
+  PT:'white', RS:'white', DE:'white', IT:'white', HR:'white',
+  JP:'asian', KR:'asian', CN:'asian',
+  SA:'mena'
+};
+function skinGroupFor(nat) {
+  const g = NAT_SKIN_GROUP[nat];
+  if (g === 'sa') return SKINS; // South Africa: full mix (black, coloured, white, Indian)
+  return SKIN_GROUPS[g] || SKINS;
+}
 const HAIRS = ['fade','afro','dreads','braids','bald','cornrows','curls','buzz','hightop','mohawk','lineup','locs'];
 const HAIR_COLOURS = ['#14100e','#1d1713','#241c16','#2f241b','#4a3320','#7a5326','#c9a227'];
 const MANAGER_AVATARS = ['blank','m1','m2','m3','m4','m5','m6'];
@@ -840,7 +862,7 @@ const DISC = (c, x, y, r) => ({ t:'disc', c, x, y, r });
 const CRES = (c, x, y, r, off) => ({ t:'cres', c, x, y, r, off: off || 0.42 });
 const TRI = (c, w) => ({ t:'tri', c, w });
 const RECT = (c, x, y, w, h) => ({ t:'rect', c, x, y, w, h });
-const DIAG = (c, w) => ({ t:'diag', c, w });
+    const DIAG = (c, w) => ({ t:'diag', c, w }); const RAW = svg => ({ t:'raw', svg });
 
 const FLAGS = {
   /* ---------- Africa ---------- */
@@ -849,7 +871,7 @@ const FLAGS = {
   BJ: [VR(['#008751','#fcd116','#e8112d'], [1, 1, 1]), RECT('#008751', 0, 0, 6, 12), RECT('#fcd116', 6, 0, 12, 6), RECT('#e8112d', 6, 6, 12, 6)],
   BW: [HR(['#75aadb','#ffffff','#000000','#ffffff','#75aadb'], [4, 0.7, 2.6, 0.7, 4])],
   BF: [H('#ef2b2d','#009e49'), ST('#fcd116', 9, 6, 1.9)],
-  BI: [H('#ce1126','#1eb53a'), { t:'saltire', c:'#ffffff' }, DISC('#ffffff', 9, 6, 3), ST('#ce1126', 9, 4.4, 1), ST('#ce1126', 7.7, 7, 1), ST('#ce1126', 10.3, 7, 1)],
+  BI: [RAW(`<rect width="18" height="12" fill="#ce1126"/><polygon points="0,0 9,6 0,12" fill="#1eb53a"/><polygon points="18,0 9,6 18,12" fill="#1eb53a"/><path d="M0 0L18 12M18 0L0 12" stroke="#ffffff" stroke-width="1.6"/><circle cx="9" cy="6" r="3" fill="#ffffff"/><path d="M9.00,3.40L9.22,4.09L9.95,4.09L9.36,4.52L9.59,5.21L9.00,4.78L8.41,5.21L8.64,4.52L8.05,4.09L8.78,4.09Z" fill="#ce1126"/><path d="M7.70,6.00L7.92,6.69L8.65,6.69L8.06,7.12L8.29,7.81L7.70,7.38L7.11,7.81L7.34,7.12L6.75,6.69L7.48,6.69Z" fill="#ce1126"/><path d="M10.30,6.00L10.52,6.69L11.25,6.69L10.66,7.12L10.89,7.81L10.30,7.38L9.71,7.81L9.94,7.12L9.35,6.69L10.08,6.69Z" fill="#ce1126"/>`)],
   CM: [V('#007a5e','#ce1126','#fcd116'), ST('#fcd116', 9, 6, 1.9)],
   CV: [HR(['#003893','#ffffff','#cf2027','#ffffff','#003893'], [5, 0.9, 0.9, 0.9, 4.3]), ST('#f7d116', 6.5, 7.5, 0.9)],
   CF: [HR(['#003082','#ffffff','#289728','#ffce00'], [3, 3, 3, 3]), RECT('#d21034', 8.1, 0, 1.8, 12), ST('#ffce00', 2, 1.6, 1.1)],
@@ -952,7 +974,7 @@ function bands(c, r, vertical) {
 
 function layerSVG(L) {
   switch (L.t) {
-    case 'bg': return `<rect width="18" height="12" fill="${L.c}"/>`;
+    case 'bg': return `<rect width="18" height="12" fill="${L.c}"/>`;     case 'raw': return L.svg;
     case 'h': return bands(L.c, L.r, false);
     case 'v': return bands(L.c, L.r, true);
     case 'rect': return `<rect x="${L.x}" y="${L.y}" width="${L.w}" height="${L.h}" fill="${L.c}"/>`;
@@ -1106,8 +1128,8 @@ function personName(nat) {
   const p = NAMES[nat] || NAMES.ZA;
   return { first: pick(p.f), last: pick(p.l) };
 }
-function makeFace() {
-  const skin = wpick(SKINS, s => s.w);
+function makeFace(nat) {
+  const skin = wpick(skinGroupFor(nat), s => s.w);
   return {
     sk: skin.c,
     hr: pick(HAIRS),
@@ -1150,7 +1172,7 @@ function makePlayer(opts) {
   const pot = Math.round(clamp(rating + potBump, rating, 95));
   const p = {
     id: PID++, first: nm.first, last: nm.last, name: nm.first + ' ' + nm.last,
-    nat, pos, age, rating, pot, face: makeFace(),
+    nat, pos, age, rating, pot, face: makeFace(nat),
     wage: wageFor(rating, age, o.tier), contract: o.contract != null ? o.contract : rint(1, 4),
     goals: 0, assists: 0, apps: 0, cs: 0, inj: 0, form: 0, yellow: 0,
     cG: 0, cA: 0, cApps: 0, earned: 0,
