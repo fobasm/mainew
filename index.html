@@ -231,6 +231,8 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .face{border-radius:50%;background:var(--panel2);display:block;flex:0 0 auto}
 .growth{font-family:var(--head);font-size:13px}
 .growth.up{color:var(--up)}.growth.down{color:var(--down)}.growth.flat{color:var(--faint)}
+.ratcol{display:inline-flex;align-items:center;gap:4px}
+.rating.pot{background:none;border:1px solid var(--line);color:var(--faint)}
 .prow{display:grid;grid-template-columns:auto auto 1fr auto auto;gap:9px;align-items:center;padding:7px 13px;border-bottom:1px solid var(--line);width:100%;text-align:left;background:none;border-left:none;border-right:none;border-top:none}
 .prow:last-child{border-bottom:none}
 .prow:hover{background:var(--panel2)}
@@ -277,8 +279,15 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .feed li{padding:8px 13px;border-bottom:1px solid var(--line);font-size:13.5px;display:flex;gap:9px;align-items:baseline}
 .feed li:last-child{border-bottom:none}
 .feed .when{color:var(--faint);font-size:11px;white-space:nowrap;min-width:46px}
+.feed .nf-thumb{display:flex;align-items:center;gap:1px;flex:0 0 auto;align-self:center}
+.feed .nf-thumb svg{display:block}
 .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;margin-top:6px}
 .k-transfer{background:var(--cup)}.k-youth{background:var(--up)}.k-retire{background:var(--faint)}
+.newsFeat{display:flex;gap:16px;align-items:center;padding:16px;background:linear-gradient(135deg,var(--panel2),var(--panel));border-bottom:1px solid var(--line);flex-wrap:wrap}
+.newsFeat .nf-body{flex:1;min-width:200px}
+.newsFeat h2{margin:0 0 6px;font-size:19px;line-height:1.25}
+.newsFeat .nf-move{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--dim)}
+.newsFeat .nf-move .arrow{color:var(--faint);font-size:16px}
 .k-cup{background:var(--gold)}.k-caf{background:#ff7ac6}.k-nation{background:#7dd3fc}.k-career{background:#fbbf24}.k-season{background:#c084fc}.k-match{background:#ff9c5b}.k-contract{background:#5eead4}
 .res{display:grid;grid-template-columns:1fr 60px 1fr;gap:6px;align-items:center;padding:6px 13px;border-bottom:1px solid var(--line);font-size:13.5px}
 .res:last-child{border-bottom:none}
@@ -1790,7 +1799,7 @@ function endSeason(G) {
       p.value = valueOf(p);
       if (p.lastGrowth >= 5 && p.age <= 21 && p.rating >= 66) {
         sum.breakout.push({ name: p.name, club: t.id, rating: p.rating, pot: p.pot });
-        news(G, 'youth', `${p.name} (${p.age}) has exploded at ${t.s} — now rated ${p.rating} with ${p.pot} potential.`);
+        news(G, 'youth', `${p.name} (${p.age}) has exploded at ${t.s} — now rated ${p.rating} with ${p.pot} potential.`, { pid: p.id, toId: t.id });`
       }
     });
     const retiring = t.squad.filter(p => (p.age >= 34 && rnd() < (p.age - 32) * 0.28) || p.age >= 39);
@@ -1925,7 +1934,7 @@ function promoteYouth(G, pid) {
   p.clubs.push({ id: t.id, from: G.season });
   t.squad.push(p);
   t.wageBill = wageOf(t);
-  news(G, 'youth', `${t.s} promote ${p.name} from the academy.`);
+  news(G, 'youth', `${t.s} promote ${p.name} from the academy.`, { pid: p.id, toId: t.id });`
   return { ok: true, msg: `${p.name} joins the senior squad.` };
 }
 function releaseYouth(G, pid) {
@@ -2083,7 +2092,7 @@ function buyPlayer(G, pid, fee, viaClause) {
   G.market = G.market.filter(m => m.pid !== pid);
   ensureLineup(me);
   logTransfer(G, f.p, f.t.id, me.id, fee);
-  news(G, 'transfer', `${f.p.name} signs for ${me.s} from ${f.t.s} for ${money(fee)}.`);
+  news(G, 'transfer', `${f.p.name} signs for ${me.s} from ${f.t.s} for ${money(fee)}.`, { pid: f.p.id, fromId: f.t.id, toId: me.id });`
   return { ok: true, msg: `${f.p.name} signs for ${me.s}.` };
 }
 
@@ -2107,7 +2116,7 @@ function sellPlayer(G, pid, fee, buyerId) {
   me.wageBill = wageOf(me); buyer.wageBill = wageOf(buyer);
   ensureLineup(me); ensureLineup(buyer);
   logTransfer(G, p, me.id, buyer.id, fee);
-  news(G, 'transfer', `${p.name} leaves ${me.s} for ${buyer.s}. Fee: ${money(fee)}.`);
+  news(G, 'transfer', `${p.name} leaves ${me.s} for ${buyer.s}. Fee: ${money(fee)}.`, { pid: p.id, fromId: me.id, toId: buyer.id });`
   return { ok: true, msg: `${p.name} sold to ${buyer.s} for ${money(fee)}.` };
 }
 
@@ -2188,7 +2197,7 @@ function signFreeAgent(G, pid) {
   me.squad.push(p);
   me.wageBill = wageOf(me);
   ensureLineup(me);
-  news(G, 'transfer', `${me.s} sign free agent ${p.name}.`);
+  news(G, 'transfer', `${me.s} sign free agent ${p.name}.`, { pid: p.id, toId: me.id });`
   return { ok: true, msg: `${p.name} joins on a free transfer.` };
 }
 
@@ -2213,7 +2222,7 @@ function aiTransferTick(G) {
     ensureLineup(buyer); ensureLineup(f.t);
     G.market = G.market.filter(m => m.pid !== deal.pid);
     logTransfer(G, f.p, f.t.id, buyer.id, deal.ask);
-    news(G, 'transfer', `${f.p.name} moves from ${f.t.s} to ${buyer.s} for ${money(deal.ask)}.`);
+    news(G, 'transfer', `${f.p.name} moves from ${f.t.s} to ${buyer.s} for ${money(deal.ask)}.`, { pid: f.p.id, fromId: f.t.id, toId: buyer.id });`
   }
 }
 
@@ -2230,8 +2239,8 @@ function generateBids(G) {
 }
 
 /* ---------------- news ---------------- */
-function news(G, kind, text) {
-  G.news.unshift({ season: G.season, round: G.round, kind, text });
+function news(G, kind, text, meta) {
+  G.news.unshift({ season: G.season, round: G.round, kind, text, meta: meta || null });
   if (G.news.length > 120) G.news.pop();
 }
 
@@ -2634,7 +2643,7 @@ function loanOut(G, pid, seasons) {
   p.clubs.push({ id: club.id, from: G.season, loan: true });
   me.wageBill = wageOf(me); club.wageBill = wageOf(club);
   ensureLineup(me); ensureLineup(club);
-  news(G, 'transfer', `${p.name} joins ${club.s} on loan from ${me.s}.`);
+  news(G, 'transfer', `${p.name} joins ${club.s} on loan from ${me.s}.`, { pid: p.id, fromId: me.id, toId: club.id });`
   return { ok: true, msg: `${p.name} goes out on loan to ${club.s}.` };
 }
 function recallLoan(G, pid) {
@@ -2955,14 +2964,15 @@ function posTag(pos) { return `<span class="tag ${POS_GROUP[pos].toLowerCase() =
 function formHtml(f) { return '<span class="form">' + f.slice(-5).map(x => `<i class="${x}">${x}</i>`).join('') + '</span>'; }
 function growthHtml(p) {
   const d = p.rating - (p.startRating || p.rating);
-  if (d > 0) return `<span class="growth up">▲${d}</span>`;
-  if (d < 0) return `<span class="growth down">▼${-d}</span>`;
+  if (d > 0) return `<span class="growth up">+${d}</span>`;
+  if (d < 0) return `<span class="growth down">${d}</span>`;
   return `<span class="growth flat">–</span>`;
 }
+function potTag(p) { return `<span class="rating pot">${p.pot}</span>`; }
 function potGrowthHtml(p) {
   const d = p.pot - (p.startPot != null ? p.startPot : p.pot);
-  if (d > 0) return `<span class="growth up">▲${d}</span>`;
-  if (d < 0) return `<span class="growth down">▼${-d}</span>`;
+  if (d > 0) return `<span class="growth up">+${d}</span>`;
+  if (d < 0) return `<span class="growth down">${d}</span>`;
   return `<span class="growth flat">–</span>`;
 }
 
@@ -3923,10 +3933,19 @@ function resRow(m) {
     <div class="sc num">${m.played ? m.hg + '–' + m.ag : 'v'}</div>
     <div class="a ${m.played && m.ag > m.hg ? 'w' : ''}">${esc(A.s)}</div></div>`;
 }
+function newsThumb(m) {
+  if (!m || m.pid == null) return '';
+  const f = findPlayer(G, m.pid);
+  if (!f) return '';
+  const face = faceSVG(f.p, 22, f.t ? f.t.c1 : null);
+  const fromT = m.fromId != null ? G.teams[m.fromId] : null;
+  const toT = m.toId != null ? G.teams[m.toId] : null;
+  return `<span class="nf-thumb">${face}${fromT ? crestHTML(fromT, 15) : ''}${fromT && toT ? '<span class="arrow" style="font-size:10px">→</span>' : ''}${toT ? crestHTML(toT, 15) : ''}</span>`;
+}
 function newsList(items, n) {
   if (!items.length) return '<div class="empty">Quiet week in the game.</div>';
   return '<ul class="feed">' + items.slice(0, n || 12).map(x =>
-    `<li><span class="dot k-${x.kind}"></span><span class="when">${seasonLabel(x.season).slice(2)} MD${x.round}</span><span>${esc(x.text)}</span></li>`).join('') + '</ul>';
+    `<li><span class="dot k-${x.kind}"></span>${newsThumb(x.meta)}<span class="when">${seasonLabel(x.season).slice(2)} MD${x.round}</span><span>${esc(x.text)}</span></li>`).join('') + '</ul>';
 }
 
 /* ---------------- matchday ---------------- */
@@ -4030,11 +4049,11 @@ function playerRow(p, t, extra) {
   const isCap = t.captainId === p.id, isVice = t.viceCaptainId === p.id;
   return `<button class="prow" data-pid="${p.id}">
     ${faceSVG(p, 34, t.c1)}
-    ${ratingTag(p.rating)}
+    <span class="ratcol">${ratingTag(p.rating)}${growthHtml(p)}</span>
     <span class="who"><b>${esc(p.name)} ${flagSVG(p.nat)}${isCap ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">C</span>' : isVice ? ' <span class="tag">VC</span>' : ''}</b>
       <small>${p.pos} · ${p.age} · ${p.apps} apps · ${p.goals}g ${p.assists}a · ${money(p.wage)}/season · ${p.contract}y
       ${p.loan ? ' <span class="tag out">on loan</span>' : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}${p.inj > 0 ? ` <span class="tag inj">out ${p.inj}</span>` : ''}${inXI ? ' <span class="tag xi">XI</span>' : ''}</small></span>
-    <span>${growthHtml(p)}</span>
+    <span class="ratcol pot">${potTag(p)}${potGrowthHtml(p)}</span>
     <span class="val">${extra != null ? extra : money(p.value)}</span></button>`;
 }
 function bindPlayerRows(root) {
@@ -4204,9 +4223,9 @@ function playerModal(pid) {
         </div>
       </div>
       <div style="text-align:center;flex:0 0 auto">
-        <div style="font-family:var(--head);font-size:44px;line-height:1">${Math.round(p.rating)}</div>
+        <div style="font-family:var(--head);font-size:44px;line-height:1">${Math.round(p.rating)} ${growthHtml(p)}</div>
         <div class="hint">rating</div>
-        <div class="hint">potential ${p.pot}</div>
+        <div class="hint">potential ${p.pot} ${potGrowthHtml(p)}</div>
       </div>
     </div>
     ${devLine ? `<p style="margin:0 0 6px;font-size:13px;color:var(--teal)">${devLine}</p>` : ''}
@@ -4321,9 +4340,9 @@ function viewTactics() {
   </div>
   <div class="panel"><h3>Bench and reserves<span class="sub">${bench.length} available</span></h3>
     ${bench.length ? bench.sort((a, b) => b.rating - a.rating).map(p =>
-      `<button class="prow" data-sub="${p.id}">${faceSVG(p, 30, t.c1)}${ratingTag(p.rating)}
+      `<button class="prow" data-sub="${p.id}">${faceSVG(p, 30, t.c1)}<span class="ratcol">${ratingTag(p.rating)}${growthHtml(p)}</span>
         <span class="who"><b>${esc(p.name)} ${flagSVG(p.nat)}</b><small>${p.pos} · ${p.age} · form ${p.form > 0.6 ? 'good' : p.form < -0.6 ? 'poor' : 'steady'}</small></span>
-        <span>${growthHtml(p)}</span><span class="val">${money(p.value)}</span></button>`).join('')
+        <span class="ratcol pot">${potTag(p)}${potGrowthHtml(p)}</span><span class="val">${money(p.value)}</span></button>`).join('')
       : '<div class="empty">Everyone fit is in the XI.</div>'}</div>
   <div class="panel"><h3>Injured</h3>${
     t.squad.filter(p => p.inj > 0).length
@@ -4736,7 +4755,28 @@ function viewNews() {
   const v = $('#v-news');
   const kinds = [['ALL','Everything'],['transfer','Transfers'],['youth','Youth'],['retire','Retirements'],['contract','Contracts'],['season','Promotion'],['match','On the pitch'],['cup','Cups'],['caf','Africa'],['nation','National teams'],['career','Your career']];
   const items = G.news.filter(n => newsFilter === 'ALL' || n.kind === newsFilter);
-  v.innerHTML = `<div class="panel"><h3>News<span class="sub">all three divisions</span></h3>
+  const NEWS_LABEL = { transfer: 'Transfer News', youth: 'Youth News', contract: 'Contract News', retire: 'Retirement', cup: 'Cup News', nation: 'National Team News', season: 'League News', career: 'Career News', match: 'Match News' };
+  const feat = items.find(x => x.meta && x.meta.pid != null);
+  let featHtml = '';
+  if (feat) {
+    const f = findPlayer(G, feat.meta.pid);
+    if (f) {
+      const fromT = feat.meta.fromId != null ? G.teams[feat.meta.fromId] : null;
+      const toT = feat.meta.toId != null ? G.teams[feat.meta.toId] : null;
+      featHtml = `<div class="hero newsFeat">
+        ${faceSVG(f.p, 84, f.t ? f.t.c1 : null)}
+        <div class="nf-body">
+          <div class="hint">${NEWS_LABEL[feat.kind] || 'Breaking News'}</div>
+          <h2>${esc(feat.text)}</h2>
+          <div class="nf-move">
+            ${fromT ? crestHTML(fromT, 26) : ''}${fromT && toT ? '<span class="arrow">→</span>' : ''}${toT ? crestHTML(toT, 26) : ''}
+            <span>${seasonLabel(feat.season)} · MD${feat.round}</span>
+          </div>
+        </div>
+      </div>`;
+    }
+  }
+  v.innerHTML = `${featHtml}<div class="panel"><h3>News<span class="sub">all three divisions</span></h3>
     <div class="chipbar">${kinds.map(([k, l]) => `<button class="chip" data-nf="${k}" aria-pressed="${newsFilter === k}">${l}</button>`).join('')}</div>
     ${newsList(items, 60)}</div>`;
   v.querySelectorAll('[data-nf]').forEach(b => b.onclick = () => { newsFilter = b.dataset.nf; viewNews(); });
