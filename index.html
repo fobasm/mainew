@@ -28,7 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Big+Shoulders+Display:wght@700;800;900&display=swap" rel="stylesheet">
-<!-- Google Sign-In: replace YOUR_GOOGLE_CLIENT_ID below with a real OAuth client ID from
+<!-- Google Sign-In: replace 850693168384-i18i4ip8ep88rk75hmg1fv2b35tb8op8.apps.googleusercontent.com below with a real OAuth client ID from
      Google Cloud Console (with this page's own domain added as an authorized origin) once
      this file is hosted on your own site. accounts.google.com is not reachable from inside
      this preview, so the button below appears but cannot complete sign-in here. Sign-in only
@@ -395,7 +395,7 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
       <select id="mgrNat"></select>
     </div>
     <div id="g_id_onload"
-         data-client_id="YOUR_GOOGLE_CLIENT_ID"
+         data-client_id="850693168384-i18i4ip8ep88rk75hmg1fv2b35tb8op8.apps.googleusercontent.com"
          data-callback="handleGoogleSignIn"
          data-auto_prompt="false"></div>
     <div class="g_id_signin" data-type="standard" data-theme="outline" data-size="medium" style="display:inline-block;margin:2px 0 4px"></div>
@@ -3069,7 +3069,7 @@ $('#heroLogo').src = IMG_LOGO;
 (function checkGoogleSetup() {
   const onload = document.getElementById ? document.getElementById('g_id_onload') : null;
   const el2 = onload || $('#g_id_onload');
-  if (el2 && el2.getAttribute && el2.getAttribute('data-client_id') === 'YOUR_GOOGLE_CLIENT_ID') {
+  if (el2 && el2.getAttribute && el2.getAttribute('data-client_id') === '850693168384-i18i4ip8ep88rk75hmg1fv2b35tb8op8.apps.googleusercontent.com') {
     const signinBtn = document.querySelector('.g_id_signin');
     if (signinBtn) signinBtn.style.display = 'none';
     if (el2.parentNode) el2.style.display = 'none';
