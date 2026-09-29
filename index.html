@@ -250,7 +250,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 /* ---------- kits ---------- */
 .kits{display:flex;gap:14px;padding:13px;flex-wrap:wrap}
 .kit{text-align:center}
-.kit small{display:block;color:var(--faint);font-size:11.5px;margin-top:3px} .kitBigWrap{position:relative;text-align:center} .kitBigWrap small{display:block;color:var(--faint);font-size:11.5px;margin-top:4px} .kitBigBadge{position:absolute;top:16%;left:32%;transform:translate(-50%,0)} .kitBigSponsor{position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);font-family:var(--head);font-weight:700;font-size:11px;letter-spacing:.3px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55);max-width:66%;line-height:1.15;pointer-events:none}
+.kit small{display:block;color:var(--faint);font-size:11.5px;margin-top:3px} .kitBigWrap{position:relative;text-align:center} .kitBigWrap small{display:block;color:var(--faint);font-size:11.5px;margin-top:4px} .kitBigBadge{position:absolute;top:15%;left:24%;transform:translate(-50%,0)} .kitBigSponsor{position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);font-family:var(--head);font-weight:700;font-size:11px;letter-spacing:.3px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55);max-width:60%;line-height:1.15;pointer-events:none} .kitBigWrap{position:relative;text-align:center} .kitBigWrap small{display:block;color:var(--faint);font-size:11.5px;margin-top:4px} .kitBigBadge{position:absolute;top:16%;left:32%;transform:translate(-50%,0)} .kitBigSponsor{position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);font-family:var(--head);font-weight:700;font-size:11px;letter-spacing:.3px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55);max-width:66%;line-height:1.15;pointer-events:none}
 
 /* ---------- live match ---------- */
 .livewrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
@@ -2937,25 +2937,41 @@ function crestHTML(t, size) {
 }
 
 /* ---------------- kits ---------------- */
+function kitStyleOf(t) {
+  const str = t.id || t.s || '';
+  let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return h % 5;
+}
 function bigKitSVG(t, away, size) {
   const w = size || 200, id = ++KIT_UID;
   const body = away ? t.c2 : t.c1, trim = away ? t.c1 : t.c2;
-  return `<svg width="${w}" height="${Math.round(w * 1.12)}" viewBox="0 0 220 246" aria-hidden="true">
+  const clipId = 'bc' + id, styleIdx = kitStyleOf(t);
+  let pattern = '';
+  if (styleIdx === 1) { let s = ''; for (let x = 70; x < 154; x += 14) s += `<rect x="${x}" y="18" width="7" height="216" fill="${trim}" opacity=".85"/>`; pattern = `<g clip-path="url(#${clipId})">${s}</g>`; }
+  else if (styleIdx === 2) { let s = ''; for (let y = 40; y < 220; y += 24) s += `<rect x="0" y="${y}" width="220" height="12" fill="${trim}" opacity=".85"/>`; pattern = `<g clip-path="url(#${clipId})">${s}</g>`; }
+  else if (styleIdx === 3) { pattern = `<g clip-path="url(#${clipId})"><path d="M10 40 L60 40 L170 226 L120 226Z" fill="${trim}" opacity=".9"/></g>`; }
+  else if (styleIdx === 4) { pattern = `<g clip-path="url(#${clipId})"><rect x="110" y="0" width="110" height="246" fill="${trim}" opacity=".85"/></g>`; }
+  return `<svg width="${w}" height="${w}" viewBox="0 0 220 246" aria-hidden="true">
     <defs>
       <linearGradient id="kbb${id}" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="${shade(body, 26)}"/><stop offset="45%" stop-color="${body}"/><stop offset="1" stop-color="${shade(body, -38)}"/>
+        <stop offset="0" stop-color="${shade(body, 26)}"/><stop offset="45%" stop-color="${body}"/><stop offset="1" stop-color="${shade(body, -30)}"/>
       </linearGradient>
       <linearGradient id="ktt${id}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="${shade(trim, 22)}"/><stop offset="1" stop-color="${shade(trim, -24)}"/>
+        <stop offset="0" stop-color="${shade(trim, 18)}"/><stop offset="1" stop-color="${shade(trim, -20)}"/>
       </linearGradient>
+      <clipPath id="${clipId}"><path d="M64 34 L64 226 Q110 234 156 226 L156 34 L144 18 Q110 34 76 18 Z"/></clipPath>
     </defs>
-    <rect x="4" y="4" width="212" height="238" rx="10" fill="var(--panel2)" stroke="var(--line)"/>
-    <path d="M74 20 L44 34 L14 78 L38 96 L38 226 Q110 234 182 226 L182 96 L206 78 L176 34 L146 20 Q110 40 74 20 Z" fill="url(#kbb${id})" stroke="rgba(0,0,0,.45)" stroke-width="1.4"/>
-    <path d="M74 20 Q110 44 146 20 L140 16 Q110 36 80 16Z" fill="url(#ktt${id})"/>
-    <path d="M14 78 L44 34 L54 30 L28 82Z" fill="url(#ktt${id})"/>
-    <path d="M206 78 L176 34 L166 30 L192 82Z" fill="url(#ktt${id})"/>
-    <path d="M38 96 L38 226 Q60 231 82 233 L82 96Z" fill="#fff" opacity=".07"/>
-    <path d="M138 96 L138 233 Q160 231 182 226 L182 96Z" fill="#000" opacity=".1"/>
+    <path d="M156 34 L212 48 L212 90 L156 78 Z" fill="url(#kbb${id})" stroke="rgba(0,0,0,.4)" stroke-width="1.2"/>
+    <path d="M198 51 L212 55 L212 84 L198 80Z" fill="url(#ktt${id})"/>
+    <path d="M64 34 L8 48 L8 90 L64 78 Z" fill="url(#kbb${id})" stroke="rgba(0,0,0,.4)" stroke-width="1.2"/>
+    <path d="M22 51 L8 55 L8 84 L22 80Z" fill="url(#ktt${id})"/>
+    <path d="M64 34 L64 226 Q110 234 156 226 L156 34 L144 18 Q110 34 76 18 Z" fill="url(#kbb${id})" stroke="rgba(0,0,0,.4)" stroke-width="1.4"/>
+    ${pattern}
+    <path d="M64 34 L64 226 Q86 231 110 233 L110 34Z" fill="#fff" opacity=".06"/>
+    <path d="M110 34 L110 233 Q134 231 156 226 L156 34Z" fill="#000" opacity=".08"/>
+    <path d="M76 18 Q110 34 144 18 L140 14 Q110 28 80 14 Z" fill="url(#ktt${id})"/>
+    <path d="M64 34 L64 44 L14 56 L14 48Z" fill="url(#ktt${id})" opacity=".9"/>
+    <path d="M156 34 L156 44 L206 56 L206 48Z" fill="url(#ktt${id})" opacity=".9"/>
   </svg>`;
 }
 function kitSVG(t, away, size) {
@@ -5494,14 +5510,13 @@ function viewOtherClubs() {
     const sq = ot.squad.slice().sort((a, b) => b.rating - a.rating);
     const fit = jobFitLabel(jobFitChance(G, ot));
     html += `<div class="panel"><h3>${esc(ot.n)}<span class="sub">${TIER_NAMES[ot.tier]} · ${esc(ot.city)} · XI rated ${teamOverall(ot)} · budget ${money(ot.budget)}</span></h3>
-      <div class="kits" style="padding:10px 13px 0">
-        <div class="kit">${kitSVG(ot, false, 60)}<small>Home</small></div>
-        <div class="kit">${kitSVG(ot, true, 60)}<small>Away</small></div>
-      </div>
-      <div class="pad" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span class="tag ${fit.cls}">${fit.txt}</span>
-        <button class="btn sm" data-apply="${ot.id}">Apply for the manager's job</button>
-      </div>
+    <div class="kits">
+      <div class="kitBigWrap">${bigKitSVG(t, false, 132)}<div class="kitBigBadge">${crestHTML(t, 26)}</div>${t.currentSponsor ? `<div class="kitBigSponsor">${esc(t.currentSponsor.name).toUpperCase()}</div>` : ''}<small>Home</small></div>
+      <div class="kitBigWrap">${bigKitSVG(t, true, 132)}<div class="kitBigBadge">${crestHTML(t, 26)}</div>${t.currentSponsor ? `<div class="kitBigSponsor">${esc(t.currentSponsor.name).toUpperCase()}</div>` : ''}<small>Away</small></div>
+      <div class="kit" style="align-self:center">${crestHTML(t, 56)}<small>Badge</small></div>
+      <div class="kit" style="align-self:center;text-align:left;margin-left:6px">
+        ${avatarSVG(G.manager.avatar, 44)}<small>${esc(G.manager.name)} · rep ${G.manager.rep || 40}</small></div>
+    </div>
       ${sq.map(p => playerRow(p, ot)).join('')}</div>`;
   }
   v.innerHTML = html;
