@@ -1265,7 +1265,7 @@ function newGame(clubIndex, manager, seed) {
 }
 
 function newFin() { return { prize: 0, sponsor: 0, gate: 0, sales: 0, buys: 0, wages: 0 }; }
-function finNet(f) { return (f.prize + f.sponsor + f.gate + f.sales) - (f.buys + f.wages); }
+function finNet(f) { return (f.prize + f.sponsor + f.gate + f.sales) - (f.buys + f.wages); } function payPrize(G, id, amt) { const t = G.teams[id]; if (!t || !(amt > 0)) return; t.budget += amt; t.fin.prize += amt; }
 function wageOf(t) { return Math.round(t.squad.reduce((s, p) => s + p.wage, 0) * 100) / 100; } function reallocateBudget(G, amount) {   const t = G.teams[G.myTeam];   amount = Math.round(amount * 1000) / 1000;   if (amount === 0) return { ok: false, msg: 'Move the slider first.' };   if (amount > 0) {     if (amount > t.budget + 1e-9) return { ok: false, msg: `Only ${money(t.budget)} is available in the transfer budget.` };     t.budget = Math.round((t.budget - amount) * 100) / 100;     t.wageBudget = Math.round((t.wageBudget + amount) * 100) / 100;     return { ok: true, msg: `Moved ${money(amount)} from the transfer budget into the wage budget.` };   }   const move = -amount, spare = t.wageBudget - t.wageBill;   if (move > spare + 1e-9) return { ok: false, msg: `Only ${money(Math.max(0, spare))} of the wage budget is uncommitted.` };   t.wageBudget = Math.round((t.wageBudget - move) * 100) / 100;   t.budget = Math.round((t.budget + move) * 100) / 100;   return { ok: true, msg: `Moved ${money(move)} from the wage budget into the transfer budget.` }; }
 
 /* ---------------- lineups ---------------- */
@@ -1490,7 +1490,7 @@ function playCupRound(G) {
     ties.push({ h, a, hg: ctx.hg, ag: ctx.ag, pens, winner, stage: c.stage, ev: ctx.ev });
   }
   c.ties = ties;
-  c.log.push({ stage: c.stage, ties: ties.map(t => ({ ...t })) });
+  c.log.push({ stage: c.stage, ties: ties.map(t => ({ ...t })) });   ties.forEach(t => payPrize(G, t.winner, 0.03 * Math.pow(1.6, c.stage)));   if (ties.length === 1 && byes.length === 0) { const t0 = ties[0]; payPrize(G, t0.winner === t0.h ? t0.a : t0.h, 3); }
   c.alive = ties.map(t => t.winner).concat(byes);
   if (c.alive.length === 1) {
     c.done = true; c.winner = c.alive[0];
@@ -1653,6 +1653,18 @@ function tableUpdate(G, tier, m) {
   [m.h, m.a].forEach(id => { if (G.teams[id].form.length > 6) G.teams[id].form.shift(); });
   /* gate money */
   G.teams[m.h].fin.gate += G.teams[m.h].tier === 0 ? 0.55 : G.teams[m.h].tier === 1 ? 0.12 : 0.04;
+  /* match bonus: win = full, draw = a third each */
+  const wb = [0.5, 0.14, 0.05, 0.02, 0.01][tier] || 0.01;
+  let mineBonus = 0;
+  if (m.hg > m.ag) { payPrize(G, m.h, wb); if (m.h === G.myTeam) mineBonus = wb; }
+  else if (m.hg < m.ag) { payPrize(G, m.a, wb); if (m.a === G.myTeam) mineBonus = wb; }
+  else {
+    payPrize(G, m.h, wb / 3); payPrize(G, m.a, wb / 3);
+    if (m.h === G.myTeam || m.a === G.myTeam) mineBonus = wb / 3;
+  }
+  if (mineBonus > 0 && typeof toastGood === 'function') {
+    toastGood('+' + money(mineBonus) + (m.hg === m.ag ? ' draw bonus' : ' win bonus'));
+  }
 }
 
 function sortTable(G, tier) {
@@ -2408,7 +2420,7 @@ function playContinentalRound(G, key, trophyName, prizeAmt, historyKey, newsKind
     } else winner = aggA > aggB ? A : B;
     ties.push({ a: A, b: B, leg1, leg2, aggA, aggB, pens, winner, stage: c.stage, single: c.stage === 3 });
   }
-  c.log.push({ stage: c.stage, ties });
+  c.log.push({ stage: c.stage, ties });   ties.forEach(t => { if (!t.bye && t.winner.sa) payPrize(G, t.winner.id, prizeAmt * 0.04 * (c.stage + 1)); });
   c.alive = ties.map(t => t.winner);
   if (c.alive.length === 1) {
     c.done = true; c.winner = c.alive[0];
@@ -2463,7 +2475,7 @@ function playKnockoutRound(G, comp, rounds, prize) {
     ties.push({ h, a, hg: ctx.hg, ag: ctx.ag, pens, winner, stage: comp.stage });
   }
   if (ties.length) {
-    comp.log.push({ stage: comp.stage, ties });
+    comp.log.push({ stage: comp.stage, ties });     ties.forEach(t => payPrize(G, t.winner, prize * 0.04 * (comp.stage + 1)));     if (ties.length === 1) { const t0 = ties[0]; payPrize(G, t0.winner === t0.h ? t0.a : t0.h, prize * 0.4); }
     comp.alive = ties.map(t => t.winner);
   }
   if (comp.alive.length === 1) {
