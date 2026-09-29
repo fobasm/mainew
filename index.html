@@ -393,7 +393,7 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
 
 <section id="landing">
   <img class="landing-poster" src="mzansi_manager_poster.png" alt="Mzansi Manager 2026">
-  <button class="btn" id="enterGameBtn">Enter game</button>
+  <button class="btn" id="enterGameBtn">Play Now</button>
 </section>
 
 <section id="start" style="display:none">
@@ -484,10 +484,10 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
       <button class="navbtn" id="fwdBtn" title="Forward" aria-label="Forward" disabled>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
       </button>
-      <button class="homebtn" id="homeBtn" title="Back to team selection" aria-label="Team selection">
+      <button class="homebtn" id="homeBtn" title="Back to Choose Your Club" aria-label="Choose Your Club">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>
       </button>
-      <button class="navbtn" id="careerBtn" title="Career file" aria-label="Career file">
+      <button class="navbtn" id="careerBtn" title="Save & Load" aria-label="Save & Load">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
       <div class="myclub">
@@ -887,7 +887,7 @@ const RECT = (c, x, y, w, h) => ({ t:'rect', c, x, y, w, h });
     const DIAG = (c, w) => ({ t:'diag', c, w }); const RAW = svg => ({ t:'raw', svg });
 
 const FLAGS = {
-  /* ---------- Africa ---------- */
+  /* ---------- Continental ---------- */
   DZ: [V('#006233','#ffffff'), CRES('#d21034', 9.6, 6, 2.5), ST('#d21034', 11.3, 6, 1.25)],
   AO: [H('#ce1126','#000000'), ST('#ffcb00', 9, 6, 1.9)],
   BJ: [VR(['#008751','#fcd116','#e8112d'], [1, 1, 1]), RECT('#008751', 0, 0, 6, 12), RECT('#fcd116', 6, 0, 12, 6), RECT('#e8112d', 6, 6, 12, 6)],
@@ -1888,7 +1888,7 @@ function fillSquad(G, t) {
   });
 }
 
-/* ---------------- youth academy ---------------- */
+/* ---------------- Youth Academy ---------------- */
 const ACADEMY_CAP = 15;
 function generateYouth(G) {
   G.teams.forEach(t => {
@@ -3231,8 +3231,8 @@ $('#startBtn').onclick = () => {
 $('#homeBtn').onclick = () => {
   if (liveState) { toast('The match is still running.'); return; }
   save();
-  openModal('Back to team selection?', '<p style="margin:0;color:var(--dim)">Your career stays saved in this slot. This just takes you back to the landing page.</p>',
-    `<button class="btn ghost sm" onclick="closeModal()">Stay in this career</button><button class="btn sm" id="homeYes">Go to team selection</button>`);
+  openModal('Back to Choose Your Club?', '<p style="margin:0;color:var(--dim)">Your career stays saved in this slot. This just takes you back to the landing page.</p>',
+    `<button class="btn ghost sm" onclick="closeModal()">Stay in this career</button><button class="btn sm" id="homeYes">Go to Choose Your Club</button>`);
   const yes = $('#homeYes');
   if (yes) yes.onclick = () => { leavingApp = true; try { localStorage.removeItem(LAST_SLOT_KEY); } catch (e) { } location.reload(); };
 };
@@ -3331,7 +3331,7 @@ const MENU_SECTIONS = [
   ['Squad', [['squad','Squad'],['tactics','Team talk'],['youth','Academy'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist']]],
   ['Competitions', [['cups','Cups'],['africa','Africa'],['nations','Nations'],['stats','Stats']]],
   ['Club', [['club','Club'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
-  ['More', [['careerfile','Career file'],['soundsettings','Music & sound effects'],['info','How to play']]]
+  ['More', [['careerfile','Save & Load'],['soundsettings','Music & sound effects'],['info','How to play']]]
 ];
 function buildSideNav() {
   const c = $('#sideNav'); if (!c) return;
@@ -3418,7 +3418,7 @@ function openCareerModal() {
       <button class="btn ghost sm" id="cmRename">Rename slot</button>
       <button class="btn ghost sm" id="cmSwitch">Switch save slot</button>
     </div>`;
-  openModal('Career file', body, `<button class="btn ghost sm" onclick="closeModal()">Close</button>`);
+  openModal('Save & Load', body, `<button class="btn ghost sm" onclick="closeModal()">Close</button>`);
   $('#cmSave').onclick = () => { save(); toast('Saved.'); };
   $('#cmRename').onclick = () => {
     openModal('Name slot ' + slot, `<input type="text" id="slotNameI2" maxlength="24" value="${esc(getSlotName(slot))}" placeholder="e.g. My Bright PMB save" style="width:100%">`,
@@ -4037,7 +4037,7 @@ function miniTable(rows, tier) {
     }).join('') + '</tbody></table>';
 }
 
-/* ---------------- log ---------------- */
+/* ---------------- League Table ---------------- */
 function viewTable() {
   const v = $('#v-table'), st = sortTable(G, tableTier);
   v.innerHTML = `<div class="panel">
@@ -4732,7 +4732,7 @@ function sellModal(pid) {
   };
 }
 
-/* ---------------- academy ---------------- */
+/* ---------------- Youth Academy ---------------- */
 function viewYouth() {
   const v = $('#v-youth'), t = me();
   const cost = [0, 6, 12, 22, 36][t.academy] || 0;
@@ -5066,7 +5066,7 @@ function viewClub() {
       .map(x => `<option value="${x.id}">${esc(x.n)} — ${TIER_SHORT[x.tier]}</option>`).join('')}</select>
       <button class="chip" id="peekGo">Look at their squad</button></div></div>
 
-  <div class="panel"><h3>Career file<span class="sub">slot ${slot}</span></h3>
+  <div class="panel"><h3>Save & Load<span class="sub">slot ${slot}</span></h3>
     <div class="pad" style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
       <button class="btn ghost sm" id="saveNow">Save now</button>
       <button class="btn ghost sm" id="switchSlot">Switch save slot</button>
