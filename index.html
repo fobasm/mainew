@@ -1490,13 +1490,13 @@ function playCupRound(G) {
     ties.push({ h, a, hg: ctx.hg, ag: ctx.ag, pens, winner, stage: c.stage, ev: ctx.ev });
   }
   c.ties = ties;
-  c.log.push({ stage: c.stage, ties: ties.map(t => ({ ...t })) });   ties.forEach(t => payPrize(G, t.winner, 0.03 * Math.pow(1.6, c.stage)));   if (ties.length === 1 && byes.length === 0) { const t0 = ties[0]; payPrize(G, t0.winner === t0.h ? t0.a : t0.h, 3); }
+  c.log.push({ stage: c.stage, ties: ties.map(t => ({ ...t })) });   ties.forEach(t => payPrize(G, t.winner, 0.03 * Math.pow(1.6, c.stage), 'Nedbank Cup round prize'));   if (ties.length === 1 && byes.length === 0) { const t0 = ties[0]; payPrize(G, t0.winner === t0.h ? t0.a : t0.h, 3, 'Nedbank Cup runners-up prize'); }
   c.alive = ties.map(t => t.winner).concat(byes);
   if (c.alive.length === 1) {
     c.done = true; c.winner = c.alive[0];
     const w = G.teams[c.winner];
     w.trophies.push({ season: G.season, name: 'Nedbank Cup' });
-    w.budget += 8; w.fin.prize += 8;
+    payPrize(G, w.id, 8, 'Nedbank Cup winners prize');
     news(G, 'cup', `${w.n} lift the Nedbank Cup.`);
   }
   c.stage++;
@@ -1655,16 +1655,9 @@ function tableUpdate(G, tier, m) {
   G.teams[m.h].fin.gate += G.teams[m.h].tier === 0 ? 0.55 : G.teams[m.h].tier === 1 ? 0.12 : 0.04;
   /* match bonus: win = full, draw = a third each */
   const wb = [0.5, 0.14, 0.05, 0.02, 0.01][tier] || 0.01;
-  let mineBonus = 0;
-  if (m.hg > m.ag) { payPrize(G, m.h, wb); if (m.h === G.myTeam) mineBonus = wb; }
-  else if (m.hg < m.ag) { payPrize(G, m.a, wb); if (m.a === G.myTeam) mineBonus = wb; }
-  else {
-    payPrize(G, m.h, wb / 3); payPrize(G, m.a, wb / 3);
-    if (m.h === G.myTeam || m.a === G.myTeam) mineBonus = wb / 3;
-  }
-  if (mineBonus > 0 && typeof toastGood === 'function') {
-    toastGood('+' + money(mineBonus) + (m.hg === m.ag ? ' draw bonus' : ' win bonus'));
-  }
+  if (m.hg > m.ag) payPrize(G, m.h, wb, 'win bonus');
+  else if (m.hg < m.ag) payPrize(G, m.a, wb, 'win bonus');
+  else { payPrize(G, m.h, wb / 3, 'draw bonus'); payPrize(G, m.a, wb / 3, 'draw bonus'); }
 }
 
 function sortTable(G, tier) {
@@ -1774,7 +1767,7 @@ function endSeason(G) {
       const prizeScale = [24, 7, 2.6, 1.1, 0.5][tier] || 0.4;
       const prizeStep = [1.2, 0.32, 0.12, 0.05, 0.02][tier] || 0.02;
       const prize = Math.max(prizeScale * 0.14, prizeScale - i * prizeStep);
-      t.budget += prize; t.fin.prize += prize;
+      payPrize(G, t.id, prize, 'prize money for finishing #' + (i + 1));
       const spons = [6, 4, 1.6, 0.6, 0.25][tier] || 0.2;
       t.budget += spons; t.fin.sponsor += spons;
       const mid = (TIER_SIZE - 1) / 2;
@@ -2421,13 +2414,13 @@ function playContinentalRound(G, key, trophyName, prizeAmt, historyKey, newsKind
     } else winner = aggA > aggB ? A : B;
     ties.push({ a: A, b: B, leg1, leg2, aggA, aggB, pens, winner, stage: c.stage, single: c.stage === 3 });
   }
-  c.log.push({ stage: c.stage, ties });   ties.forEach(t => { if (!t.bye && t.winner.sa) payPrize(G, t.winner.id, prizeAmt * 0.04 * (c.stage + 1)); });
+  c.log.push({ stage: c.stage, ties });   ties.forEach(t => { if (!t.bye && t.winner.sa) payPrize(G, t.winner.id, prizeAmt * 0.04 * (c.stage + 1), trophyName + ' round prize'); });
   c.alive = ties.map(t => t.winner);
   if (c.alive.length === 1) {
     c.done = true; c.winner = c.alive[0];
     const w = c.winner;
     const nm = cafName(G, w);
-    if (w.sa) { G.teams[w.id].trophies.push({ season: G.season, name: trophyName }); G.teams[w.id].budget += prizeAmt; G.teams[w.id].fin.prize += prizeAmt; }
+    if (w.sa) { G.teams[w.id].trophies.push({ season: G.season, name: trophyName }); payPrize(G, w.id, prizeAmt, trophyName + ' winners prize'); }
     news(G, newsKind, `${nm} win the ${trophyName}.`);
     G.africa[historyKey].push({ season: G.season, winner: nm });
   }
@@ -2476,14 +2469,14 @@ function playKnockoutRound(G, comp, rounds, prize) {
     ties.push({ h, a, hg: ctx.hg, ag: ctx.ag, pens, winner, stage: comp.stage });
   }
   if (ties.length) {
-    comp.log.push({ stage: comp.stage, ties });     ties.forEach(t => payPrize(G, t.winner, prize * 0.04 * (comp.stage + 1)));     if (ties.length === 1) { const t0 = ties[0]; payPrize(G, t0.winner === t0.h ? t0.a : t0.h, prize * 0.4); }
+    comp.log.push({ stage: comp.stage, ties });       ties.forEach(t => payPrize(G, t.winner, prize * 0.04 * (comp.stage + 1), comp.name + ' round prize'));     if (ties.length === 1) { const t0 = ties[0]; payPrize(G, t0.winner === t0.h ? t0.a : t0.h, prize * 0.4, comp.name + ' runners-up prize'); }
     comp.alive = ties.map(t => t.winner);
   }
   if (comp.alive.length === 1) {
     comp.done = true; comp.winner = comp.alive[0];
     const w = G.teams[comp.winner];
     w.trophies.push({ season: G.season, name: comp.name });
-    w.budget += prize; w.fin.prize += prize;
+    payPrize(G, w.id, prize, comp.name + ' winners prize');
     news(G, 'cup', `${w.n} win the ${comp.name}.`);
   }
   comp.stage++;
