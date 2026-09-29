@@ -3598,7 +3598,7 @@ function showMatchdayModal(res) {
     </div>
     <p style="text-align:center;color:var(--dim);margin:0">${verdict} ${ordinal(posOfTeam(G, G.myTeam))} after ${G.round} ${G.round === 1 ? 'game' : 'games'}.</p>
     ${goalList(m.allEv || m.ev)}`;
-  if (res.cup) body += cupRoundHTML(res.cup);
+  body += myCupResultsHTML(res);   if (res.cup) body += cupRoundHTML(res.cup);
   openModal(`Matchday ${res.round}`, body,
     `<button class="btn ghost sm" onclick="closeModal();tab='table';render()">See the log</button>
      <button class="btn sm" onclick="closeModal();maybeShowPendingOffer()">Continue</button>`);
@@ -3617,7 +3617,7 @@ function showRunModal(runs) {
     const mine = m.h === G.myTeam ? m.hg : m.ag, th = m.h === G.myTeam ? m.ag : m.hg;
     const r = mine > th ? 'W' : mine === th ? 'D' : 'L';
     return `<div class="res"><div class="h">${res.round}. ${m.h === G.myTeam ? 'vs' : 'at'} ${esc(opp.s)}</div>
-      <div class="sc">${mine}–${th}</div><div class="a"><span class="form"><i class="${r}">${r}</i></span></div></div>`;
+       <div class="sc">${mine}–${th}</div><div class="a"><span class="form"><i class="${r}">${r}</i></span></div></div>${myCupResultsHTML(res)}`;
   }).join('');
   openModal(`${runs.length} matchday${runs.length > 1 ? 's' : ''} played`,
     rows + `<p style="margin:13px 0 0;color:var(--dim)">You're ${ordinal(posOfTeam(G, G.myTeam))} in the ${TIER_SHORT[me().tier]} after ${G.round} games.</p>`,
@@ -4100,7 +4100,57 @@ function newsList(items, n) {
     `<li><span class="dot k-${x.kind}"></span>${newsThumb(x.meta)}<span class="when">${seasonLabel(x.season).slice(2)} MD${x.round}</span><span>${esc(x.text)}</span></li>`).join('') + '</ul>';
 }
 
-/* ---------------- matchday ---------------- */
+/* ---- cup ties on matchday ---- */
+function myCupTies(r) {
+  const out = [], md = r + 1, me_ = G.myTeam;
+  [[CUP_NAME, G.cup, CUP_AT, CUP_ROUNDS, true],
+   [SUPER8, G.super8, S8_AT, S8_ROUNDS, false],
+   [KNOCKOUT, G.knockout, KO_AT, KO_ROUNDS, false]].forEach(([name, c, at, names, isMain]) => {
+    if (!c || c.done || !at.includes(md)) return;
+    const i = c.alive.indexOf(me_); if (i < 0) return;
+    let opp = null, note = '';
+    if (isMain && c.stage === 0) note = 'Draw is made on the day';
+    else if (i ^ 1 < c.alive.length) opp = G.teams[c.alive[i ^ 1]].n;
+    else note = 'Bye through this round';
+    out.push({ name, round: names[c.stage] || 'Round', opp, home: i % 2 === 0, note });
+  });
+  [['caf', CAF_NAME, CAF_AT], ['confed', CONFED_NAME, CONFED_AT]].forEach(([k, name, at]) => {
+    const c = G.africa && G.africa[k];
+    if (!c || c.done || !at.includes(md)) return;
+    const i = c.alive.findIndex(e => e.sa && e.id === me_); if (i < 0) return;
+    const o = c.alive[i ^ 1];
+    out.push({ name, round: CAF_ROUNDS[c.stage] || 'Round', opp: o ? cafName(G, o) : null, home: i % 2 === 0, note: o ? '' : 'Bye through this round' });
+  });
+  return out;
+}
+function myCupResultsHTML(res) {
+  const rows = [], me_ = G.myTeam;
+  [[res.cup, CUP_NAME, CUP_ROUNDS], [res.s8, SUPER8, S8_ROUNDS], [res.ko, KNOCKOUT, KO_ROUNDS]].forEach(([ties, name, names]) => {
+    (ties || []).forEach(t => {
+      if (t.h !== me_ && t.a !== me_) return;
+      rows.push(`<h4 style="margin:14px 0 4px;font-size:17px">${esc(name)} · ${names[t.stage] || 'Round'}</h4>
+        <div class="res mine"><div class="h ${t.winner === t.h ? 'w' : ''}">${esc(G.teams[t.h].s)}</div>
+        <div class="sc num">${t.hg}–${t.ag}</div>
+        <div class="a ${t.winner === t.a ? 'w' : ''}">${esc(G.teams[t.a].s)}${t.pens ? ` <span class="hint">(${t.pens[0]}–${t.pens[1]} pens)</span>` : ''}</div></div>
+        <p class="hint" style="margin:4px 0 0">${t.winner === me_ ? 'Through to the next round.' : 'Knocked out.'}</p>`);
+    });
+  });
+  [[res.caf, CAF_NAME], [res.confed, CONFED_NAME]].forEach(([ties, name]) => {
+    (ties || []).forEach(t => {
+      if (t.bye) return;
+      const mineA = t.a.sa && t.a.id === me_, mineB = t.b.sa && t.b.id === me_;
+      if (!mineA && !mineB) return;
+      const won = t.winner.sa && t.winner.id === me_;
+      rows.push(`<h4 style="margin:14px 0 4px;font-size:17px">${esc(name)} · ${CAF_ROUNDS[t.stage] || 'Round'}</h4>
+        <div class="res mine"><div class="h ${t.winner === t.a ? 'w' : ''}">${esc(cafShort(G, t.a))}</div>
+        <div class="sc num">${t.aggA}–${t.aggB}</div>
+        <div class="a ${t.winner === t.b ? 'w' : ''}">${esc(cafShort(G, t.b))}${t.pens ? ` <span class="hint">(${t.pens[0]}–${t.pens[1]} pens)</span>` : ''}</div></div>
+        <p class="hint" style="margin:4px 0 0">${t.single ? 'Single match.' : 'Aggregate over two legs.'} ${won ? 'Through to the next round.' : 'Knocked out.'}</p>`);
+    });
+  });
+  return rows.join('');
+}
+
 function viewMatch() {
   const t = me(), v = $('#v-match'); v.innerHTML = '';
   const nx = myFixture(G.round);
@@ -4117,6 +4167,14 @@ function viewMatch() {
     v.innerHTML += `<div class="hero"><div class="meta">Season complete</div><div class="pad">
       <h3 style="font-size:25px">${seasonLabel(G.season)} is done</h3>
       <p style="color:var(--dim);margin:8px 0 0">You finished ${ordinal(posOfTeam(G, G.myTeam))} in the ${TIER_SHORT[t.tier]}. Roll the season over when you're ready.</p></div></div>`;
+  }
+  const cupTies = G.finished ? [] : myCupTies(G.round);
+  if (cupTies.length) {
+    v.appendChild(el('div', 'panel',
+      `<h3>Cup ties this matchday<span class="sub">played alongside your league fixture</span></h3>` +
+      cupTies.map(c => `<div class="pad" style="border-top:1px solid var(--line)">
+        <b style="color:var(--cup)">🏆 ${esc(c.name)}</b> · ${c.round}<br>
+        <span style="color:var(--dim)">${c.opp ? `${c.home ? 'Home to' : 'Away to'} ${esc(c.opp)}` : esc(c.note)}</span></div>`).join('')));
   }
   const cols = el('div', 'cols');
   const last = G.round > 0 ? G.fixtures[t.tier][G.round - 1] : null;
