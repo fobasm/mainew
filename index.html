@@ -259,7 +259,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .livebar .nm.a{text-align:right}
 .livebar .sc{font-family:var(--head);font-size:26px;font-weight:700;text-align:center;min-width:86px}
 .livebar .clock{display:block;font-family:var(--body);font-size:11.5px;color:var(--gold);font-weight:600}
-.pitch{display:block;width:100%;height:auto;background:var(--pitch);margin:0 auto}
+.pitch{display:block;width:100%;height:auto;background:var(--pitch);margin:0 auto} .fifa{position:relative;width:100%;aspect-ratio:1/1.12;max-width:560px;margin:0 auto;border-radius:6px;overflow:hidden;border:2px solid rgba(255,255,255,.75);background:repeating-linear-gradient(180deg,#22894f 0 12.5%,#1c7a45 12.5% 25%)} .fifa i{position:absolute;border:2px solid rgba(255,255,255,.55);pointer-events:none} .fifa .hl{left:0;right:0;top:50%;height:0;border-width:2px 0 0} .fifa .cc{left:50%;top:50%;width:26%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%} .fifa .bx1{left:22%;right:22%;top:0;height:16%;border-top:0} .fifa .bx2{left:22%;right:22%;bottom:0;height:16%;border-bottom:0} .fpl{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:64px;background:none;border:0;padding:0;cursor:pointer;color:#fff} .fpl .fn{display:flex;gap:4px;align-items:center;max-width:66px;padding:1px 5px;border-radius:3px;background:rgba(0,0,0,.65);font-size:10.5px;line-height:1.35;white-space:nowrap} .fpl .fn b{color:var(--gold);font-family:var(--head)} .fpl .fn span{overflow:hidden;text-overflow:ellipsis} .fsubs{display:flex;gap:8px;overflow-x:auto;padding:10px 12px} .fpl .fpos{font-size:9px;opacity:.85;margin-top:1px} .fpl.sel svg{filter:drop-shadow(0 0 7px var(--gold))} .fpl.sel .fn{background:var(--gold)} .fpl.sel .fn b,.fpl.sel .fn span{color:#111} .fsub{flex:0 0 92px;text-align:center;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px 4px;color:inherit;cursor:pointer} .fsub b{display:block;font-size:18px;font-family:var(--head);color:var(--gold)} .fsub small{display:block;color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .liveticker{max-height:180px;overflow:auto;border-top:1px solid var(--line)}
 .tick{display:grid;grid-template-columns:38px 20px 1fr;gap:8px;padding:6px 12px;border-bottom:1px solid var(--line);font-size:13.5px;align-items:baseline}
 .tick .m{font-family:var(--head);color:var(--gold)}
@@ -537,7 +537,7 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
     <div class="view" id="v-createclub"></div>
     <div class="view" id="v-manager"></div>
     <div class="view" id="v-otherclubs"></div>     <div class="view" id="v-watchlist"></div>
-    <div class="view" id="v-club"></div>
+    <div class="view" id="v-club"></div>     <div class="view" id="v-finances"></div>     <div class="view" id="v-trophies"></div>
   </main>
   </main>
   </div>
@@ -3328,9 +3328,9 @@ function buildSlots() {
 /* ---------------- tabs ---------------- */
 const MENU_SECTIONS = [
   ['Career', [['match','Matchday'],['calendar','Calendar'],['table','Log'],['fixtures','Fixtures']]],
-  ['Squad', [['squad','Squad'],['tactics','Team talk'],['youth','Academy'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist']]],
+  ['Squad', [['squad','Squad'],['tactics','Tactics'],['youth','Academy'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist']]],
   ['Competitions', [['cups','Cups'],['africa','Africa'],['nations','Nations'],['stats','Stats']]],
-  ['Club', [['club','Club'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
+  ['Club', [['club','Club'],['finances','Finances'],['trophies','Trophy room'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
   ['More', [['careerfile','Save & Load'],['soundsettings','Music & sound effects'],['info','How to play']]]
 ];
 function buildSideNav() {
@@ -3385,10 +3385,10 @@ function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 30);
   document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
   const active = $('#v-' + tab);
   if (active) active.classList.add('on');
-  const dispatch = { match: viewMatch, table: viewTable, fixtures: viewFixtures, squad: viewSquad, tactics: viewTactics,
+  const dispatch = { match: viewMatch, table: viewTable, fixtures: viewFixtures, squad: viewSquad, tactics: viewTactics, finances: viewFinances, trophies: viewTrophies };
      transfers: viewTransfers, youth: viewYouth, stats: viewStats, news: viewNews,
       cups: viewCups, africa: viewAfrica, nations: viewNations, calendar: viewCalendar, watchlist: viewWatchlist,
-     info: viewInfo, createclub: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub };
+     info: viewInfo, createclub: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub, 
   try {
     (dispatch[tab] || viewMatch)();
   } catch (err) {
@@ -4109,7 +4109,7 @@ function playerRow(p, t, extra) {
 function bindPlayerRows(root) {
   root.querySelectorAll('[data-pid]').forEach(b => b.onclick = () => playerModal(+b.dataset.pid));
 }
-function viewSquad() {
+function squadPitchHTML(t) {   ensureLineup(t);   const slots = FORMATIONS[t.formation] || FORMATIONS['4-4-2'], coords = FORM_COORDS[t.formation] || FORM_COORDS['4-4-2'];   const xi = lineupOf(t), bench = benchOf(t).sort((a, b) => b.rating - a.rating).slice(0, 12);   const gk = { c1: '#7ddc1f', c2: '#1a1a1a' };   const men = xi.map((p, i) => {     const [x, y] = coords[i], bad = posPenalty(p.pos, slots[i]) > 3;     return `<button class="fpl" data-pid="${p.id}" style="left:${8 + x * 0.84}%;top:${8 + (100 - y) * 0.84}%">       ${kitSVG(slots[i] === 'GK' ? gk : t, false, 40)}       <span class="fn"><b>${p.rating}</b><span>${esc(p.last || p.name)}${bad ? ' !' : ''}${t.captainId === p.id ? ' (C)' : ''}</span></span></button>`;   }).join('');   return `<div class="panel"><h3>Starting XI<span class="sub">${t.formation} · rated ${teamOverall(t)}</span></h3>     <div class="pad"><div class="fifa"><i class="hl"></i><i class="cc"></i><i class="bx1"></i><i class="bx2"></i>${men}</div>     <div style="text-align:center;margin-top:8px"><button class="btn ghost sm" id="pitchToTactics">Change formation / swap players</button></div></div></div>   <div class="panel"><h3>Substitutes<span class="sub">tap a player for his profile</span></h3>     <div class="fsubs">${bench.map(p => `<button class="fsub" data-pid="${p.id}">${faceSVG(p, 40, t.c1)}<b>${p.rating}</b><small>${p.pos} · ${esc(p.last || p.name)}</small></button>`).join('')}</div></div>`; } function viewSquad() {
   const v = $('#v-squad'), t = me();
   const order = { GK:0, RB:1, CB:2, LB:3, CDM:4, CM:5, RM:6, LM:7, ST:8, CF:9 };
   const sorter = (a, b) => {
@@ -4127,7 +4127,7 @@ function viewSquad() {
   const foreign = t.squad.filter(p => p.nat !== 'ZA');
   v.innerHTML = `<div class="panel">
     <h3>First team<span class="sub">${first.length} players · XI rated ${teamOverall(t)} · squad depth ${squadAverage(t)}<br>wages ${money(t.wageBill)} a season · ${foreign.length}/${MAX_FOREIGN} foreign</span></h3>
-    <div class="chipbar">${[['rating','Rating'],['pos','Position'],['age','Age'],['goals','Goals'],['growth','Growth'],['contract','Contract'],['value','Value']]
+    <div class="pad"><button class="btn" id="squadToTransfers">Transfer Market</button></div>     <div class="chipbar">${[['rating','Rating'],['pos','Position'],['age','Age'],['goals','Goals'],['growth','Growth'],['contract','Contract'],['value','Value']]
       .map(([k, l]) => `<button class="chip" data-ss="${k}" aria-pressed="${squadSort === k}">${l}</button>`).join('')}</div>
     ${first.map(p => playerRow(p, t)).join('')}</div>
     <div class="panel"><h3>Reserves<span class="sub">${reserves.length} players · organised out of first-team contention</span></h3>
@@ -4139,7 +4139,7 @@ function viewSquad() {
       <div class="pad" style="display:flex;gap:8px;flex-wrap:wrap">${
         foreign.length ? foreign.map(p => `<span class="tag" style="padding:4px 8px">${flagSVG(p.nat)} ${esc(p.name)} · ${natName(p.nat)}</span>`).join('')
         : '<span class="hint">All South African.</span>'}</div></div>`;
-  v.querySelectorAll('[data-ss]').forEach(b => b.onclick = () => { squadSort = b.dataset.ss; viewSquad(); });
+  v.querySelectorAll('[data-ss]').forEach(b => b.onclick = () => { squadSort = b.dataset.ss; viewSquad(); });   v.insertAdjacentHTML('afterbegin', squadPitchHTML(t));   const ptb = v.querySelector('#pitchToTactics'); if (ptb) ptb.onclick = () => goTo('tactics');   const trBtn = v.querySelector('#squadToTransfers'); if (trBtn) trBtn.onclick = () => goTo('transfers');
   bindPlayerRows(v);
 }
 
@@ -4364,7 +4364,7 @@ function playerModal(pid) {
 }
 
 /* ---------------- tactics / lineup ---------------- */
-function viewTactics() {
+function tacticsPitchSpots(t, xi, slots, coords) {   const gk = { c1: '#7ddc1f', c2: '#1a1a1a' };   return xi.map((p, i) => {     const [x, y] = coords[i], bad = posPenalty(p.pos, slots[i]) > 3;     return `<button class="fpl ${selSpot === i ? 'sel' : ''}" data-slot="${i}" style="left:${8 + x * 0.84}%;top:${8 + (100 - y) * 0.84}%">       ${kitSVG(slots[i] === 'GK' ? gk : t, false, 40)}       <span class="fn"><b>${p.rating}</b><span>${esc(p.last || p.name)}${bad ? ' !' : ''}</span></span>       <small class="fpos">${slots[i]}</small></button>`;   }).join(''); } function viewTactics() {
   const v = $('#v-tactics'), t = me();
   ensureLineup(t);
   const slots = FORMATIONS[t.formation], xi = lineupOf(t), bench = benchOf(t);
@@ -4378,18 +4378,18 @@ function viewTactics() {
       <span class="nm">${esc(p.last)}${mismatch ? ' !' : ''}</span></button>`;
   }).join('');
   v.innerHTML = `<div class="panel">
-    <h3>Team talk<span class="sub">XI rated ${teamOverall(t)} · tap a shirt, then a sub, to swap</span></h3>
+    <h3>Tactics<span class="sub">XI rated ${teamOverall(t)} · tap a player, then another player or a sub, to swap</span></h3>
     <div class="chipbar">
       <label class="hint" for="formSel">Formation</label>
       <select id="formSel">${Object.keys(FORMATIONS).map(f => `<option ${t.formation === f ? 'selected' : ''}>${f}</option>`).join('')}</select>
       <button class="chip" id="autoPick">Pick strongest XI</button>
       <label class="hint" style="margin-left:auto"><input type="checkbox" id="liveChk" ${G.liveMode ? 'checked' : ''}> Watch matches live</label>
     </div>
-    <div class="pad"><div class="formpitch">${spots}</div>
+    <div class="pad"><div class="fifa"><i class="hl"></i><i class="cc"></i><i class="bx1"></i><i class="bx2"></i>${tacticsPitchSpots(t, xi, slots, coords)}</div>
       <p class="hint" style="text-align:center;margin:8px 0 0">A shirt marked ! is out of position and loses rating.</p></div>
   </div>
-  <div class="panel"><h3>Bench and reserves<span class="sub">${bench.length} available</span></h3>
-    ${bench.length ? bench.sort((a, b) => b.rating - a.rating).map(p =>
+  <div class="panel"><h3>Substitutes<span class="sub">${bench.length} available · tap a player, then a sub</span></h3>     <div class="fsubs">${bench.slice().sort((a, b) => b.rating - a.rating).map(p => `<button class="fsub" data-sub="${p.id}">${faceSVG(p, 40, t.c1)}<b>${p.rating}</b><small>${p.pos} · ${esc(p.last || p.name)}</small></button>`).join('')}</div>
+    ${bench.length ? bench.slice(0, 0).map(p =>
       `<button class="prow" data-sub="${p.id}">${faceSVG(p, 30, t.c1)}<span class="ratcol">${ratingTag(p.rating)}${growthHtml(p)}</span>
         <span class="who"><b>${esc(p.name)} ${flagSVG(p.nat)}</b><small>${p.pos} · ${p.age} · form ${p.form > 0.6 ? 'good' : p.form < -0.6 ? 'poor' : 'steady'}</small></span>
         <span class="ratcol pot">${potTag(p)}${potGrowthHtml(p)}</span><span class="val">${money(p.value)}</span></button>`).join('')
@@ -5353,7 +5353,7 @@ function roundRect(ctx, x, y, w, h, r) {
 function ordinalPlain(n) { const s = ['th','st','nd','rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
 /* ---------------- manager ---------------- */
-function viewManager() {
+function viewTrophies() {   const v = $('#v-trophies'), t = me(), all = t.trophies || [];   const by = {};   all.forEach(x => (by[x.name] = by[x.name] || []).push(x.season));   const names = Object.keys(by).sort((a, b) => by[b].length - by[a].length);   v.innerHTML = `<div class="panel"><h3>Trophy room<span class="sub">${esc(t.n)} · ${all.length} trophy${all.length === 1 ? '' : 's'}</span></h3>     ${names.length ? names.map(n => `<div class="pad" style="border-top:1px solid var(--line);display:flex;gap:12px;align-items:center">       <div style="font-size:30px">🏆</div>       <div style="flex:1;min-width:0"><b>${esc(n)}</b><br><small style="color:var(--dim)">${by[n].slice().sort((a, b) => a - b).map(seasonLabel).join(' · ')}</small></div>       <div style="font-size:22px;font-weight:700;color:var(--gold)">×${by[n].length}</div></div>`).join('')       : '<div class="empty">The cabinet is empty. Win a league or cup and it goes here.</div>'}</div>`; } function viewFinances() {   const v = $('#v-finances'), t = me(), f = t.fin;   const inc = f.prize + f.sponsor + f.gate + f.sales, out = f.buys + f.wages;   const net = finNet(f), col = n => n >= 0 ? 'var(--up)' : 'var(--down)';   const row = (l, a, tot) => `<div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:13px"><span>${l}</span><b>${money(a)}</b></div><div class="bar"><i style="width:${tot > 0 ? Math.min(100, a / tot * 100) : 0}%"></i></div></div>`;   v.innerHTML = `<div class="panel"><h3>Finances<span class="sub">${esc(t.n)} · ${seasonLabel(G.season)}</span></h3>     <dl class="kv">       <dt>Transfer budget</dt><dd>${money(t.budget)}</dd>       <dt>Wage bill</dt><dd>${money(t.wageBill)} a season</dd>       <dt>Income so far</dt><dd style="color:var(--up)">${money(inc)}</dd>       <dt>Spending so far</dt><dd style="color:var(--down)">−${money(out)}</dd>       <dt style="font-weight:600">Season profit</dt><dd style="color:${col(net)}"><b>${money(net)}</b></dd>     </dl></div>   <div class="cols">     <div class="panel"><h3>Money in</h3><div class="pad">       ${row('Prize money', f.prize, inc)}${row('Sponsorship', f.sponsor, inc)}${row('Gate receipts', f.gate, inc)}${row('Player sales', f.sales, inc)}</div></div>     <div class="panel"><h3>Money out</h3><div class="pad">       ${row('Wages paid', f.wages, out)}${row('Signings and fees', f.buys, out)}</div></div>   </div>   <div class="panel"><h3>Past seasons</h3>     ${t.finHistory.length ? `<table class="tbl"><thead><tr><th>Season</th><th>In</th><th>Out</th><th>Net</th></tr></thead><tbody>` +       t.finHistory.slice().reverse().map(h => `<tr><td>${seasonLabel(h.season)}</td><td class="num">${money(h.prize + h.sponsor + h.gate + h.sales)}</td><td class="num">${money(h.buys + h.wages)}</td><td class="num" style="color:${col(h.net)}"><b>${money(h.net)}</b></td></tr>`).join('') + '</tbody></table>'       : '<div class="empty">No completed seasons yet.</div>'}</div>`; } function viewManager() {
   const v = $('#v-manager'), t = me();
   const m = G.manager;
   const clubs = (m.clubs || []).map((c, i) => {
