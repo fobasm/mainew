@@ -3385,10 +3385,10 @@ function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 30);
   document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
   const active = $('#v-' + tab);
   if (active) active.classList.add('on');
-  const dispatch = { match: viewMatch, table: viewTable, fixtures: viewFixtures, squad: viewSquad, tactics: viewTactics, finances: viewFinances, trophies: viewTrophies };
+  const dispatch = { match: viewMatch, table: viewTable, fixtures: viewFixtures, squad: viewSquad, tactics: viewTactics, finances: viewFinances, trophies: viewTrophies,
      transfers: viewTransfers, youth: viewYouth, stats: viewStats, news: viewNews,
       cups: viewCups, africa: viewAfrica, nations: viewNations, calendar: viewCalendar, watchlist: viewWatchlist,
-     info: viewInfo, createclub: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub, 
+     info: viewInfo, createclub: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub };
   try {
     (dispatch[tab] || viewMatch)();
   } catch (err) {
