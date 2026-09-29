@@ -1161,8 +1161,8 @@ function makeFace(nat) {
     nose: rint(0, 2)
   };
 }
-const TIER_WAGE_AVG = [0.13, 0.038, 0.016, 0.0055, 0.0013];
-const TIER_WAGE_CAP = [0.3, 0.05, 0.025, 0.007, 0.0022];
+const TIER_WAGE_AVG = [1.25, 0.36, 0.15, 0.052, 0.0125];
+const TIER_WAGE_CAP = [4.0, 0.65, 0.28, 0.075, 0.022];
 const TIER_WAGE_TYPICAL = [68, 58, 51, 45, 39];
 function wageFor(rating, age, tier) {
   const t = tier != null ? clamp(tier, 0, 4) : 0;
@@ -2578,10 +2578,12 @@ function runAfconFinals(G) {
 }
 
 /* ---------------- manager reputation and job offers ---------------- */
-function repFor(G, pos, tier, trophies, promoted) {
-  let pts = (TIER_SIZE - pos) * (tier === 0 ? 1.7 : tier === 1 ? 1.25 : 0.95);
+function repFor(G, pos, tier, trophies, promoted, relegated) {
+  const target = tier === 0 ? 8 : TIER_SIZE - 4;
+  let pts = (target - pos) * (tier === 0 ? 1.7 : tier === 1 ? 1.25 : 0.95);
   pts += trophies * 13;
   if (promoted) pts += 18;
+  if (relegated) pts -= 22;
   if (pos <= 3) pts += 6;
   return pts;
 }
@@ -2589,7 +2591,7 @@ function updateReputation(G, sum) {
   const my = G.teams[G.myTeam];
   const last = my.history[my.history.length - 1];
   const won = my.trophies.filter(t => t.season === sum.season).length;
-  const gain = repFor(G, last.pos, last.tier, won, sum.promoted.includes(G.myTeam));
+  const gain = repFor(G, last.pos, last.tier, won, sum.promoted.includes(G.myTeam), sum.relegated.includes(G.myTeam));
   G.manager.rep = Math.round(clamp((G.manager.rep || 40) * 0.82 + gain, 0, 100));
   G.manager.seasons = (G.manager.seasons || 0) + 1;
   G.manager.trophies = (G.manager.trophies || 0) + won;
@@ -2611,16 +2613,22 @@ function askForRaise(G) {
 function jobOffers(G) {
   const my = G.teams[G.myTeam], rep = G.manager.rep || 40;
   if (rep < 40) return [];
-  const cands = G.teams.filter(t => t.id !== G.myTeam && t.rep > my.rep + 0.4 && t.rep <= (rep / 100) * 7 + 3.2);
+  const stepUpOk = rep >= 55 && my.tier > 0;
+  const cands = G.teams.filter(t => {
+    if (t.id === G.myTeam) return false;
+    if (t.tier === my.tier) return t.rep > my.rep + 0.4;
+    if (stepUpOk && t.tier === my.tier - 1) return t.rep <= (rep / 100) * 7 + 3.2;
+    return false;
+  });
   if (!cands.length) return [];
   shuffle(cands);
   return cands.slice(0, rnd() < 0.5 ? 1 : 2).map(t => ({ id: t.id, wage: Math.round(t.rep * 1.4 * 10) / 10 }));
 }
 function rescueOffers(G) {
   const my = G.teams[G.myTeam];
-  const cands = G.teams.filter(t => t.id !== G.myTeam && t.tier >= my.tier && t.rep <= my.rep + 1.2)
-    .sort((a, b) => b.rep - a.rep);
-  const pool = cands.length ? cands : G.teams.filter(t => t.id !== G.myTeam);
+  const sameOrLower = G.teams.filter(t => t.id !== G.myTeam && t.tier >= my.tier);
+  const cands = sameOrLower.filter(t => t.rep <= my.rep + 1.2).sort((a, b) => b.rep - a.rep);
+  const pool = cands.length ? cands : sameOrLower;
   return shuffle(pool.slice()).slice(0, 3).map(t => ({ id: t.id, wage: Math.round(t.rep * 1.1 * 10) / 10 }));
 }
 function jobFitChance(G, target) {   const my = G.teams[G.myTeam], rep = G.manager.rep || 40;   if (target.id === G.myTeam) return 0;   const last = my.history && my.history.length ? my.history[my.history.length - 1] : null;   const doingWell = last && last.pos <= boardTargetFor(my);   const cap = (rep / 100) * 7 + 3.2 + (doingWell ? 0.7 : 0);   if (target.rep <= my.rep + 0.4) return 0.85;   if (target.rep > cap) {     const over = target.rep - cap;     return clamp(0.12 - over * 0.05, 0.01, 0.12);   }   const span = Math.max(0.1, cap - (my.rep + 0.4));   const pos = (target.rep - (my.rep + 0.4)) / span;   return clamp(0.75 - pos * 0.55, 0.15, 0.75); } function jobFitLabel(c) {   if (c >= 0.6) return { txt: 'Well within your reach', cls: 'xi' };   if (c >= 0.3) return { txt: 'A realistic step up', cls: '' };   if (c >= 0.12) return { txt: 'A big stretch', cls: 'out' };   return { txt: 'Extremely unlikely', cls: 'inj' }; } function applyForJob(G, id) {   const my = G.teams[G.myTeam], target = G.teams[id];   if (id === G.myTeam) return { ok: false, msg: `You already manage ${target.n}.` };   if (G.lastApplyRound === G.round) return { ok: false, msg: `You've only just gone for a job — wait until next matchday to try again.` };   G.lastApplyRound = G.round;   const chance = jobFitChance(G, target);   if (rnd() > chance) {     const gap = target.rep - my.rep;     const msg = gap > 2.5       ? `${target.n} don't think you're ready for a club of their size yet — build your reputation and try again later.`       : `${target.n} thank you for your interest but appoint another candidate.`;     return { ok: false, msg };   }   const wage = Math.round(target.rep * 1.3 * 10) / 10;   takeJob(G, id, wage);   return { ok: true, msg: `${target.n} appoint you as their new manager.` }; } function takeJob(G, id, wage) {
@@ -2731,13 +2739,13 @@ function updateBoard(G, sum) {
   const last = t.history[t.history.length - 1];
   const target = boardTargetFor(t);
   const won = t.trophies.filter(x => x.season === sum.season).length;
-  let delta = (target - last.pos) * 2.6 + won * 18;
-  if (sum.relegated.includes(G.myTeam)) delta -= 30;
+  let delta = (target - last.pos) * 4.2 + won * 18;
+  if (sum.relegated.includes(G.myTeam)) delta -= 55;
   if (sum.promoted.includes(G.myTeam)) delta += 20;
   const fin = t.finHistory[t.finHistory.length - 1];
   if (fin && fin.net < 0) delta -= 8;
-  G.board = clamp((G.board != null ? G.board : 62) + delta * 0.5, 0, 100);
-  G.boardFired = G.board <= 6;
+  G.board = clamp((G.board != null ? G.board : 62) + delta * 0.6, 0, 100);
+  G.boardFired = G.board <= 20;
   return G.boardFired;
 }
 function boardMaxGrant(G) {
@@ -3556,6 +3564,10 @@ function afterRound() {
   const bids = generateBids(G);
   G.pendingBids = (G.pendingBids || []).concat(bids).slice(-6);
   fxRound = Math.max(0, G.round - 1);
+  if (!G.finished && rnd() < 0.05) {
+    const offers = jobOffers(G);
+    if (offers.length) G.pendingJobOffers = offers;
+  }
   save(); render();
 }
 
@@ -3585,7 +3597,14 @@ function showMatchdayModal(res) {
   if (res.cup) body += cupRoundHTML(res.cup);
   openModal(`Matchday ${res.round}`, body,
     `<button class="btn ghost sm" onclick="closeModal();tab='table';render()">See the log</button>
-     <button class="btn sm" onclick="closeModal()">Continue</button>`);
+     <button class="btn sm" onclick="closeModal();maybeShowPendingOffer()">Continue</button>`);
+}
+function maybeShowPendingOffer() {
+  if (G.pendingJobOffers && G.pendingJobOffers.length) {
+    const offers = G.pendingJobOffers;
+    G.pendingJobOffers = null;
+    showOffers(offers, () => {});
+  }
 }
 function showRunModal(runs) {
   const rows = runs.map(res => {
@@ -3598,7 +3617,7 @@ function showRunModal(runs) {
   }).join('');
   openModal(`${runs.length} matchday${runs.length > 1 ? 's' : ''} played`,
     rows + `<p style="margin:13px 0 0;color:var(--dim)">You're ${ordinal(posOfTeam(G, G.myTeam))} in the ${TIER_SHORT[me().tier]} after ${G.round} games.</p>`,
-    `<button class="btn sm" onclick="closeModal()">Continue</button>`);
+    `<button class="btn sm" onclick="closeModal();maybeShowPendingOffer()">Continue</button>`);
 }
 
 function doEndSeason() {
