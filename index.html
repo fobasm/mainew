@@ -250,7 +250,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 /* ---------- kits ---------- */
 .kits{display:flex;gap:14px;padding:13px;flex-wrap:wrap}
 .kit{text-align:center}
-.kit small{display:block;color:var(--faint);font-size:11.5px;margin-top:3px}  .kitBigWrap{position:relative;text-align:center} .kitBigWrap small{display:block;color:var(--faint);font-size:11.5px;margin-top:4px} .kitBigBadge{position:absolute;top:29%;left:57%;transform:translate(-50%,0)} .kitBigSponsor{position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);font-family:var(--head);font-weight:700;font-size:11px;letter-spacing:.3px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55);max-width:66%;line-height:1.15;pointer-events:none}
+.kit small{display:block;color:var(--faint);font-size:11.5px;margin-top:3px}  .kitBigWrap{position:relative;text-align:center} .kitBigWrap small{display:block;color:var(--faint);font-size:11.5px;margin-top:4px} .kitBigBadge{position:absolute;top:46%;left:64%;transform:translate(-50%,-50%);width:22px;height:22px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.5)} .kitBigBadge .crest{width:16px!important;height:16px!important} .kitBigSponsor{position:absolute;top:63%;left:50%;transform:translate(-50%,-50%);font-family:var(--head);font-weight:700;font-size:10px;letter-spacing:.3px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);max-width:60%;line-height:1.15;text-align:center;pointer-events:none}
 
 /* ---------- live match ---------- */
 .livewrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
@@ -2954,12 +2954,13 @@ function bigKitSVG(t, away, size) {
   const w = size || 200, id = ++KIT_UID;
   const body = away ? t.c2 : t.c1, trim = away ? t.c1 : t.c2;
   const clipId = 'bc' + id, styleIdx = kitStyleOf(t);
+  const bodyPath = "M73 33 L44 48 L22 88 L51 103 L51 202 Q110 213 169 202 L169 103 L198 88 L176 48 L147 33 Q110 55 73 33 Z";
   let pattern = '';
-  if (styleIdx === 1) { let s = ''; for (let x = 70; x < 154; x += 14) s += `<rect x="${x}" y="18" width="7" height="216" fill="${trim}" opacity=".85"/>`; pattern = `<g clip-path="url(#${clipId})">${s}</g>`; }
-  else if (styleIdx === 2) { let s = ''; for (let y = 40; y < 220; y += 24) s += `<rect x="0" y="${y}" width="220" height="12" fill="${trim}" opacity=".85"/>`; pattern = `<g clip-path="url(#${clipId})">${s}</g>`; }
-  else if (styleIdx === 3) { pattern = `<g clip-path="url(#${clipId})"><path d="M10 40 L60 40 L170 226 L120 226Z" fill="${trim}" opacity=".9"/></g>`; }
-  else if (styleIdx === 4) { pattern = `<g clip-path="url(#${clipId})"><rect x="110" y="0" width="110" height="246" fill="${trim}" opacity=".85"/></g>`; }
-  return `<svg width="${w}" height="${w}" viewBox="0 0 220 246" aria-hidden="true">
+  if (styleIdx === 1) { let s = ''; for (let x = 62; x < 160; x += 14) s += `<rect x="${x}" y="29" width="7" height="184" fill="${trim}" opacity=".85"/>`; pattern = `<g clip-path="url(#${clipId})">${s}</g>`; }
+  else if (styleIdx === 2) { let s = ''; for (let y = 48; y < 200; y += 20) s += `<rect x="0" y="${y}" width="220" height="10" fill="${trim}" opacity=".85"/>`; pattern = `<g clip-path="url(#${clipId})">${s}</g>`; }
+  else if (styleIdx === 3) { pattern = `<g clip-path="url(#${clipId})"><path d="M40 60 L88 60 L150 195 L102 195Z" fill="${trim}" opacity=".9"/></g>`; }
+  else if (styleIdx === 4) { pattern = `<g clip-path="url(#${clipId})"><rect x="110" y="0" width="110" height="220" fill="${trim}" opacity=".85"/></g>`; }
+  return `<svg width="${w}" height="${w}" viewBox="0 0 220 220" aria-hidden="true">
     <defs>
       <linearGradient id="kbb${id}" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stop-color="${shade(body, 26)}"/><stop offset="45%" stop-color="${body}"/><stop offset="1" stop-color="${shade(body, -30)}"/>
@@ -2967,19 +2968,18 @@ function bigKitSVG(t, away, size) {
       <linearGradient id="ktt${id}" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="${shade(trim, 18)}"/><stop offset="1" stop-color="${shade(trim, -20)}"/>
       </linearGradient>
-      <clipPath id="${clipId}"><path d="M64 34 L64 226 Q110 234 156 226 L156 34 L144 18 Q110 34 76 18 Z"/></clipPath>
+      <clipPath id="${clipId}"><path d="${bodyPath}"/></clipPath>
     </defs>
-    <path d="M156 34 L212 48 L212 90 L156 78 Z" fill="url(#kbb${id})" stroke="rgba(0,0,0,.4)" stroke-width="1.2"/>
-    <path d="M198 51 L212 55 L212 84 L198 80Z" fill="url(#ktt${id})"/>
-    <path d="M64 34 L8 48 L8 90 L64 78 Z" fill="url(#kbb${id})" stroke="rgba(0,0,0,.4)" stroke-width="1.2"/>
-    <path d="M22 51 L8 55 L8 84 L22 80Z" fill="url(#ktt${id})"/>
-    <path d="M64 34 L64 226 Q110 234 156 226 L156 34 L144 18 Q110 34 76 18 Z" fill="url(#kbb${id})" stroke="rgba(0,0,0,.4)" stroke-width="1.4"/>
+    <path d="${bodyPath}" fill="url(#kbb${id})" stroke="rgba(0,0,0,.4)" stroke-width="1.4"/>
     ${pattern}
-    <path d="M64 34 L64 226 Q86 231 110 233 L110 34Z" fill="#fff" opacity=".06"/>
-    <path d="M110 34 L110 233 Q134 231 156 226 L156 34Z" fill="#000" opacity=".08"/>
-    <path d="M76 18 Q110 34 144 18 L140 14 Q110 28 80 14 Z" fill="url(#ktt${id})"/>
-    <path d="M64 34 L64 44 L14 56 L14 48Z" fill="url(#ktt${id})" opacity=".9"/>
-    <path d="M156 34 L156 44 L206 56 L206 48Z" fill="url(#ktt${id})" opacity=".9"/>
+    <path d="M51 103 L51 202 Q80 209 110 211 L110 103Z" fill="#fff" opacity=".07"/>
+    <path d="M110 103 L110 211 Q140 209 169 202 L169 103Z" fill="#000" opacity=".09"/>
+    <path d="M73 33 Q110 64 147 33 L137 29 Q110 50 83 29 Z" fill="url(#ktt${id})"/>
+    <path d="M81 39 Q110 70 139 39 L139 48 Q110 77 81 48 Z" fill="url(#ktt${id})"/>
+    <path d="M22 88 L44 48 L59 40 L39 84 Z" fill="url(#ktt${id})"/>
+    <path d="M198 88 L176 48 L161 40 L181 84 Z" fill="url(#ktt${id})"/>
+    <rect x="51" y="187" width="118" height="15" fill="url(#ktt${id})" opacity=".9"/>
+    <path d="M73 33 L44 48 L22 88 L33 94 L54 51 Z" fill="#fff" opacity=".12"/>
   </svg>`;
 }
 function kitSVG(t, away, size) {
