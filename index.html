@@ -35,11 +35,11 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
-  --bg:#100418; --bg2:#0b0212; --panel:#1c0a28; --panel2:#2a0f3a;
-  --line:rgba(255,140,20,.4); --line2:rgba(255,140,20,.75);
-  --ink:#fff7ec; --dim:#cda9c9; --faint:#9b7797;
-  --gold:#fff200; --gold-d:#c25b00; --teal:#ff8a00; --teal-d:#c25b00;
-  --up:#39ff8c; --down:#ff2d6e; --cup:#29e0ff;
+  --bg:#08152f; --bg2:#0a2a5e; --panel:#0f3b82; --panel2:#1257a6;
+  --line:rgba(255,255,255,.14); --line2:rgba(255,255,255,.3);
+  --ink:#ffffff; --dim:#eaf4ff; --faint:#a9c9f2;
+  --gold:#f5c518; --gold-d:#c89a0e; --teal:#5fcbff; --teal-d:#2e93cc;
+  --up:#4ade80; --down:#ff7a7a; --cup:#7fd1ff;
   --pitch:#1c7a4c; --pitch2:#1a7046;
   --r:6px;
   --head:'Big Shoulders Display',Impact,'Arial Narrow',sans-serif;
@@ -68,10 +68,8 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
 body{margin:0;color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
 background:
- radial-gradient(60% 50% at 12% -6%,rgba(255,242,0,.35),transparent 60%),
- radial-gradient(55% 46% at 108% 6%,rgba(255,90,0,.3),transparent 62%),
- radial-gradient(60% 55% at 100% 100%,rgba(255,20,120,.25),transparent 60%),
- radial-gradient(50% 45% at -4% 96%,rgba(255,150,0,.25),transparent 60%),
+ radial-gradient(70% 55% at 50% -10%,rgba(79,163,255,.30),transparent 60%),
+ radial-gradient(60% 50% at 100% 100%,rgba(18,87,166,.35),transparent 62%),
  linear-gradient(180deg,var(--bg2),var(--bg) 55%,var(--bg));
 background-attachment:fixed}
 h1,h2,h3,h4{font-family:var(--head);font-weight:700;margin:0;line-height:1.05}
@@ -3987,7 +3985,7 @@ function liveDraw() {
     c.fillStyle = '#fff'; c.fill(); c.lineWidth = 1.2; c.strokeStyle = '#111'; c.stroke();
     if (ls.flash && performance.now() - ls.flash.t < 1800) {
       c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(0, Hh / 2 - 28, W, 56);
-      c.fillStyle = '#fff200'; c.font = `800 ${Math.round(Hh * 0.13)}px "Big Shoulders Display",Impact,sans-serif`;
+      c.fillStyle = '#f5c518'; c.font = `800 ${Math.round(Hh * 0.13)}px "Big Shoulders Display",Impact,sans-serif`;
       c.textAlign = 'center'; c.textBaseline = 'middle';
       c.fillText(ls.flash.txt, W / 2, Hh / 2);
     }
