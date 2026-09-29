@@ -1241,6 +1241,7 @@ function newGame(clubIndex, manager, seed) {
     };
     t.squad.forEach(p => p.clubs.push({ id: i, from: season }));
     t.wageBill = wageOf(t);
+    t.wageBudget = Math.round(t.wageBill * 1.4 * 100) / 100;
     ensureLineup(t);
     const ranked = t.squad.slice().sort((a, b) => b.rating - a.rating);
     if (ranked[0]) t.captainId = ranked[0].id;
@@ -1267,7 +1268,7 @@ function newGame(clubIndex, manager, seed) {
 
 function newFin() { return { prize: 0, sponsor: 0, gate: 0, sales: 0, buys: 0, wages: 0 }; }
 function finNet(f) { return (f.prize + f.sponsor + f.gate + f.sales) - (f.buys + f.wages); }
-function wageOf(t) { return Math.round(t.squad.reduce((s, p) => s + p.wage, 0) * 100) / 100; }
+function wageOf(t) { return Math.round(t.squad.reduce((s, p) => s + p.wage, 0) * 100) / 100; } function reallocateBudget(G, amount) {   const t = G.teams[G.myTeam];   amount = Math.round(amount * 1000) / 1000;   if (amount === 0) return { ok: false, msg: 'Move the slider first.' };   if (amount > 0) {     if (amount > t.budget + 1e-9) return { ok: false, msg: `Only ${money(t.budget)} is available in the transfer budget.` };     t.budget = Math.round((t.budget - amount) * 100) / 100;     t.wageBudget = Math.round((t.wageBudget + amount) * 100) / 100;     return { ok: true, msg: `Moved ${money(amount)} from the transfer budget into the wage budget.` };   }   const move = -amount, spare = t.wageBudget - t.wageBill;   if (move > spare + 1e-9) return { ok: false, msg: `Only ${money(Math.max(0, spare))} of the wage budget is uncommitted.` };   t.wageBudget = Math.round((t.wageBudget - move) * 100) / 100;   t.budget = Math.round((t.budget + move) * 100) / 100;   return { ok: true, msg: `Moved ${money(move)} from the wage budget into the transfer budget.` }; }
 
 /* ---------------- lineups ---------------- */
 function posPenalty(natural, slot) {
@@ -1779,8 +1780,8 @@ function endSeason(G) {
   const move = (ids, dir) => ids.forEach(id => {
     const t = G.teams[id];
     t.tier = clamp(t.tier + dir, 0, N_TIERS - 1);
-    if (dir < 0) { t.budget += t.tier === 0 ? 16 : t.tier === 1 ? 6 : 2; t.rep = clamp(t.rep + 0.55, 3.2, 9.9); }
-    else { t.budget = Math.max(0.5, t.budget * 0.5); t.rep = clamp(t.rep - 0.35, 3.2, 9.9); }
+    if (dir < 0) { t.budget += t.tier === 0 ? 16 : t.tier === 1 ? 6 : 2; t.rep = clamp(t.rep + 0.55, 3.2, 9.9); t.wageBudget = Math.round(t.wageBudget * 1.35 * 100) / 100; }
+    else { t.budget = Math.max(0.5, t.budget * 0.5); t.rep = clamp(t.rep - 0.35, 3.2, 9.9); t.wageBudget = Math.max(t.wageBill, Math.round(t.wageBudget * 0.6 * 100) / 100); }
   });
   move(relegated, 1); move(promoted, -1);
   sum.relegated = relegated; sum.promoted = promoted;
@@ -1836,6 +1837,8 @@ function endSeason(G) {
     t.squad = t.squad.filter(p => !leaving.includes(p));
     fillSquad(G, t);
     t.wageBill = wageOf(t);
+    const wageGrowth = 1 + clamp(finNet(t.fin) / Math.max(1, t.wageBudget) * 0.15, -0.12, 0.18);
+    t.wageBudget = Math.round(clamp(t.wageBudget * wageGrowth, t.wageBill, t.wageBill * 3) * 100) / 100;
     t.budget = Math.max(0, Math.round(t.budget * 10) / 10);
     t.finHistory.push({ season: G.season, ...t.fin, net: finNet(t.fin) });
     ensureLineup(t);
@@ -2082,6 +2085,7 @@ function buyPlayer(G, pid, fee, viaClause) {
   if (f.t.id === me.id) return { ok: false, msg: 'He already plays for you.' };
   if (!viaClause && !inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
   if (me.budget < fee) return { ok: false, msg: 'Not enough in the transfer budget.' };
+  if (me.wageBill + f.p.wage > me.wageBudget) return { ok: false, msg: `Wage budget won't stretch to ${f.p.name} — ${money(me.wageBill)} of ${money(me.wageBudget)} is already committed. Move funds from the transfer budget in Club & Manager, or free up wages first.` };
   if (me.squad.length >= 32) return { ok: false, msg: 'Squad is full at 32. Sell or release first.' };
   if (f.p.nat !== 'ZA' && me.squad.filter(p => p.nat !== 'ZA').length >= MAX_FOREIGN)
     return { ok: false, msg: `You already have ${MAX_FOREIGN} foreign players. Sell or release one before signing another.` };
@@ -2148,6 +2152,8 @@ function negotiateContract(G, pid, wage, years) {
   const marketWage = wageFor(p.rating, p.age, me.tier);
   const raiseRatio = wage / (p.wage || marketWage);
   const bonus = Math.round(wage * 0.7 * 100) / 100;
+  const wageAfter = Math.round((me.wageBill - p.wage + wage) * 100) / 100;
+  if (wageAfter > me.wageBudget) return { ok: false, msg: `That wage would take you to ${money(wageAfter)} against a ${money(me.wageBudget)} wage budget. Offer less, or move funds from the transfer budget in Club & Manager.` };
   if (me.budget < bonus) return { ok: false, msg: `A signing-on fee of ${money(bonus)} is beyond the budget.` };
   let chance = p.wantsOut
     ? clamp(0.1 + (raiseRatio - 1) * 0.85 - Math.max(0, gap) * 0.018, 0.04, 0.9)
@@ -2203,6 +2209,7 @@ function signFreeAgent(G, pid) {
   const cand = G.freeAgents[i];
   if (cand.nat !== 'ZA' && me.squad.filter(p => p.nat !== 'ZA').length >= MAX_FOREIGN)
     return { ok: false, msg: `You already have ${MAX_FOREIGN} foreign players. Sell or release one before signing another.` };
+  if (me.wageBill + cand.wage > me.wageBudget) return { ok: false, msg: `Wage budget won't stretch to ${cand.name} — ${money(me.wageBill)} of ${money(me.wageBudget)} is already committed.` };
   const p = G.freeAgents.splice(i, 1)[0];
   p.contract = rint(1, 3); p.wantsOut = false;
   p.clubs.push({ id: me.id, from: G.season });
@@ -2732,6 +2739,39 @@ function updateBoard(G, sum) {
   G.board = clamp((G.board != null ? G.board : 62) + delta * 0.5, 0, 100);
   G.boardFired = G.board <= 6;
   return G.boardFired;
+}
+function boardMaxGrant(G) {
+  const t = G.teams[G.myTeam];
+  const board = G.board != null ? G.board : 62;
+  const last = t.history[t.history.length - 1];
+  const doingWell = last && last.pos <= boardTargetFor(t);
+  const tierScale = [14, 5, 1.8, 0.7, 0.3][t.tier] || 0.3;
+  let mult = 0.15 + (board / 100) * 0.55 + (doingWell ? 0.25 : 0);
+  mult *= 0.6 + (G.manager.rep || 40) / 100 * 0.8;
+  return Math.max(0.1, Math.round(tierScale * mult * 100) / 100);
+}
+function askBoardForFunds(G, amount) {
+  const t = G.teams[G.myTeam];
+  amount = Math.max(0, Math.round(amount * 100) / 100);
+  if (amount <= 0) return { ok: false, msg: 'Ask for a real amount first.' };
+  if (G.lastBoardAsk === G.season) return { ok: false, msg: 'You already went to the board this season — try again next season.' };
+  const board = G.board != null ? G.board : 62;
+  if (board < 20) { G.lastBoardAsk = G.season; return { ok: false, msg: 'The board have no confidence in you right now and refuse outright.' }; }
+  const max = boardMaxGrant(G);
+  G.lastBoardAsk = G.season;
+  if (amount > max * 1.15) {
+    const counter = Math.max(0.1, Math.round(max * (0.55 + rnd() * 0.3) * 100) / 100);
+    t.budget = Math.round((t.budget + counter) * 100) / 100;
+    news(G, 'career', `The board reject ${G.manager.name}'s ask for ${money(amount)} but release ${money(counter)} instead.`);
+    return { ok: true, countered: true, granted: counter, msg: `${money(amount)} was too rich for them — they'll stretch to ${money(counter)} instead.` };
+  }
+  const chance = clamp(0.35 + (board - 50) / 90 - (amount / max) * 0.25, 0.08, 0.95);
+  if (rnd() > chance) {
+    return { ok: false, msg: `The board turn down your request for ${money(amount)}.` };
+  }
+  t.budget = Math.round((t.budget + amount) * 100) / 100;
+  news(G, 'career', `The board back ${G.manager.name} with an extra ${money(amount)} for the transfer budget.`);
+  return { ok: true, granted: amount, msg: `The board agree — ${money(amount)} lands in the transfer budget.` };
 }
 
 /* ============================================================
@@ -4126,7 +4166,7 @@ function squadPitchHTML(t) {   ensureLineup(t);   const slots = FORMATIONS[t.for
   const onLoanOut = G.teams.flatMap(c => c.squad.filter(p => p.loan && p.loan.from === t.id));
   const foreign = t.squad.filter(p => p.nat !== 'ZA');
   v.innerHTML = `<div class="panel">
-    <h3>First team<span class="sub">${first.length} players · XI rated ${teamOverall(t)} · squad depth ${squadAverage(t)}<br>wages ${money(t.wageBill)} a season · ${foreign.length}/${MAX_FOREIGN} foreign</span></h3>
+    <h3>First team<span class="sub">${first.length} players · XI rated ${teamOverall(t)} · squad depth ${squadAverage(t)}<br>wages ${money(t.wageBill)} of ${money(t.wageBudget)} a season · ${foreign.length}/${MAX_FOREIGN} foreign</span></h3>
     <div class="pad"><button class="btn" id="squadToTransfers">Transfer Market</button></div>     <div class="chipbar">${[['rating','Rating'],['pos','Position'],['age','Age'],['goals','Goals'],['growth','Growth'],['contract','Contract'],['value','Value']]
       .map(([k, l]) => `<button class="chip" data-ss="${k}" aria-pressed="${squadSort === k}">${l}</button>`).join('')}</div>
     ${first.map(p => playerRow(p, t)).join('')}</div>
@@ -4453,6 +4493,7 @@ function viewTransfers() {
 
   let html = `<div class="rbox">
     <div><b>${money(t.budget)}</b><span>Transfer budget</span></div>
+    <div><b style="color:${t.wageBill >= t.wageBudget ? 'var(--down)' : 'var(--ink)'}">${money(t.wageBudget - t.wageBill)}</b><span>Wage budget spare</span></div>
     <div><b style="color:${winOpen ? 'var(--up)' : 'var(--down)'}">${winOpen ? windowCloses(G) + (windowCloses(G) === 1 ? ' matchday' : ' matchdays') : roundsToNextWindow(G) + (roundsToNextWindow(G) === 1 ? ' matchday' : ' matchdays')}</b><span>${winOpen ? currentWindowName(G) + ' left' : 'Until window opens'}</span></div>
     <div><b>${t.squad.length} / 32</b><span>Squad size</span></div>
     <div><b style="${foreignN < 1 || foreignN > MAX_FOREIGN ? 'color:var(--down)' : ''}">${foreignN} / ${MAX_FOREIGN}</b><span>Foreign players</span></div>
@@ -4584,7 +4625,7 @@ function txReleaseAsk(pid) {
   $('#txRelYes').onclick = () => { const res = releasePlayer(G, pid); toast(res.msg); closeModal(); if (res.ok) { save(); render(); } };
 }
 
-function negotiateModal(pid) {
+function askBoardModal() {   const t = me();   const max = boardMaxGrant(G);   const board = G.board != null ? G.board : 62;   const cap = Math.max(0.2, Math.round(max * 2.4 * 100) / 100);   const already = G.lastBoardAsk === G.season;   openModal('Ask the board for funds',     `<p class="hint" style="margin:0 0 8px">${already ? "You've already asked the board this season — try again next season." : 'The board judge requests against how the season is going and their confidence in you. Ask for too much and they may offer less instead.'}</p>      <label class="hint">Amount requested</label>      <input class="range" type="range" id="askAmt" min="0.1" max="${cap.toFixed(2)}" step="0.05" value="${Math.max(0.1, Math.round(max * 0.6 * 100) / 100).toFixed(2)}" ${already ? 'disabled' : ''}>      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--faint)"><span>Requested</span>        <span id="askAmtV" style="font-family:var(--head);font-size:20px;color:var(--ink)"></span></div>      <div class="bar" style="margin-top:8px"><i id="askBar"></i></div>      <p id="askOdds" class="hint" style="margin:6px 0 0"></p>`,     `<button class="btn ghost sm" onclick="closeModal()">Cancel</button><button class="btn sm" id="askGo" ${already ? 'disabled' : ''}>Make the case</button>`);   if (already) return;   const ar = $('#askAmt');   const upd = () => {     const amt = +ar.value;     const tooMuch = amt > max * 1.15;     const chance = tooMuch ? 0 : clamp(0.35 + (board - 50) / 90 - (amt / max) * 0.25, 0.08, 0.95);     $('#askAmtV').textContent = money(amt);     $('#askBar').style.width = (tooMuch ? 100 : chance * 100).toFixed(0) + '%';     $('#askBar').style.background = tooMuch ? 'var(--gold)' : chance > 0.55 ? 'var(--up)' : chance > 0.25 ? 'var(--gold)' : 'var(--down)';     $('#askOdds').textContent = tooMuch ? "Well beyond what they'll sanction outright — expect a smaller counter-offer."       : chance > 0.7 ? 'A reasonable ask — they will likely agree.' : chance > 0.35 ? 'Could go either way.' : 'A tough sell given their confidence in you.';   };   ar.oninput = upd; upd();   $('#askGo').onclick = () => {     const res = askBoardForFunds(G, +ar.value);     closeModal();     if (res.ok) { toast(res.msg); save(); render(); } else { toastWarn(res.msg); }   }; } function negotiateModal(pid) {
   const t = me();
   const p = t.squad.find(x => x.id === pid); if (!p) return;
   const minW = Math.max(0.0002, p.wage * 0.7), maxW = p.wage * (p.wantsOut ? 2.2 : 1.8);
@@ -4612,12 +4653,17 @@ function negotiateModal(pid) {
       : clamp(0.55 + (ratio - 1) * 0.6, 0.25, 0.97);
     if (y < 2 && p.wantsOut) chance *= 0.7;
     if (p.wantsOut && gap > 24) chance = 0.02;
+    const wageAfter = Math.round((t.wageBill - p.wage + w) * 100) / 100;
+    const overBudget = wageAfter > t.wageBudget;
     $('#negWV').textContent = money(w);
     $('#negYV').textContent = y + (y === 1 ? ' year' : ' years');
     $('#negBar').style.width = (chance * 100).toFixed(0) + '%';
-    $('#negBar').style.background = chance > 0.6 ? 'var(--up)' : chance > 0.3 ? 'var(--gold)' : 'var(--down)';
-    $('#negOdds').textContent = gap > 24 && p.wantsOut ? "He has his heart set on a bigger club — money won't fix this."
+    $('#negBar').style.background = overBudget ? 'var(--down)' : chance > 0.6 ? 'var(--up)' : chance > 0.3 ? 'var(--gold)' : 'var(--down)';
+    $('#negOdds').textContent = overBudget ? `Over the wage budget by ${money(wageAfter - t.wageBudget)} — move funds from the transfer budget in Club & Manager, or offer less.`
+      : gap > 24 && p.wantsOut ? "He has his heart set on a bigger club — money won't fix this."
       : chance > 0.75 ? "He'll likely sign this happily." : chance > 0.4 ? 'Could go either way.' : 'A tough sell at these terms.';
+    $('#negOdds').style.color = overBudget ? 'var(--down)' : '';
+    $('#negGo').disabled = overBudget;
   };
   wr.oninput = upd; yr.oninput = upd; upd();
   $('#negGo').onclick = () => {
@@ -5009,7 +5055,7 @@ function viewClub() {
       <dt>Division</dt><dd>${TIER_NAMES[t.tier]}</dd>
       <dt>Team rating</dt><dd>${teamOverall(t)} · squad ${squadAverage(t)}</dd>
       <dt>Transfer budget</dt><dd>${money(t.budget)}</dd>
-      <dt>Wage bill</dt><dd>${money(t.wageBill)} a season</dd>
+      <dt>Wage budget</dt><dd>${money(t.wageBill)} committed of ${money(t.wageBudget)}</dd>
       <dt>Academy</dt><dd>Level ${t.academy}</dd>
       <dt>Trophies</dt><dd>${t.trophies.length}</dd>
     </dl>
@@ -5018,6 +5064,15 @@ function viewClub() {
         <span>Board confidence</span><span style="color:${boardColor};font-weight:600">${Math.round(board)}/100</span></div>
       <div class="bar"><i style="width:${board}%;background:${boardColor}"></i></div>
       <p class="hint" style="margin:6px 0 0">${board > 55 ? 'The board are happy with how things are going.' : board > 30 ? 'The board expect better next season.' : 'Your job is under real threat.'}</p>
+      <button class="btn ghost sm" id="askBoardBtn" style="margin-top:8px">Ask the board for funds</button>
+    </div>
+    <div class="pad" style="border-top:1px solid var(--line)">
+      <h4 style="margin:0 0 6px">Budget allocation</h4>
+      <p class="hint" style="margin:0 0 8px">Transfer budget is cash for fees. Wage budget is the most you can have committed to player wages at once — right now that's ${money(t.wageBill)} of ${money(t.wageBudget)}. Slide to move funds between the two.</p>
+      <input class="range" type="range" id="allocSlide" min="${(-Math.max(0, t.wageBudget - t.wageBill)).toFixed(2)}" max="${Math.max(0, t.budget).toFixed(2)}" step="0.01" value="0">
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--faint)"><span>← into transfer</span><span>into wages →</span></div>
+      <p id="allocPreview" class="hint" style="margin:8px 0 0">No change.</p>
+      <button class="btn sm" id="allocGo" style="margin-top:6px">Move funds</button>
     </div></div>
 
   <div class="cols">
@@ -5079,6 +5134,23 @@ function viewClub() {
     </div>
     <p class="hint" style="padding:0 13px 13px;margin:0">Saved in this browser only, across four slots. Clearing site data wipes it.</p></div>`;
   $('#saveNow').onclick = () => { save(); toast('Career saved in this browser.'); };
+  const askBoardBtn = $('#askBoardBtn');
+  if (askBoardBtn) askBoardBtn.onclick = askBoardModal;
+  const allocSlide = $('#allocSlide');
+  if (allocSlide) {
+    const allocPreview = $('#allocPreview');
+    const updAlloc = () => {
+      const v = +allocSlide.value;
+      allocPreview.textContent = v === 0 ? 'No change.' : v > 0
+        ? `Move ${money(v)} from the transfer budget into the wage budget.`
+        : `Move ${money(-v)} from the wage budget into the transfer budget.`;
+    };
+    allocSlide.oninput = updAlloc;
+    $('#allocGo').onclick = () => {
+      const res = reallocateBudget(G, +allocSlide.value);
+      if (res.ok) { toast(res.msg); save(); render(); } else { toastWarn(res.msg); }
+    };
+  }
   $('#soundChk').onchange = e => { soundOn = e.target.checked; if (soundOn) playSound('click'); };
   $('#shareBtn').onclick = shareSeason;
   $('#switchSlot').onclick = () => {
