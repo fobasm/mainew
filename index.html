@@ -1706,6 +1706,7 @@ function playRound(G, skipMine) {
     });
   }
   G.round++;
+  G.teams.forEach(t => { t.fin.wages += t.wageBill / totalRounds(G); });
   africaRound(G);
   if (CUP_AT.includes(G.round) && !G.cup.done) out.cup = playCupRound(G);
   if (S8_AT.includes(G.round)) out.s8 = playKnockoutRound(G, G.super8, S8_ROUNDS, 6);
@@ -1801,7 +1802,7 @@ function endSeason(G) {
   endSeasonLoans(G);
   /* players: wages paid, ageing, growth, retirement, contracts */
   G.teams.forEach(t => {
-    t.fin.wages += t.wageBill;
+    t.fin.wages = t.wageBill;
     t.budget -= t.wageBill;
     t.squad.forEach(p => {
       p.career.push({ season: G.season, club: t.id, tier: t.tier, apps: p.apps, g: p.goals, a: p.assists, rating: p.rating });
