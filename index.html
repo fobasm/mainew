@@ -4531,7 +4531,7 @@ function playerModal(pid) {
       <div style="min-width:0;flex:1">
         <h3 style="font-size:23px">${esc(p.name)}${isCaptain ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">C</span>' : isVice ? ' <span class="tag">VC</span>' : ''}</h3>
         <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          ${posTag(p.pos)}${(p.alt || []).map(a => <span style="opacity:.6">${posTag(a)}</span>).join('')}<span>${flagSVG(p.nat)} ${natName(p.nat)}</span><span class="hint">Age ${p.age}${p.dob ? ', born ' + esc(p.dob) : ''}</span>
+          ${posTag(p.pos)}${(p.alt || []).map(a => `<span style="opacity:.6">${posTag(a)}</span>`).join('')}<span>${flagSVG(p.nat)} ${natName(p.nat)}</span><span class="hint">Age ${p.age}${p.dob ? ', born ' + esc(p.dob) : ''}</span>
         </div>
         <div style="margin-top:6px;font-size:13px">
           ${t ? crestHTML(t, 18) + ' ' + esc(t.n) : '<span class="hint">Free agent</span>'}
