@@ -245,7 +245,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .tag.gk{color:#ff7ac6;border-color:#ff7ac666}
 .tag.def{color:#6bb8ff;border-color:#6bb8ff66}
 .tag.mid{color:#4fd39a;border-color:#4fd39a66}
-.tag.att{color:#ff9c5b;border-color:#ff9c5b66}
+.tag.att{color:#ff9c5b;border-color:#ff9c5b66} .pen{color:#ff6b6b;font-style:normal;font-size:9px;font-weight:700;margin-left:2px}
 .tag.xi{color:var(--gold);border-color:var(--gold)}
 .tag.inj{color:var(--down);border-color:var(--down)}
 .tag.out{color:#ffb020;border-color:#ffb020}
@@ -752,11 +752,11 @@ const NAMES = {
 };
 
 /* ---------------- positions ---------------- */
-const POS_LIST = ['GK','RB','CB','LB','CDM','CM','RM','LM','ST','CF'];
-const POS_GROUP = { GK:'GK', RB:'DEF', CB:'DEF', LB:'DEF', CDM:'MID', CM:'MID', RM:'MID', LM:'MID', ST:'ATT', CF:'ATT' };
+const POS_LIST = ['GK','RB','CB','LB','RWB','LWB','CDM','CM','CAM','RM','LM','RW','LW','ST','CF'];
+const POS_GROUP = { GK:'GK', RB:'DEF', CB:'DEF', LB:'DEF', RWB:'DEF', LWB:'DEF', CDM:'MID', CM:'MID', CAM:'MID', RM:'MID', LM:'MID', RW:'ATT', LW:'ATT', ST:'ATT', CF:'ATT' };
 const GROUP_ORDER = ['GK','DEF','MID','ATT'];
-const POS_ATT = { GK:0.02, CB:0.35, RB:0.6, LB:0.6, CDM:0.55, CM:1.0, RM:1.25, LM:1.25, CF:1.8, ST:2.2 };
-const POS_DEF = { GK:2.0, CB:2.0, RB:1.5, LB:1.5, CDM:1.5, CM:0.9, RM:0.6, LM:0.6, CF:0.2, ST:0.1 };
+const POS_ATT = { GK:0.02, CB:0.35, RB:0.6, LB:0.6, RWB:0.8, LWB:0.8, CDM:0.55, CM:1.0, CAM:1.4, RM:1.25, LM:1.25, RW:1.6, LW:1.6, CF:1.8, ST:2.2 };
+const POS_DEF = { GK:2.0, CB:2.0, RB:1.5, LB:1.5, RWB:1.2, LWB:1.2, CDM:1.5, CM:0.9, CAM:0.5, RM:0.6, LM:0.6, RW:0.35, LW:0.35, CF:0.2, ST:0.1 };
 
 const FORMATIONS = {
   '4-4-2':   ['GK','RB','CB','CB','LB','RM','CM','CM','LM','ST','ST'],
@@ -764,7 +764,15 @@ const FORMATIONS = {
   '4-2-3-1': ['GK','RB','CB','CB','LB','CDM','CDM','RM','CF','LM','ST'],
   '4-1-2-1-2': ['GK','RB','CB','CB','LB','CDM','CM','CM','CF','ST','ST'],
   '3-5-2':   ['GK','CB','CB','CB','RM','CDM','CM','CM','LM','ST','ST'],
-  '5-3-2':   ['GK','RB','CB','CB','CB','LB','CDM','CM','CM','ST','ST']
+  '5-3-2':   ['GK','RB','CB','CB','CB','LB','CDM','CM','CM','ST','ST'],
+  '4-2-3-1 (CAM)': ['GK','RB','CB','CB','LB','CDM','CDM','RW','CAM','LW','ST'],
+  '4-3-3 (Wide)':  ['GK','RB','CB','CB','LB','CM','CDM','CM','RW','ST','LW'],
+  '4-3-1-2':       ['GK','RB','CB','CB','LB','CM','CDM','CM','CAM','ST','ST'],
+  '3-4-3':         ['GK','CB','CB','CB','RWB','CM','CM','LWB','RW','ST','LW'],
+  '3-4-1-2':       ['GK','CB','CB','CB','RWB','CM','CM','LWB','CAM','ST','ST'],
+  '3-5-2 (WB)':    ['GK','CB','CB','CB','RWB','CM','CDM','CM','LWB','ST','ST'],
+  '5-3-2 (WB)':    ['GK','RWB','CB','CB','CB','LWB','CM','CDM','CM','ST','ST'],
+  '5-4-1':         ['GK','RWB','CB','CB','CB','LWB','RM','CM','CM','LM','ST']
 };
 const FORM_COORDS = {
   '4-4-2':   [[50,7],[85,25],[63,20],[37,20],[15,25],[85,55],[62,48],[38,48],[15,55],[60,80],[40,80]],
@@ -772,7 +780,15 @@ const FORM_COORDS = {
   '4-2-3-1': [[50,7],[85,25],[63,20],[37,20],[15,25],[60,42],[40,42],[80,64],[50,66],[20,64],[50,86]],
   '4-1-2-1-2': [[50,7],[85,25],[63,20],[37,20],[15,25],[50,40],[72,54],[28,54],[50,68],[60,84],[40,84]],
   '3-5-2':   [[50,7],[68,20],[50,17],[32,20],[88,52],[50,38],[66,56],[34,56],[12,52],[60,82],[40,82]],
-  '5-3-2':   [[50,7],[88,28],[68,18],[50,16],[32,18],[12,28],[50,42],[66,56],[34,56],[60,82],[40,82]]
+  '5-3-2':   [[50,7],[88,28],[68,18],[50,16],[32,18],[12,28],[50,42],[66,56],[34,56],[60,82],[40,82]],
+  '4-2-3-1 (CAM)': [[50,7],[85,25],[63,20],[37,20],[15,25],[62,42],[38,42],[84,66],[50,64],[16,66],[50,86]],
+  '4-3-3 (Wide)':  [[50,7],[85,25],[63,20],[37,20],[15,25],[68,52],[50,40],[32,52],[84,74],[50,86],[16,74]],
+  '4-3-1-2':       [[50,7],[85,25],[63,20],[37,20],[15,25],[68,46],[50,38],[32,46],[50,66],[60,84],[40,84]],
+  '3-4-3':         [[50,7],[68,20],[50,17],[32,20],[88,42],[62,45],[38,45],[12,42],[82,76],[50,86],[18,76]],
+  '3-4-1-2':       [[50,7],[68,20],[50,17],[32,20],[88,42],[62,45],[38,45],[12,42],[50,64],[60,84],[40,84]],
+  '3-5-2 (WB)':    [[50,7],[68,20],[50,17],[32,20],[88,45],[64,52],[50,38],[36,52],[12,45],[60,82],[40,82]],
+  '5-3-2 (WB)':    [[50,7],[90,32],[68,18],[50,16],[32,18],[10,32],[64,52],[50,40],[36,52],[60,82],[40,82]],
+  '5-4-1':         [[50,7],[88,30],[68,18],[50,16],[32,18],[12,30],[85,55],[62,48],[38,48],[15,55],[50,82]]
 };
 
 /* ---------------- faces ---------------- */
@@ -1220,7 +1236,7 @@ function makePlayer(opts) {
   const pot = Math.round(clamp(rating + potBump, rating, 95));
   const p = {
     id: PID++, first: nm.first, last: nm.last, name: nm.first + ' ' + nm.last,
-    nat, pos, age, rating, pot, face: makeFace(nat),
+    nat, pos, alt: o.alt || rollAlt(pos), age, rating, pot, face: makeFace(nat),
     wage: wageFor(rating, age, o.tier), contract: o.contract != null ? o.contract : rint(1, 4),
     goals: 0, assists: 0, apps: 0, cs: 0, inj: 0, form: 0, yellow: 0,
     cG: 0, cA: 0, cApps: 0, earned: 0,
@@ -1237,7 +1253,7 @@ function natFor(club, foreignSlot) {
   return pick(SCOUT_POOLS[club.scout] || SCOUT_POOLS.AFR);
 }
 
-const SQUAD_PLAN = ['GK','GK','GK','RB','RB','CB','CB','CB','CB','LB','LB','CDM','CDM','CM','CM','CM','RM','RM','LM','LM','ST','ST','CF','CF'];
+const SQUAD_PLAN = ['GK','GK','GK','RB','RB','CB','CB','CB','CB','LB','LB','RWB','LWB','CDM','CDM','CM','CM','CM','CAM','CAM','RM','LM','RW','LW','ST','ST','CF'];
 
 function makeSquad(club, season) {
   const foreigners = rint(1, 6);
@@ -1297,15 +1313,50 @@ function finNet(f) { return (f.prize + f.sponsor + f.gate + f.sales) - (f.buys +
 function wageOf(t) { return Math.round(t.squad.reduce((s, p) => s + p.wage, 0) * 100) / 100; } function reallocateBudget(G, amount) {   const t = G.teams[G.myTeam];   amount = Math.round(amount * 1000) / 1000;   if (amount === 0) return { ok: false, msg: 'Move the slider first.' };   if (amount > 0) {     if (amount > t.budget + 1e-9) return { ok: false, msg: `Only ${money(t.budget)} is available in the transfer budget.` };     t.budget = Math.round((t.budget - amount) * 100) / 100;     t.wageBudget = Math.round((t.wageBudget + amount) * 100) / 100;     return { ok: true, msg: `Moved ${money(amount)} from the transfer budget into the wage budget.` };   }   const move = -amount, spare = t.wageBudget - t.wageBill;   if (move > spare + 1e-9) return { ok: false, msg: `Only ${money(Math.max(0, spare))} of the wage budget is uncommitted.` };   t.wageBudget = Math.round((t.wageBudget - move) * 100) / 100;   t.budget = Math.round((t.budget + move) * 100) / 100;   return { ok: true, msg: `Moved ${money(move)} from the wage budget into the transfer budget.` }; }
 
 /* ---------------- lineups ---------------- */
-function posPenalty(natural, slot) {
-  if (natural === slot) return 0;
-  const a = POS_GROUP[natural], b = POS_GROUP[slot];
-  if (a === b) return 2.5;
-  if (a === 'GK' || b === 'GK') return 22;
-  const gi = GROUP_ORDER.indexOf(a), gj = GROUP_ORDER.indexOf(b);
-  return Math.abs(gi - gj) === 1 ? 7 : 13;
+/* Which extra positions a player of each main position can learn */
+const ALT_POS = {
+  CB:['LB','RB','CDM'], LB:['LWB','LM','CB'], RB:['RWB','RM','CB'],
+  LWB:['LB','LM'], RWB:['RB','RM'], CDM:['CM','CB'], CM:['CDM','CAM'],
+  CAM:['CM','CF','LW','RW'], LM:['LW','LWB'], RM:['RW','RWB'],
+  LW:['LM','RW'], RW:['RM','LW'], ST:['CF'], CF:['ST','CAM'], GK:[]
+};
+function rollAlt(pos) {
+  const o = ALT_POS[pos] || [];
+  if (!o.length || rnd() > 0.35) return [];          // 35% of players are versatile
+  const a = [pick(o)];
+  if (rnd() < 0.2) { const b = o.filter(x => x !== a[0]); if (b.length) a.push(pick(b)); }
+  return a;
 }
-function effRating(p, slot) { return clamp(p.rating - posPenalty(p.pos, slot) + p.form * 0.8, 20, 99); }
+/* Penalty between two positions (closer positions lose less) */
+const POS_NEAR = {
+  'LWB-LB':2,'RWB-RB':2,'LWB-LM':3,'RWB-RM':3,'LB-LM':4,'RB-RM':4,'LM-LW':2,'RM-RW':2,
+  'LW-ST':3,'RW-ST':3,'LW-CF':3,'RW-CF':3,'LW-RW':5,'LM-RM':5,'LB-RB':5,'LWB-RWB':5,
+  'CAM-CF':2,'CAM-CM':2,'CAM-ST':4,'CAM-LW':4,'CAM-RW':4,'CAM-CDM':5,'CM-CDM':2,
+  'CDM-CB':4,'ST-CF':2,'CB-LB':5,'CB-RB':5,'LWB-LW':5,'RWB-RW':5
+};
+function basePen(a, b) {
+  if (a === b) return 0;
+  const n = POS_NEAR[a + '-' + b] ?? POS_NEAR[b + '-' + a];
+  if (n != null) return n;
+  const ga = POS_GROUP[a], gb = POS_GROUP[b];
+  if (ga === 'GK' || gb === 'GK') return 22;
+  if (ga === gb) return 5;
+  return Math.abs(GROUP_ORDER.indexOf(ga) - GROUP_ORDER.indexOf(gb)) === 1 ? 8 : 14;
+}
+/* pl can be a player object (uses main + alternate positions) or a position string */
+function posPenalty(pl, slot) {
+  const nat = typeof pl === 'string' ? pl : pl.pos;
+  const alts = typeof pl === 'string' ? [] : (pl.alt || []);
+  if (nat === slot || alts.includes(slot)) return 0;
+  let best = basePen(nat, slot);
+  alts.forEach(a => { best = Math.min(best, basePen(a, slot) + 1); });
+  return best;
+}
+function penTag(p, slot) {
+  const n = Math.round(posPenalty(p, slot));
+  return n > 0 ? `<em class="pen">-${n}</em>` : '';
+}
+function effRating(p, slot) { return clamp(p.rating - posPenalty(p, slot) + p.form * 0.8, 20, 99); }
 
 function ensureLineup(t) {
   const slots = FORMATIONS[t.formation] || FORMATIONS['4-4-2'];
@@ -1904,7 +1955,7 @@ function endSeason(G) {
 }
 
 function fillSquad(G, t) {
-  const need = { GK:3, RB:2, CB:4, LB:2, CDM:2, CM:3, RM:2, LM:2, ST:2, CF:2 };
+  const need = { GK:3, RB:2, CB:4, LB:2, RWB:1, LWB:1, CDM:2, CM:3, CAM:2, RM:1, LM:1, RW:1, LW:1, ST:2, CF:1 };;
   const foreign = t.squad.filter(p => p.nat !== 'ZA').length;
   Object.entries(need).forEach(([pos, min]) => {
     let have = t.squad.filter(p => p.pos === pos).length;
@@ -2026,7 +2077,7 @@ function findPlayer(G, pid) {
   for (const t of G.teams) { const p = t.squad.find(x => x.id === pid); if (p) return { p, t }; }
   return null;
 }
-function minAtPos(pos) { return { GK:2, RB:1, CB:3, LB:1, CDM:1, CM:2, RM:1, LM:1, ST:1, CF:1 }[pos] || 1; }
+function minAtPos(pos) { return { GK:2, RB:1, CB:3, LB:1, RWB:0, LWB:0, CDM:1, CM:2, CAM:1, RM:0, LM:0, RW:0, LW:0, ST:1, CF:1 }[pos] ?? 1; }
 
 /* ---------------- found a custom club ---------------- */
 function foundClub(G, opts) {
@@ -4326,9 +4377,9 @@ function playerRow(p, t, extra) {
 function bindPlayerRows(root) {
   root.querySelectorAll('[data-pid]').forEach(b => b.onclick = () => playerModal(+b.dataset.pid));
 }
-function squadPitchHTML(t) {   ensureLineup(t);   const slots = FORMATIONS[t.formation] || FORMATIONS['4-4-2'], coords = FORM_COORDS[t.formation] || FORM_COORDS['4-4-2'];   const xi = lineupOf(t), bench = benchOf(t).sort((a, b) => b.rating - a.rating).slice(0, 12);   const gk = { c1: '#7ddc1f', c2: '#1a1a1a' };   const men = xi.map((p, i) => {     const [x, y] = coords[i], bad = posPenalty(p.pos, slots[i]) > 3;     return `<button class="fpl" data-pid="${p.id}" style="left:${8 + x * 0.84}%;top:${8 + (100 - y) * 0.84}%">       ${kitSVG(slots[i] === 'GK' ? gk : t, false, 40)}       <span class="fn"><b>${p.rating}</b><span>${esc(p.last || p.name)}${bad ? ' !' : ''}${t.captainId === p.id ? ' (C)' : ''}</span></span></button>`;   }).join('');   return `<div class="panel"><h3>Starting XI<span class="sub">${t.formation} · rated ${teamOverall(t)}</span></h3>     <div class="pad"><div class="fifa"><i class="hl"></i><i class="cc"></i><i class="bx1"></i><i class="bx2"></i>${men}</div>     <div style="text-align:center;margin-top:8px"><button class="btn ghost sm" id="pitchToTactics">Change formation / swap players</button></div></div></div>   <div class="panel"><h3>Substitutes<span class="sub">tap a player for his profile</span></h3>     <div class="fsubs">${bench.map(p => `<button class="fsub" data-pid="${p.id}">${faceSVG(p, 40, t.c1)}<b>${p.rating}</b><small>${p.pos} · ${esc(p.last || p.name)}</small></button>`).join('')}</div></div>`; } function viewSquad() {
+function squadPitchHTML(t) {   ensureLineup(t);   const slots = FORMATIONS[t.formation] || FORMATIONS['4-4-2'], coords = FORM_COORDS[t.formation] || FORM_COORDS['4-4-2'];   const xi = lineupOf(t), bench = benchOf(t).sort((a, b) => b.rating - a.rating).slice(0, 12);   const gk = { c1: '#7ddc1f', c2: '#1a1a1a' };   const men = xi.map((p, i) => {     const [x, y] = coords[i], bad = posPenalty(p.pos, slots[i]) > 3;     return `<button class="fpl" data-pid="${p.id}" style="left:${8 + x * 0.84}%;top:${8 + (100 - y) * 0.84}%">       ${kitSVG(slots[i] === 'GK' ? gk : t, false, 40)}      <span class="fn"><b>${p.rating}${penTag(p, slots[i])}</b><span>${esc(p.last || p.name)}${bad ? ' !' : ''}${t.captainId === p.id ? ' (C)' : ''}</span></span></button>`;   }).join('');   return `<div class="panel"><h3>Starting XI<span class="sub">${t.formation} · rated ${teamOverall(t)}</span></h3>     <div class="pad"><div class="fifa"><i class="hl"></i><i class="cc"></i><i class="bx1"></i><i class="bx2"></i>${men}</div>     <div style="text-align:center;margin-top:8px"><button class="btn ghost sm" id="pitchToTactics">Change formation / swap players</button></div></div></div>   <div class="panel"><h3>Substitutes<span class="sub">tap a player for his profile</span></h3>     <div class="fsubs">${bench.map(p => `<button class="fsub" data-pid="${p.id}">${faceSVG(p, 40, t.c1)}<b>${p.rating}</b><small>${p.pos} · ${esc(p.last || p.name)}</small></button>`).join('')}</div></div>`; } function viewSquad() {
   const v = $('#v-squad'), t = me();
-  const order = { GK:0, RB:1, CB:2, LB:3, CDM:4, CM:5, RM:6, LM:7, ST:8, CF:9 };
+  const order = { GK:0, RB:1, CB:2, LB:3, RWB:4, LWB:5, CDM:6, CM:7, CAM:8, RM:9, LM:10, RW:11, LW:12, ST:13, CF:14 };
   const sorter = (a, b) => {
     if (squadSort === 'pos') return order[a.pos] - order[b.pos] || b.rating - a.rating;
     if (squadSort === 'age') return a.age - b.age || b.rating - a.rating;
@@ -4363,7 +4414,7 @@ function squadPitchHTML(t) {   ensureLineup(t);   const slots = FORMATIONS[t.for
 /* ---------------- player profile ---------------- */
 /* ---------------- player profile ---------------- */
 const hashS = s => { let h = 2166136261; for (let i = 0; i < String(s).length; i++) { h ^= String(s).charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
-const ATTR_PROFILE = { ST:[3,8,-6,2,-25,2], CF:[0,6,-2,4,-25,0], RM:[6,0,2,7,-18,-6], LM:[6,0,2,7,-18,-6], CM:[-2,-2,7,3,-6,0], CDM:[-4,-8,4,-2,8,6], CB:[-5,-25,-8,-14,10,8], RB:[4,-15,-2,0,4,2], LB:[4,-15,-2,0,4,2], GK:[0,0,0,0,0,0] };
+const ATTR_PROFILE = { ST:[3,8,-6,2,-25,2], CF:[0,6,-2,4,-25,0], LW:[8,2,2,8,-18,-6], RW:[8,2,2,8,-18,-6], CAM:[0,3,8,6,-15,-4], LWB:[6,-10,0,1,3,2], RWB:[6,-10,0,1,3,2], RM:[6,0,2,7,-18,-6], LM:[6,0,2,7,-18,-6], CM:[-2,-2,7,3,-6,0], CDM:[-4,-8,4,-2,8,6], CB:[-5,-25,-8,-14,10,8], RB:[4,-15,-2,0,4,2], LB:[4,-15,-2,0,4,2], GK:[0,0,0,0,0,0] };
 function playerAttrBars(p) {
   const gk = p.pos === 'GK';
   const L = gk ? ['DIV','HAN','KIC','REF','SPD','POS'] : ['PAC','SHO','PAS','DRI','DEF','PHY'];
@@ -4480,7 +4531,7 @@ function playerModal(pid) {
       <div style="min-width:0;flex:1">
         <h3 style="font-size:23px">${esc(p.name)}${isCaptain ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">C</span>' : isVice ? ' <span class="tag">VC</span>' : ''}</h3>
         <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          ${posTag(p.pos)}<span>${flagSVG(p.nat)} ${natName(p.nat)}</span><span class="hint">Age ${p.age}${p.dob ? ', born ' + esc(p.dob) : ''}</span>
+          ${posTag(p.pos)}${(p.alt || []).map(a => <span style="opacity:.6">${posTag(a)}</span>).join('')}<span>${flagSVG(p.nat)} ${natName(p.nat)}</span><span class="hint">Age ${p.age}${p.dob ? ', born ' + esc(p.dob) : ''}</span>
         </div>
         <div style="margin-top:6px;font-size:13px">
           ${t ? crestHTML(t, 18) + ' ' + esc(t.n) : '<span class="hint">Free agent</span>'}
@@ -4589,7 +4640,7 @@ function tacticsPitchSpots(t, xi, slots, coords) {   const gk = { c1: '#7ddc1f',
   const spots = xi.map((p, i) => {
     const [x, y] = coords[i];
     const px = x, py = 100 - y;
-    const mismatch = posPenalty(p.pos, slots[i]) > 3;
+    const mismatch = posPenalty(p, slots[i]) > 3;
     return `<button class="spot ${selSpot === i ? 'sel' : ''}" data-slot="${i}" style="left:${px}%;top:${py}%">
       <span class="shirt" style="background:${t.c1};color:${isDark(t.c1) ? '#fff' : '#111'}">${slots[i]}</span>
       <span class="nm">${esc(p.last)}${mismatch ? ' !' : ''}</span></button>`;
@@ -4603,7 +4654,7 @@ function tacticsPitchSpots(t, xi, slots, coords) {   const gk = { c1: '#7ddc1f',
       <label class="hint" style="margin-left:auto"><input type="checkbox" id="liveChk" ${G.liveMode ? 'checked' : ''}> Watch matches live</label>
     </div>
     <div class="pad"><div class="fifa"><i class="hl"></i><i class="cc"></i><i class="bx1"></i><i class="bx2"></i>${tacticsPitchSpots(t, xi, slots, coords)}</div>
-      <p class="hint" style="text-align:center;margin:8px 0 0">A shirt marked ! is out of position and loses rating.</p></div>
+      <p class="hint" style="text-align:center;margin:8px 0 0">A red number next to a rating is the penalty for playing out of position.</p></div>
   </div>
   <div class="panel"><h3>Substitutes<span class="sub">${bench.length} available · tap a player, then a sub</span></h3>     <div class="fsubs">${bench.slice().sort((a, b) => b.rating - a.rating).map(p => `<button class="fsub" data-sub="${p.id}">${faceSVG(p, 40, t.c1)}<b>${p.rating}</b><small>${p.pos} · ${esc(p.last || p.name)}</small></button>`).join('')}</div>
     ${bench.length ? bench.slice(0, 0).map(p =>
