@@ -1293,7 +1293,7 @@ function newGame(clubIndex, manager, seed) {
   });
   const G = {
     v: 2, season, teams, myTeam: clubIndex,
-    manager: manager || { name: 'Coach', avatar: 'blank' },
+    manager: manager || { name: 'Coach', avatar: 'mgr-01' },
     tables: [], fixtures: [], round: 0, cup: null,
     news: [], market: [], freeAgents: [], transferLog: [], pendingBids: [],
     records: { seasons: [] }, finished: false, liveMode: true, watchlist: []
@@ -3129,7 +3129,7 @@ const SLOT_COUNT = 5;
 const LAST_SLOT_KEY = 'mzansi_manager_2026_last';
 let slot = 1; let leavingApp = false;
 let G = null, tab = 'match';
-let pickTier = 2, pickClub = null, pickAvatar = 'blank';
+let pickTier = 2, pickClub = null, pickAvatar = 'mgr-01';
 let squadSort = 'rating', txFilter = 'ALL', txSearch = '', tableTier = 0, tableSeason = 'current', fxRound = 0, statTier = 0, newsFilter = 'ALL';
 let selSpot = null;
 let navStack = ['match'], navIdx = 0, navSkip = false;
@@ -3311,7 +3311,7 @@ function buildAvatars() {
   MANAGER_AVATARS.forEach(id => {
     const b = el('button', 'avbtn', avatarSVG(id, 48));
     b.setAttribute('aria-pressed', pickAvatar === id);
-    b.title = id === 'blank' ? 'No face' : 'Avatar';
+    b.title = 'Avatar';
     b.onclick = () => { pickAvatar = id; buildAvatars(); };
     w.appendChild(b);
   });
