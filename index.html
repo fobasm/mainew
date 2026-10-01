@@ -23,7 +23,7 @@
 <meta name="twitter:title" content="Mzansi Manager 2026">
 <meta name="twitter:description" content="Manage a South African football club through five divisions. Free, browser-based, mobile and PC.">
 <meta name="twitter:image" content="https://mzansimanager.co.za/assets/mm-poster.jpg">
-<link rel="icon" id="favicon" type="image/png" href="assets/mm-favicon.png"> <link rel="apple-touch-icon" href="assets/mm-apple-touch.png">
+<link rel="icon" id="favicon" type="image/png" href="mm-logo.jpg"> <link rel="apple-touch-icon" href="mm-logo.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Big+Shoulders+Display:wght@700;800;900&display=swap" rel="stylesheet">
@@ -1196,7 +1196,10 @@ function wageFor(rating, age, tier) {
   return Math.round(w * 100000) / 100000;
 }
 function valueOf(p) {
-  let v = 0.30 * Math.pow(1.165, p.rating - 55);
+  const r = p.rating;
+  let v = r < 75 ? 0.30 * Math.pow(1.165, r - 55)
+    : r < 80 ? 6.35 * Math.pow(1.718, r - 75)
+      : 95 * Math.pow(1.0826, r - 80);
   const a = p.age;
   let af = a <= 20 ? 1.25 + (p.pot - p.rating) * 0.035
     : a <= 23 ? 1.15 + (p.pot - p.rating) * 0.02
@@ -3274,7 +3277,7 @@ function handleGoogleSignIn(resp) {
   } catch (e) { }
 }
 window.handleGoogleSignIn = handleGoogleSignIn;
-$('#favicon').href = IMG_FAVICON;
+$('#favicon').href = 'mm-logo.jpg';
 
 function buildAvatars() {
   const w = $('#avPick'); w.innerHTML = '';
@@ -3593,7 +3596,7 @@ function afterRound() {
   const bids = generateBids(G);
   G.pendingBids = (G.pendingBids || []).concat(bids).slice(-6);
   fxRound = Math.max(0, G.round - 1);
-  if (!G.finished && rnd() < 0.05) {
+  if (!G.finished && G.round >= 12 && rnd() < 0.05) {
     const offers = jobOffers(G);
     if (offers.length) G.pendingJobOffers = offers;
   }
@@ -4799,7 +4802,7 @@ function txReleaseAsk(pid) {
   $('#txRelYes').onclick = () => { const res = releasePlayer(G, pid); toast(res.msg); closeModal(); if (res.ok) { save(); render(); } };
 }
 
-function askBoardModal() {   const t = me();   const max = boardMaxGrant(G);   const board = G.board != null ? G.board : 62;   const cap = Math.max(0.2, Math.round(max * 2.4 * 100) / 100);   const already = G.lastBoardAsk === G.season;   openModal('Ask the board for funds',     `<p class="hint" style="margin:0 0 8px">${already ? "You've already asked the board this season — try again next season." : 'The board judge requests against how the season is going and their confidence in you. Ask for too much and they may offer less instead.'}</p>      <label class="hint">Amount requested</label>      <input class="range" type="range" id="askAmt" min="0.1" max="${cap.toFixed(2)}" step="0.05" value="${Math.max(0.1, Math.round(max * 0.6 * 100) / 100).toFixed(2)}" ${already ? 'disabled' : ''}>      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--faint)"><span>Requested</span>        <span id="askAmtV" style="font-family:var(--head);font-size:20px;color:var(--ink)"></span></div>      <div class="bar" style="margin-top:8px"><i id="askBar"></i></div>      <p id="askOdds" class="hint" style="margin:6px 0 0"></p>`,     `<button class="btn ghost sm" onclick="closeModal()">Cancel</button><button class="btn sm" id="askGo" ${already ? 'disabled' : ''}>Make the case</button>`);   if (already) return;   const ar = $('#askAmt');   const upd = () => {     const amt = +ar.value;     const tooMuch = amt > max * 1.15;     const chance = tooMuch ? 0 : clamp(0.35 + (board - 50) / 90 - (amt / max) * 0.25, 0.08, 0.95);     $('#askAmtV').textContent = money(amt);     $('#askBar').style.width = (tooMuch ? 100 : chance * 100).toFixed(0) + '%';     $('#askBar').style.background = tooMuch ? 'var(--gold)' : chance > 0.55 ? 'var(--up)' : chance > 0.25 ? 'var(--gold)' : 'var(--down)';     $('#askOdds').textContent = tooMuch ? "Well beyond what they'll sanction outright — expect a smaller counter-offer."       : chance > 0.7 ? 'A reasonable ask — they will likely agree.' : chance > 0.35 ? 'Could go either way.' : 'A tough sell given their confidence in you.';   };   ar.oninput = upd; upd();   $('#askGo').onclick = () => {     const res = askBoardForFunds(G, +ar.value);     closeModal();     if (res.ok) { toast(res.msg); save(); render(); } else { toastWarn(res.msg); }   }; } function negotiateModal(pid) {
+function askBoardModal() {   const t = me();   const max = boardMaxGrant(G);   const board = G.board != null ? G.board : 62;   const cap = Math.max(0.2, Math.round(max * 2.4 * 100) / 100);   const already = G.lastBoardAsk === G.season;   openModal('Ask the board for funds',     `<p class="hint" style="margin:0 0 8px">${already ? "You've already asked the board this season — try again next season." : 'The board judge requests against how the season is going and their confidence in you. Ask for too much and they may offer less instead.'}</p>      <label class="hint">Amount requested</label>      <input class="range" type="range" id="askAmt" min="0.1" max="${cap.toFixed(2)}" step="0.05" value="${Math.max(0.1, Math.round(max * 0.6 * 100) / 100).toFixed(2)}" ${already ? 'disabled' : ''}>      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--faint)"><span>Requested</span>        <span id="askAmtV" style="font-family:var(--head);font-size:20px;color:var(--ink)"></span></div>      <div class="bar" style="margin-top:8px"><i id="askBar"></i></div>      <p id="askOdds" class="hint" style="margin:6px 0 0"></p>`,     `<button class="btn ghost sm" onclick="closeModal()">Cancel</button><button class="btn sm" id="askGo" ${already ? 'disabled' : ''}>Make the case</button>`);   if (already) return;   const ar = $('#askAmt');   const upd = () => {     const amt = +ar.value;     const tooMuch = amt > max * 1.15;     const chance = tooMuch ? 0 : clamp(0.35 + (board - 50) / 90 - (amt / max) * 0.25, 0.08, 0.95);     $('#askAmtV').textContent = money(amt);     $('#askBar').style.width = (tooMuch ? 100 : chance * 100).toFixed(0) + '%';     $('#askBar').style.background = tooMuch ? 'var(--gold)' : chance > 0.55 ? 'var(--up)' : chance > 0.25 ? 'var(--gold)' : 'var(--down)';     $('#askOdds').textContent = tooMuch ? "Well beyond what they'll sanction outright — expect a smaller counter-offer."       : chance > 0.7 ? 'A reasonable ask — they will likely agree.' : chance > 0.35 ? 'Could go either way.' : 'A tough sell given their confidence in you.';   };   ar.oninput = upd; upd();   $('#askGo').onclick = () => {     const before = t.budget;     const res = askBoardForFunds(G, +ar.value);     closeModal();     if (res.ok) { showMoneyEffect('Board backing', before, t.budget, 'var(--up)', () => { toast(res.msg); save(); render(); }); } else { toastWarn(res.msg); }   }; } function negotiateModal(pid) {
   const t = me();
   const p = t.squad.find(x => x.id === pid); if (!p) return;
   const minW = Math.max(0.0002, p.wage * 0.7), maxW = p.wage * (p.wantsOut ? 2.2 : 1.8);
@@ -4840,10 +4843,12 @@ function askBoardModal() {   const t = me();   const max = boardMaxGrant(G);   c
     $('#negGo').disabled = overBudget;
   };
   wr.oninput = upd; yr.oninput = upd; upd();
-  $('#negGo').onclick = () => {
+$('#negGo').onclick = () => {
+    const before = t.budget;
     const res = negotiateContract(G, pid, +wr.value, +yr.value);
     closeModal();
-    if (res.ok) { toast(res.msg); save(); render(); } else { toastWarn(res.msg); }
+    if (res.ok) { showMoneyEffect(`${p.name} signs on`, before, t.budget, 'var(--down)', () => { toast(res.msg); save(); render(); }); }
+    else { toastWarn(res.msg); }
   };
 }
 
@@ -4983,7 +4988,7 @@ function viewYouth() {
     (t.squad.filter(p => p.age <= 23).length
       ? t.squad.filter(p => p.age <= 23).sort((a, b) => b.pot - a.pot).map(p => playerRow(p, t, p.pot)).join('')
       : '<div class="empty">No youngsters in the senior squad.</div>') + `</div>`;
-  const u = $('#upAc'); if (u) u.onclick = () => { const r = upgradeAcademy(G); toast(r.msg); if (r.ok) { save(); render(); } };
+  const u = $('#upAc'); if (u) u.onclick = () => { const before = t.budget; const r = upgradeAcademy(G); if (r.ok) { showMoneyEffect('Academy upgraded', before, t.budget, 'var(--down)', () => { toast(r.msg); save(); render(); }); } else toast(r.msg); };
   v.querySelectorAll('[data-promote]').forEach(b => b.onclick = () => { const r = promoteYouth(G, +b.dataset.promote); toast(r.msg); if (r.ok) { save(); render(); } });
   v.querySelectorAll('[data-drop]').forEach(b => b.onclick = () => { releaseYouth(G, +b.dataset.drop); save(); render(); });
   bindPlayerRows(v);
@@ -5002,7 +5007,7 @@ function viewStats() {
         ${cols.map(c => `<td class="num">${c[1] === 'v' ? x.v : x.p[c[1]]}</td>`).join('')}</tr>`).join('') + '</tbody></table>'
     : '<div class="empty">Nothing to show until the ball starts rolling.</div>';
   const teams = sortTable(G, statTier).map(r => G.teams[r.id]).sort((a, b) => teamOverall(b) - teamOverall(a));
-  v.innerHTML = `<div class="panel"><div class="chipbar">${[0,1,2].map(i => `<button class="chip" data-st="${i}" aria-pressed="${statTier === i}">${TIER_SHORT[i]}</button>`).join('')}</div></div>
+  v.innerHTML = `<div class="panel"><div class="chipbar"> ${[0,1,2,3,4].map(i => `<button class="chip" data-st="${i}" aria-pressed="${statTier === i}">${TIER_SHORT[i]}</button>`).join('')}</div></div>
     <div class="cols">
       <div class="panel"><h3>Golden Boot</h3>${tbl(sc, [['Apps','apps'],['A','assists'],['Goals','v']])}</div>
       <div>
@@ -5667,7 +5672,7 @@ function viewOtherClubs() {
     const res = applyForJob(G, +b.dataset.apply);
     toast(res.msg);
     save();
-    if (res.ok) { tableTier = me().tier; statTier = Math.min(me().tier, 2); ocPick = null; render(); }
+    if (res.ok) { tableTier = me().tier; statTier = me().tier; ocPick = null; render(); }
     viewOtherClubs();
   });
   bindPlayerRows(v);
