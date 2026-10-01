@@ -2763,7 +2763,7 @@ function loanOut(G, pid, seasons) {
   if (!p) return { ok: false, msg: 'Not in your squad.' };
   if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
   if (me.captainId === pid || me.viceCaptainId === pid) return { ok: false, msg: `${p.name} is captain or vice-captain — can't be loaned out.` };
-  const dest = = G.teams.filter(t => t.id !== me.id && Math.abs(clubLevel(t) - p.rating) < 14);
+  const dest = G.teams.filter(t => t.id !== me.id && Math.abs(clubLevel(t) - p.rating) < 14);
   const club = dest.length ? pick(dest) : pick(G.teams.filter(t => t.id !== me.id));
   p.loan = { from: me.id, seasons: seasons || 1, wageShare: 0.5 };
   me.squad = me.squad.filter(x => x.id !== pid);
