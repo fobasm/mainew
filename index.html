@@ -1392,7 +1392,7 @@ function benchOf(t) {
   const set = new Set(t.lineup || []);
   return t.squad.filter(p => !set.has(p.id) && p.inj <= 0);
 }
-function firstTeamOf(t) { return t.squad.filter(p => !p.reserve); }
+function firstTeamOf(t) { return t.squad.filter(p => !p.reserve); } const FIRST_TEAM_MAX = 32; function firstTeamFull(t) { return firstTeamOf(t).length >= FIRST_TEAM_MAX; }
 function reservesOf(t) { return t.squad.filter(p => p.reserve); }
 function moveToReserve(G, pid) {
   const t = me_(G);
@@ -1403,7 +1403,7 @@ function moveToReserve(G, pid) {
   if ((t.lineup || []).includes(pid)) t.lineup = autoLineup(t);
   return { ok: true, msg: `${p.name} moves to the reserves.` };
 }
-function moveToFirstTeam(G, pid) {
+function moveToFirstTeam(G, pid) {   if (firstTeamFull(me_(G))) return { ok: false, msg: `First team is full at ${FIRST_TEAM_MAX}. Move someone to the reserves first.` };
   const t = me_(G);
   const p = t.squad.find(x => x.id === pid);
   if (!p) return { ok: false, msg: 'Not in your squad.' };
@@ -2027,8 +2027,7 @@ function promoteYouth(G, pid) {
   const t = G.teams[G.myTeam];
   const i = t.youth.findIndex(p => p.id === pid);
   if (i < 0) return { ok: false, msg: 'Not in the academy.' };
-  if (t.squad.length >= 32) return { ok: false, msg: 'Senior squad is full at 32.' };
-  const p = t.youth.splice(i, 1)[0];
+const p = t.youth.splice(i, 1)[0]; p.reserve = firstTeamFull(t);
   p.clubs.push({ id: t.id, from: G.season });
   t.squad.push(p);
   t.wageBill = wageOf(t);
@@ -2162,14 +2161,13 @@ function triggerReleaseClause(G, pid) {
   return buyPlayer(G, pid, f.p.releaseClause, true);
 }
 
-function buyPlayer(G, pid, fee, viaClause) {
+function buyPlayer(G, pid, fee, viaClause, terms) {
   const me = G.teams[G.myTeam], f = findPlayer(G, pid);
   if (!f) return { ok: false, msg: 'He has already moved on.' };
   if (f.t.id === me.id) return { ok: false, msg: 'He already plays for you.' };
   if (!viaClause && !inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
   if (me.budget < fee) return { ok: false, msg: 'Not enough in the transfer budget.' };
-  if (me.wageBill + f.p.wage > me.wageBudget) return { ok: false, msg: `Wage budget won't stretch to ${f.p.name} — ${money(me.wageBill)} of ${money(me.wageBudget)} is already committed. Move funds from the transfer budget in Club & Manager, or free up wages first.` };
-  if (me.squad.length >= 32) return { ok: false, msg: 'Squad is full at 32. Sell or release first.' };
+  if (me.wageBill + (terms ? terms.wage : f.p.wage) > me.wageBudget) return { ok: false, msg: `Wage budget won't stretch to ${f.p.name} — ${money(me.wageBill)} of ${money(me.wageBudget)} is already committed. Move funds from the transfer budget in Club & Manager, or free up wages first.` };
   if (f.p.nat !== 'ZA' && me.squad.filter(p => p.nat !== 'ZA').length >= MAX_FOREIGN)
     return { ok: false, msg: `You already have ${MAX_FOREIGN} foreign players. Sell or release one before signing another.` };
   if (!viaClause) {
@@ -2182,9 +2180,9 @@ function buyPlayer(G, pid, fee, viaClause) {
   }
   f.t.squad = f.t.squad.filter(p => p.id !== pid);
   f.t.budget += fee; f.t.fin.sales += fee;
-  f.p.contract = rint(2, 4); f.p.fee = fee; f.p.joinedSeason = G.season; f.p.wantsOut = false;
+f.p.contract = terms ? terms.years : rint(2, 4); if (terms) f.p.wage = terms.wage; f.p.fee = fee; f.p.joinedSeason = G.season; f.p.wantsOut = false;
   f.p.clubs.push({ id: me.id, from: G.season });
-  me.squad.push(f.p);
+   f.p.reserve = firstTeamFull(me); me.squad.push(f.p);
   me.budget = Math.round((me.budget - fee) * 100) / 100;
   me.fin.buys += fee;
   me.wageBill = wageOf(me); f.t.wageBill = wageOf(f.t);
@@ -2192,7 +2190,7 @@ function buyPlayer(G, pid, fee, viaClause) {
   ensureLineup(me);
   logTransfer(G, f.p, f.t.id, me.id, fee);
   news(G, 'transfer', `${f.p.name} signs for ${me.s} from ${f.t.s} for ${money(fee)}.`, { pid: f.p.id, fromId: f.t.id, toId: me.id });
-  return { ok: true, msg: `${f.p.name} signs for ${me.s}.` };
+   return { ok: true, msg: `${f.p.name} signs for ${me.s}.${f.p.reserve ? ' Your first team is full, so he starts in the reserves.' : ''}` };
 }
 
 function sellPlayer(G, pid, fee, buyerId) {
@@ -2202,8 +2200,7 @@ function sellPlayer(G, pid, fee, buyerId) {
   if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
   if (me.captainId === pid) me.captainId = null;
   if (me.viceCaptainId === pid) me.viceCaptainId = null;
-  if (me.squad.filter(x => x.pos === p.pos).length <= minAtPos(p.pos))
-    return { ok: false, msg: `You'd have no cover at ${p.pos}. Sign a replacement first.` };
+  // no cover check: if you leave a position empty, you pay for it on the pitch
   const buyer = G.teams[buyerId != null ? buyerId : pickBuyer(G, p)];
   me.squad = me.squad.filter(x => x.id !== pid);
   me.budget = Math.round((me.budget + fee) * 100) / 100;
@@ -2269,8 +2266,6 @@ function releasePlayer(G, pid) {
   if (!p) return { ok: false, msg: 'Not in your squad.' };
   if (me.captainId === pid) me.captainId = null;
   if (me.viceCaptainId === pid) me.viceCaptainId = null;
-  if (me.squad.filter(x => x.pos === p.pos).length <= minAtPos(p.pos))
-    return { ok: false, msg: `You'd have no cover at ${p.pos}.` };
   const payoff = Math.round(p.wage * Math.max(0, p.contract) * 0.5 * 100) / 100;
   me.squad = me.squad.filter(x => x.id !== pid);
   me.budget = Math.round((me.budget - payoff) * 100) / 100;
@@ -2288,19 +2283,18 @@ function signFreeAgent(G, pid) {
   const i = G.freeAgents.findIndex(p => p.id === pid);
   if (i < 0) return { ok: false, msg: 'He signed elsewhere.' };
   if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
-  if (me.squad.length >= 32) return { ok: false, msg: 'Squad is full at 32.' };
   const cand = G.freeAgents[i];
   if (cand.nat !== 'ZA' && me.squad.filter(p => p.nat !== 'ZA').length >= MAX_FOREIGN)
     return { ok: false, msg: `You already have ${MAX_FOREIGN} foreign players. Sell or release one before signing another.` };
   if (me.wageBill + cand.wage > me.wageBudget) return { ok: false, msg: `Wage budget won't stretch to ${cand.name} — ${money(me.wageBill)} of ${money(me.wageBudget)} is already committed.` };
   const p = G.freeAgents.splice(i, 1)[0];
-  p.contract = rint(1, 3); p.wantsOut = false;
+  p.contract = rint(1, 3); p.wantsOut = false; p.reserve = firstTeamFull(me);
   p.clubs.push({ id: me.id, from: G.season });
   me.squad.push(p);
   me.wageBill = wageOf(me);
   ensureLineup(me);
   news(G, 'transfer', `${me.s} sign free agent ${p.name}.`, { pid: p.id, toId: me.id });
-  return { ok: true, msg: `${p.name} joins on a free transfer.` };
+  return { ok: true, msg: `${p.name} joins on a free transfer.${p.reserve ? ' First team is full, so he starts in the reserves.' : ''}` };
 }
 
 function aiTransferTick(G) {
@@ -2768,9 +2762,7 @@ function loanOut(G, pid, seasons) {
   if (!p) return { ok: false, msg: 'Not in your squad.' };
   if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
   if (me.captainId === pid || me.viceCaptainId === pid) return { ok: false, msg: `${p.name} is captain or vice-captain — can't be loaned out.` };
-  if (me.squad.filter(x => x.pos === p.pos).length <= minAtPos(p.pos))
-    return { ok: false, msg: `You'd have no cover at ${p.pos}.` };
-  const dest = G.teams.filter(t => t.id !== me.id && Math.abs(clubLevel(t) - p.rating) < 14);
+  const dest = = G.teams.filter(t => t.id !== me.id && Math.abs(clubLevel(t) - p.rating) < 14);
   const club = dest.length ? pick(dest) : pick(G.teams.filter(t => t.id !== me.id));
   p.loan = { from: me.id, seasons: seasons || 1, wageShare: 0.5 };
   me.squad = me.squad.filter(x => x.id !== pid);
