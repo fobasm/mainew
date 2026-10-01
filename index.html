@@ -822,7 +822,7 @@ function skinGroupFor(nat) {
 }
 const HAIRS = ['fade','afro','dreads','braids','bald','cornrows','curls','buzz','hightop','mohawk','lineup','locs'];
 const HAIR_COLOURS = ['#14100e','#1d1713','#241c16','#2f241b','#4a3320','#7a5326','#c9a227'];
-const MANAGER_AVATARS = ['blank','m1','m2','m3','m4','m5','m6'];
+const MANAGER_AVATARS = ['mgr-01','mgr-02','mgr-03','mgr-04','mgr-05','mgr-06','mgr-07','mgr-08','mgr-09','mgr-10','mgr-11','mgr-12','mgr-13','mgr-14','mgr-15','mgr-16','mgr-17','mgr-18','mgr-19','mgr-20','mgr-21','mgr-22','mgr-23','mgr-24','mgr-25','mgr-26','mgr-27','mgr-28'];
 
 /* ---------------- competition names ---------------- */
 const CUP_NAME   = 'Thatbank Cup';
@@ -2977,26 +2977,9 @@ function faceSVG(p, size, kit) {
 }
 
 /* ---------------- manager avatars ---------------- */
-const MGR_FACES = {
-  m1: { sk:'#573320', hr:'fade', hc:'#1d1713', bd:1, ey:1, nose:1 },
-  m2: { sk:'#6a4028', hr:'bald', hc:'#14100e', bd:2, ey:0, nose:2 },
-  m3: { sk:'#4a2c17', hr:'locs', hc:'#14100e', bd:0, ey:2, nose:1 },
-  m4: { sk:'#96683f', hr:'buzz', hc:'#2f241b', bd:3, ey:1, nose:0 },
-  m5: { sk:'#d3a37a', hr:'lineup', hc:'#4a3320', bd:0, ey:1, nose:1 },
-  m6: { sk:'#7d4f30', hr:'afro', hc:'#1d1713', bd:1, ey:1, nose:2 }
-};
 function avatarSVG(id, size) {
   const s = size || 46;
-  if (!id || id === 'blank') {
-    const u = ++FACE_UID;
-    return `<svg class="face" width="${s}" height="${s}" viewBox="0 0 40 40" aria-hidden="true">
-      <defs><linearGradient id="bl${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--line2)"/><stop offset="1" stop-color="var(--line)"/></linearGradient></defs>
-      <circle cx="20" cy="20" r="20" fill="var(--panel2)"/>
-      <circle cx="20" cy="15.6" r="7.2" fill="url(#bl${u})"/>
-      <path d="M6 40c1.6-7.4 6.8-11 14-11s12.4 3.6 14 11z" fill="url(#bl${u})"/>
-      <circle cx="20" cy="20" r="19.4" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="1.2"/></svg>`;
-  }
-  return faceSVG({ face: MGR_FACES[id] }, s, '#2b3a33');
+  return `<img class="face" src="managers/${id}.jpg" width="${s}" height="${s}" style="object-fit:cover" alt="">`;
 }
 
 function crestHTML(t, size) {
