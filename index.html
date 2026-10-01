@@ -202,7 +202,32 @@ main{max-width:1200px;margin:0 auto;padding:16px 14px 118px}
 .pos{font-family:var(--head);font-size:15px;width:24px;color:var(--dim);text-align:center !important}
 tr.zone-up td:first-child{box-shadow:inset 3px 0 var(--up)}
 tr.zone-cup td:first-child{box-shadow:inset 3px 0 var(--cup)}
+tr.zone-cl td:first-child{box-shadow:inset 3px 0 var(--cup)}
+tr.zone-confed td:first-child{box-shadow:inset 3px 0 var(--gold)}
+tr.zone-playoff td:first-child{box-shadow:inset 3px 0 var(--gold)}
 tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
+.tbl-google{background:#1f1f1f !important;border-color:#2c2c2e !important}
+.tbl-google > h3{background:#28282a !important;color:#e7e8ea !important;border-color:#2c2c2e !important}
+.gtable{width:100%;border-collapse:collapse;font-size:14px;background:#1f1f1f;color:#e7e8ea}
+.gtable th{font-family:var(--head);font-weight:600;font-size:12.5px;color:#9e9ea0;text-align:right;padding:10px 8px;border-bottom:1px solid #2c2c2e;background:#1f1f1f}
+.gtable th:nth-child(-n+2),.gtable td:nth-child(-n+2){text-align:left}
+.gtable td{padding:10px 8px;border-bottom:1px solid #2a2a2c;text-align:right;color:#c7c8ca;white-space:nowrap}
+.gtable td.pos{color:#9e9ea0;font-family:var(--head);font-size:14px}
+.gtable td b{color:#ffffff;font-weight:700}
+.gtable .team{display:flex;align-items:center;gap:9px;color:#ffffff;font-weight:500}
+.gtable tr.me{background:rgba(245,197,24,.1)}
+.gtable tr.me td{font-weight:600}
+.gtable td.muted{color:#7a7a7d}
+.gtable tr.zone-cl td:first-child{box-shadow:inset 4px 0 #4286f5}
+.gtable tr.zone-confed td:first-child{box-shadow:inset 4px 0 #fb7b18}
+.gtable tr.zone-playoff td:first-child{box-shadow:inset 4px 0 #fb7b18}
+.gtable tr.zone-up td:first-child{box-shadow:inset 4px 0 #34c471}
+.gtable tr.zone-down td:first-child{box-shadow:inset 4px 0 #ff5a5a}
+.gseasonbar{display:flex;gap:10px;align-items:center;padding:10px 13px;border-bottom:1px solid #2c2c2e;background:#1f1f1f;flex-wrap:wrap}
+.gseasonbar label{color:#9e9ea0;font-size:12.5px}
+.gseasonbar select{background:#2c2c2e;color:#e7e8ea;border:1px solid #3a3a3d;border-radius:6px;padding:6px 10px;font-family:inherit;font-size:14px}
+.glegend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 13px;font-size:12px;color:#9e9ea0;border-top:1px solid #2c2c2e;background:#1f1f1f}
+.glegend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
 .form{display:inline-flex;gap:2px}
 .form i{width:15px;height:15px;border-radius:3px;font-style:normal;font-size:10px;font-weight:700;display:grid;place-items:center;color:#0c110e;font-family:var(--head)}
 .form i.W{background:var(--up)}.form i.D{background:var(--faint)}.form i.L{background:var(--down)}
@@ -3075,7 +3100,7 @@ const LAST_SLOT_KEY = 'mzansi_manager_2026_last';
 let slot = 1; let leavingApp = false;
 let G = null, tab = 'match';
 let pickTier = 2, pickClub = null, pickAvatar = 'blank';
-let squadSort = 'rating', txFilter = 'ALL', txSearch = '', tableTier = 0, fxRound = 0, statTier = 0, newsFilter = 'ALL';
+let squadSort = 'rating', txFilter = 'ALL', txSearch = '', tableTier = 0, tableSeason = 'current', fxRound = 0, statTier = 0, newsFilter = 'ALL';
 let selSpot = null;
 let navStack = ['match'], navIdx = 0, navSkip = false;
 
@@ -4072,10 +4097,25 @@ function endLive() {
    ============================================================ */
 
 function zoneClass(i, tier) {
-  if (tier === 0) { if (i === 0) return 'zone-up'; if (i <= 2) return 'zone-cup'; if (i >= TIER_SIZE - PROMOTED) return 'zone-down'; }
-  else if (tier === 1) { if (i < PROMOTED) return 'zone-up'; if (i >= TIER_SIZE - PROMOTED) return 'zone-down'; }
-  else if (i < PROMOTED) return 'zone-up';
+  if (tier === 0) {
+    if (i <= 1) return 'zone-cl';
+    if (i <= 4) return 'zone-confed';
+    if (i >= TIER_SIZE - PROMOTED) return 'zone-down';
+  } else if (tier < TIER_NAMES.length - 1) {
+    if (i < PROMOTED) return 'zone-up';
+    if (i < PROMOTED + 4) return 'zone-playoff';
+    if (i >= TIER_SIZE - PROMOTED) return 'zone-down';
+  } else if (i < PROMOTED) return 'zone-up';
   return '';
+}
+function historicalTable(G, season, tier) {
+  const rows = [];
+  G.teams.forEach(t => {
+    const h = t.history.find(x => x.season === season && x.tier === tier);
+    if (h) rows.push({ id: t.id, w: h.w, d: h.d, l: h.l, gf: h.gf, ga: h.ga, pts: h.pts, pos: h.pos });
+  });
+  rows.sort((a, b) => a.pos - b.pos);
+  return rows;
 }
 function resRow(m) {
   const H = G.teams[m.h], A = G.teams[m.a];
@@ -4199,28 +4239,42 @@ function miniTable(rows, tier) {
 
 /* ---------------- League Table ---------------- */
 function viewTable() {
-  const v = $('#v-table'), st = sortTable(G, tableTier);
-  v.innerHTML = `<div class="panel">
-    <div class="chipbar" style="overflow-x:auto;flex-wrap:nowrap">${[0,1,2,3,4].map(i => `<button class="chip" data-tt="${i}" aria-pressed="${tableTier === i}">${TIER_SHORT[i]}</button>`).join('')}</div>
-    <table class="tbl"><thead><tr><th class="pos">#</th><th>Club</th><th>Ovr</th><th>P</th><th>W</th><th>D</th><th>L</th>
-      <th class="hide-s">GF</th><th class="hide-s">GA</th><th>GD</th><th>Pts</th><th class="hide-s">Form</th></tr></thead><tbody>` +
-    st.map((r, i) => {
+  const v = $('#v-table');
+  const seasons = G.records.seasons.map(s => s.season).sort((a, b) => b - a);
+  const isCurrent = tableSeason === 'current';
+  const st = isCurrent ? sortTable(G, tableTier) : historicalTable(G, +tableSeason, tableTier);
+  const champId = !isCurrent && st[0] ? st[0].id : null;
+  v.innerHTML = `<div class="panel tbl-google">
+    <div class="chipbar" style="overflow-x:auto;flex-wrap:nowrap;background:#1f1f1f;border-color:#2c2c2e">${[0,1,2,3,4].map(i => `<button class="chip" data-tt="${i}" aria-pressed="${tableTier === i}">${TIER_SHORT[i]}</button>`).join('')}</div>
+    <div class="gseasonbar">
+      <label for="gseason">Season</label>
+      <select id="gseason">
+        <option value="current" ${isCurrent ? 'selected' : ''}>${seasonLabel(G.season)} (in progress)</option>
+        ${seasons.map(s => `<option value="${s}" ${String(s) === String(tableSeason) ? 'selected' : ''}>${seasonLabel(s)} final</option>`).join('')}
+      </select>
+      ${champId != null ? `<span class="hint" style="color:#9e9ea0">Champions: <b style="color:#f5c518">${esc(G.teams[champId].n)}</b></span>` : ''}
+    </div>
+    <table class="gtable"><thead><tr><th class="pos">#</th><th>Club</th>${isCurrent ? '<th>Ovr</th>' : ''}<th>P</th><th>W</th><th>D</th><th>L</th>
+      <th class="hide-s">GF</th><th class="hide-s">GA</th><th>GD</th><th>Pts</th>${isCurrent ? '<th class="hide-s">Form</th>' : ''}</tr></thead><tbody>` +
+    (st.length ? st.map((r, i) => {
       const t = G.teams[r.id];
+      const p = isCurrent ? r.p : (r.w + r.d + r.l);
       return `<tr class="${r.id === G.myTeam ? 'me' : ''} ${zoneClass(i, tableTier)}">
-        <td class="pos num">${i + 1}</td>
-        <td><span class="team">${crestHTML(t, 15)}<span>${esc(t.s)}</span></span></td>
-        <td class="num" style="color:var(--dim)">${teamOverall(t)}</td>
-        <td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td>
-        <td class="num hide-s">${r.gf}</td><td class="num hide-s">${r.ga}</td>
-        <td class="num">${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td class="num"><b>${r.pts}</b></td>
-        <td class="hide-s">${formHtml(t.form)}</td></tr>`;
-    }).join('') + `</tbody></table>
-    <div class="legend">${tableTier === 0
-      ? '<span><i style="background:var(--up)"></i>Champions</span><span><i style="background:var(--cup)"></i>CAF places</span><span><i style="background:var(--down)"></i>Relegated</span>'
-      : tableTier === 1
-        ? '<span><i style="background:var(--up)"></i>Promoted</span><span><i style="background:var(--down)"></i>Relegated to the Motsepe League</span>'
-        : `<span><i style="background:var(--up)"></i>Promoted to the ${TIER_SHORT[tableTier - 1]}</span>`}</div></div>`;
+        <td class="pos">${i + 1}</td>
+        <td><span class="team">${crestHTML(t, 20)}<span>${esc(t.s)}</span></span></td>
+        ${isCurrent ? `<td class="muted">${teamOverall(t)}</td>` : ''}
+        <td>${p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
+        <td class="hide-s muted">${r.gf}</td><td class="hide-s muted">${r.ga}</td>
+        <td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td><b>${r.pts}</b></td>
+        ${isCurrent ? `<td class="hide-s">${formHtml(t.form)}</td>` : ''}</tr>`;
+    }).join('') : `<tr><td colspan="11" style="text-align:center;padding:20px;color:#7a7a7d">No completed table for this season yet.</td></tr>`) + `</tbody></table>
+    <div class="glegend">${tableTier === 0
+      ? '<span><i style="background:#4286f5"></i>Champions League</span><span><i style="background:#fb7b18"></i>Confederation Cup</span><span><i style="background:#ff5a5a"></i>Relegated</span>'
+      : tableTier === TIER_NAMES.length - 1
+        ? '<span><i style="background:#34c471"></i>Promoted</span>'
+        : `<span><i style="background:#34c471"></i>Promoted</span><span><i style="background:#fb7b18"></i>Promotion playoff</span><span><i style="background:#ff5a5a"></i>Relegated</span>`}</div></div>`;
   v.querySelectorAll('[data-tt]').forEach(b => b.onclick = () => { tableTier = +b.dataset.tt; viewTable(); });
+  const sel = $('#gseason'); if (sel) sel.onchange = e => { tableSeason = e.target.value; viewTable(); };
 }
 
 /* ---------------- fixtures ---------------- */
