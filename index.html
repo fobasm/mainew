@@ -251,7 +251,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .tag.inj{color:var(--down);border-color:var(--down)}
 .tag.out{color:#ffb020;border-color:#ffb020}
 .flag{display:inline-flex;width:18px;height:12px;border-radius:2px;vertical-align:-2px;border:1px solid rgba(0,0,0,.35);overflow:hidden;box-sizing:content-box}.flag svg{display:block;flex:none}
-.face{border-radius:50%;background:var(--panel2);display:block;flex:0 0 auto}
+.face{border-radius:10px;background:var(--panel2);display:block;flex:0 0 auto}
 .growth{font-family:var(--head);font-size:13px}
 .growth.up{color:var(--up)}.growth.down{color:var(--down)}.growth.flat{color:var(--faint)}
 .ratcol{display:inline-flex;align-items:center;gap:4px}
@@ -3311,7 +3311,7 @@ $('#favicon').href = 'mm-logo.jpg';
 function buildAvatars() {
   const w = $('#avPick'); w.innerHTML = '';
   MANAGER_AVATARS.forEach(id => {
-    const b = el('button', 'avbtn', avatarSVG(id, 48));
+    const b = el('button', 'avbtn', avatarSVG(id, 60));
     b.setAttribute('aria-pressed', pickAvatar === id);
     b.title = 'Avatar';
     b.onclick = () => { pickAvatar = id; buildAvatars(); };
@@ -3518,7 +3518,7 @@ function renderHistoryBtns() {
 document.addEventListener('click', e => {}, false);
 
 /* ---------------- render ---------------- */
-function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 30);   $('#mgrName').textContent = G.manager.name;   renderTicker();   const { m: hdrM, y: hdrY } = roundToMonth(G.round, G.season);   $('#statDate').textContent = `${MONTH_NAMES[hdrM]} ${hdrY}`;   $('#statSeason').textContent = `Season ${seasonLabel(G.season)}`;   const winOpen = inTransferWindow(G), winPill = $('#winPill');   if (winPill) {     winPill.className = 'winpill ' + (winOpen ? 'open' : 'shut');     winPill.textContent = winOpen       ? `${currentWindowName(G)} open, ${windowCloses(G)} ${windowCloses(G) === 1 ? 'matchday' : 'matchdays'} left`       : `${currentWindowName(G)} opens in ${roundsToNextWindow(G)} ${roundsToNextWindow(G) === 1 ? 'matchday' : 'matchdays'}`;   }   const contBtn = $('#contBtn');   if (contBtn) {     contBtn.textContent = G.finished ? `Start ${seasonLabel(G.season + 1)}` : 'Continue';     contBtn.disabled = !!liveState;   }
+function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 42);   $('#mgrName').textContent = G.manager.name;   renderTicker();   const { m: hdrM, y: hdrY } = roundToMonth(G.round, G.season);   $('#statDate').textContent = `${MONTH_NAMES[hdrM]} ${hdrY}`;   $('#statSeason').textContent = `Season ${seasonLabel(G.season)}`;   const winOpen = inTransferWindow(G), winPill = $('#winPill');   if (winPill) {     winPill.className = 'winpill ' + (winOpen ? 'open' : 'shut');     winPill.textContent = winOpen       ? `${currentWindowName(G)} open, ${windowCloses(G)} ${windowCloses(G) === 1 ? 'matchday' : 'matchdays'} left`       : `${currentWindowName(G)} opens in ${roundsToNextWindow(G)} ${roundsToNextWindow(G) === 1 ? 'matchday' : 'matchdays'}`;   }   const contBtn = $('#contBtn');   if (contBtn) {     contBtn.textContent = G.finished ? `Start ${seasonLabel(G.season + 1)}` : 'Continue';     contBtn.disabled = !!liveState;   }
   const t = me();
   $('#myCrest').innerHTML = crestHTML(t, 30);
   $('#myName').textContent = t.n;
@@ -5260,7 +5260,7 @@ function viewClub() {
       <div class="kitBigWrap">${bigKitSVG(t, true, 132)}<div class="kitBigBadge">${crestHTML(t, 26)}</div><div class="kitBigSponsor">${t.currentSponsor ? esc(t.currentSponsor.name).toUpperCase() : 'NO SPONSOR'}</div><small>Away</small></div>
       <div class="kit" style="align-self:center">${crestHTML(t, 56)}<small>Badge</small></div>
       <div class="kit" style="align-self:center;text-align:left;margin-left:6px">
-        ${avatarSVG(G.manager.avatar, 44)}<small>${esc(G.manager.name)} · rep ${G.manager.rep || 40}</small></div>
+        ${avatarSVG(G.manager.avatar, 56)}<small>${esc(G.manager.name)} · rep ${G.manager.rep || 40}</small></div>
     </div>
     <dl class="kv" style="border-top:1px solid var(--line)">
       <dt>Division</dt><dd>${TIER_NAMES[t.tier]}</dd>
@@ -5653,7 +5653,7 @@ function viewTrophies() {   const v = $('#v-trophies'), t = me(), all = t.trophi
   }).join('');
   v.innerHTML = `<div class="panel"><h3>${esc(m.name)}<span class="sub">Manager · ${flagSVG(m.nat || 'ZA')} ${natName(m.nat || 'ZA')}</span></h3>
     <div class="pad" style="display:flex;gap:16px;align-items:center">
-      ${avatarSVG(m.avatar, 72)}
+      ${avatarSVG(m.avatar, 96)}
       <dl class="kv" style="flex:1;padding:0">
         <dt>Reputation</dt><dd>${m.rep || 40}/100</dd>
         <dt>Seasons in charge</dt><dd>${m.seasons || 0}</dd>
