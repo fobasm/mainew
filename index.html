@@ -1844,6 +1844,7 @@ function playRound(G, skipMine) {
   }
   aiTransferTick(G);
   moraleTick(G);
+  try { inboxTick(G); } catch (e) { console.error('Inbox error', e); }
   return out;
 }
 
@@ -1854,25 +1855,37 @@ function moraleTick(G) {
       const gap = p.rating - clubLevel(t);
       const wasOut = p.wantsOut;
       p.wantsOut = (gap > 11 && p.age < 31 && rnd() < 0.5) || (p.contract <= 1 && p.apps < 3 && rnd() < 0.2);
-      if (p.wantsOut && !wasOut && t.id === G.myTeam) news(G, 'transfer', `${p.name} hands in a transfer request at ${t.s}.`);
+       if (p.wantsOut && !wasOut && t.id === G.myTeam) {         news(G, 'transfer', `${p.name} hands in a transfer request at ${t.s}.`);         const why = p.rating - clubLevel(t) > 11 ? 'he believes he has outgrown the club and wants a bigger stage' : `he is frustrated at a lack of playing time (${p.apps} appearances)`;         mail(G, { cat: 'request', from: `${p.name}'s Agent`, p, club: t, status: 'Wants to leave', flag: true,           subject: `Transfer Request: ${p.name}`,           body: [`${p.name} has asked to leave ${t.n}; ${why}.`, 'You can talk him round with an improved contract from his profile, or listen to offers.'],           rows: [['Current wage', money(p.wage) + ' a season'], ['Contract', `${p.contract} year${p.contract === 1 ? '' : 's'} left`], ['Appearances', p.apps]], act: 'contract' });       }
     });
   });
   scoutTick(G);
 }
+function scoutWonderkid(G) {
+  const pool = [];
+  G.teams.forEach(x => { if (x.id !== G.myTeam) x.squad.forEach(p => { if (p.age <= 20 && p.pot >= 76 && p.pot - p.rating >= 8 && !(G.mailKeys || {})['wk_' + p.id]) pool.push([p, x]); }); });
+  if (!pool.length) return false;
+  const [p, x] = pick(pool);
+  mail(G, { key: 'wk_' + p.id, cat: 'scout', from: 'Chief Scout', p, club: x, status: `At ${x.s}`, flag: true, act: 'shortlist',
+    subject: `Wonderkid Alert: ${p.name}`,
+    body: [`Boss, I've found a special talent. ${p.name} is a ${p.age}-year-old ${p.pos} at ${x.n}.`, `He is rated ${p.rating} now but I believe he can reach ${p.pot}. Move quickly before bigger clubs do.`],
+    rows: [['Club', x.n], ['Rating / potential', `${p.rating} / ${p.pot}`], ['Estimated value', money(p.value)], ['Contract', `${p.contract} year${p.contract === 1 ? '' : 's'} left`]] });
+  return true;
+}
 function scoutTick(G) {
   if (rnd() > 0.14) return;
   const t = G.teams[G.myTeam];
+  if (rnd() < 0.5 && scoutWonderkid(G)) return;
   const gems = t.youth.filter(p => p.pot - p.rating >= 14 && p.pot >= 72);
   if (gems.length) {
     const g = pick(gems);
-    news(G, 'youth', `Chief scout's report: keep an eye on ${g.name}, ${g.age} — he says there's a real player in there.`);
+    news(G, 'youth', `Chief scout's report: keep an eye on ${g.name}, ${g.age} — he says there's a real player in there.`);     mail(G, { cat: 'scout', from: 'Chief Scout', p: g, club: t, status: 'In your academy', subject: `Academy Gem: ${g.name}`,       body: [`Boss, keep an eye on ${g.name} in the academy. He is ${g.age}, a ${g.pos}, and I think there is a real player in there.`, `He is rated ${g.rating} today with a ceiling of ${g.pot}.`] });
     return;
   }
   const stars = t.squad.filter(p => p.rating >= 78 && p.age <= 29);
   if (stars.length && rnd() < 0.5) {
     const s = pick(stars);
     const abroad = pick(['a club in Europe', 'a club in the Gulf', 'scouts from Asia', 'an agent representing clubs abroad']);
-    news(G, 'transfer', `${abroad} are said to be watching ${s.name} closely.`);
+       news(G, 'transfer', `${abroad} are said to be watching ${s.name} closely.`);     mail(G, { cat: 'news', from: 'Press Office', p: s, club: t, status: 'Reported interest', subject: `Breaking News: interest in ${s.name}`,       body: [`${abroad} are said to be watching ${s.name} closely.`, 'It may be worth tying him down to a new contract before someone makes a move.'], act: 'contract' });
   }
 }
 
@@ -1963,7 +1976,7 @@ function endSeason(G) {
       }
     });
     const leaving = t.squad.filter(p => p.contract <= 0);
-    leaving.forEach(p => { p.contract = 0; G.freeAgents.push(p); news(G, 'transfer', `${p.name} leaves ${t.s} as a free agent.`); });
+    leaving.forEach(p => {       p.contract = 0; G.freeAgents.push(p); news(G, 'transfer', `${p.name} leaves ${t.s} as a free agent.`);       if (t.id === G.myTeam) mail(G, { cat: 'leaving', from: 'Chief Executive', p, club: null, status: 'Left on a free transfer', flag: true, subject: `Contract Expired: ${p.name} has left`,         body: [`${p.name}'s contract ran out and he has left ${t.n} as a free agent.`, 'Renew key players before their final six months to avoid losing them for nothing.'],         rows: [['Rating / potential', `${p.rating} / ${p.pot}`], ['Last wage', money(p.wage) + ' a season'], ['This season', `${p.apps} apps, ${p.goals} goals`]] });     });
     t.squad = t.squad.filter(p => !leaving.includes(p));
     fillSquad(G, t);
     t.wageBill = wageOf(t);
@@ -2236,7 +2249,7 @@ f.p.contract = terms ? terms.years : rint(2, 4); if (terms) f.p.wage = terms.wag
   G.market = G.market.filter(m => m.pid !== pid);
   ensureLineup(me);
   logTransfer(G, f.p, f.t.id, me.id, fee);
-  news(G, 'transfer', `${f.p.name} signs for ${me.s} from ${f.t.s} for ${money(fee)}.`, { pid: f.p.id, fromId: f.t.id, toId: me.id });
+  news(G, 'transfer', `${f.p.name} signs for ${me.s} from ${f.t.s} for ${money(fee)}.`, { pid: f.p.id, fromId: f.t.id, toId: me.id });   mailSigning(G, f.p, fee, f.t.n);
    return { ok: true, msg: `${f.p.name} signs for ${me.s}.${f.p.reserve ? ' Your first team is full, so he starts in the reserves.' : ''}` };
 }
 
@@ -2260,6 +2273,9 @@ function sellPlayer(G, pid, fee, buyerId) {
   ensureLineup(me); ensureLineup(buyer);
   logTransfer(G, p, me.id, buyer.id, fee);
   news(G, 'transfer', `${p.name} leaves ${me.s} for ${buyer.s}. Fee: ${money(fee)}.`, { pid: p.id, fromId: me.id, toId: buyer.id });
+  mail(G, { cat: 'leaving', from: 'Chief Executive', p, club: buyer, status: `Sold to ${buyer.s}`, subject: `[Info] Transfer Completed: ${p.name} leaves`,
+    body: [`${p.name} has left ${me.n} and joined ${buyer.n}.`, 'The fee has been added to your transfer budget.'],
+    rows: [['Buyer', buyer.n], ['Fee received', money(fee)], ['Transfer budget now', money(me.budget)], ['Wages freed', money(p.wage) + ' a season'], ['This season', `${p.apps} apps, ${p.goals} goals`]] });
   return { ok: true, msg: `${p.name} sold to ${buyer.s} for ${money(fee)}.` };
 }
 
@@ -2294,7 +2310,7 @@ function negotiateContract(G, pid, wage, years) {
   p.wage = Math.round(wage * 100000) / 100000; p.contract = Math.min(6, Math.max(1, years)); p.wantsOut = false;
   me.wageBill = wageOf(me);
   const verb = p.wantsOut === false ? 'agrees to stay' : 'signs a new deal';
-  news(G, 'contract', `${p.name} ${verb} at ${me.s} — ${p.contract}y at ${money(p.wage)} a season.`);
+   news(G, 'contract', `${p.name} ${verb} at ${me.s} — ${p.contract}y at ${money(p.wage)} a season.`);   mail(G, { cat: 'contract', from: 'Chief Executive', p, club: me, status: 'New contract', subject: `[Info] Contract Agreed: ${p.name}`,     body: [`${p.name} has put pen to paper on a new deal at ${me.n}.`],     rows: [['Wage', money(p.wage) + ' a season'], ['Contract length', `${p.contract} year${p.contract === 1 ? '' : 's'}`], ['Expires', `June ${G.season + p.contract}`], ['Signing-on fee', money(bonus)], ['Wage bill', `${money(me.wageBill)} of ${money(me.wageBudget)}`]] });
   return { ok: true, msg: `${p.name} signs on for ${p.contract} year${p.contract === 1 ? '' : 's'} at ${money(p.wage)} a season.` };
 }
 
@@ -2321,7 +2337,7 @@ function releasePlayer(G, pid) {
   p.contract = 0;
   G.freeAgents.push(p);
   ensureLineup(me);
-  news(G, 'contract', `${me.s} release ${p.name}.`);
+   news(G, 'contract', `${me.s} release ${p.name}.`);   mail(G, { cat: 'leaving', from: 'Chief Executive', p, club: null, status: 'Released: free agent', subject: `[Info] Contract Terminated: ${p.name}`,     body: [`${p.name} has been released from ${me.n} and is now a free agent.`],     rows: [['Pay-off', money(payoff)], ['Wages freed', money(p.wage) + ' a season'], ['This season', `${p.apps} apps, ${p.goals} goals`]] });
   return { ok: true, msg: `${p.name} released. Pay-off: ${money(payoff)}.` };
 }
 
@@ -2340,7 +2356,7 @@ function signFreeAgent(G, pid) {
   me.squad.push(p);
   me.wageBill = wageOf(me);
   ensureLineup(me);
-  news(G, 'transfer', `${me.s} sign free agent ${p.name}.`, { pid: p.id, toId: me.id });
+    news(G, 'transfer', `${me.s} sign free agent ${p.name}.`, { pid: p.id, toId: me.id });   mailSigning(G, p, 0, null);
   return { ok: true, msg: `${p.name} joins on a free transfer.${p.reserve ? ' First team is full, so he starts in the reserves.' : ''}` };
 }
 
@@ -2384,7 +2400,7 @@ function generateBids(G) {
 /* ---------------- news ---------------- */
 function news(G, kind, text, meta) {
   G.news.unshift({ season: G.season, round: G.round, kind, text, meta: meta || null });
-  if (G.news.length > 120) G.news.pop();
+  if (G.news.length > 120) G.news.pop();   const myT = G.teams && G.teams[G.myTeam];   if (myT && (kind === 'career' || kind === 'season' || kind === 'cup' || kind === 'nation' || /sponsor/i.test(text)) && (text.includes(myT.n) || text.includes(myT.s))) {     mail(G, { cat: 'news', from: 'Press Office', subject: 'Breaking News: ' + (text.length > 48 ? text.slice(0, 46) + '…' : text), body: [text] });   }
 }
 
 /* ============================================================
@@ -2817,7 +2833,7 @@ function loanOut(G, pid, seasons) {
   p.clubs.push({ id: club.id, from: G.season, loan: true });
   me.wageBill = wageOf(me); club.wageBill = wageOf(club);
   ensureLineup(me); ensureLineup(club);
-  news(G, 'transfer', `${p.name} joins ${club.s} on loan from ${me.s}.`, { pid: p.id, fromId: me.id, toId: club.id });
+  news(G, 'transfer', `${p.name} joins ${club.s} on loan from ${me.s}.`, { pid: p.id, fromId: me.id, toId: club.id });   mail(G, { cat: 'leaving', from: 'Chief Executive', p, club, status: `On loan at ${club.s}`, subject: `[Info] Loan Agreed: ${p.name}`,     body: [`${p.name} has joined ${club.n} on loan.`, `You can recall him from the Squad screen if you need him back.`],     rows: [['Loan club', club.n], ['Length', `${p.loan.seasons} season${p.loan.seasons === 1 ? '' : 's'}`], ['Wage share paid by borrower', Math.round(p.loan.wageShare * 100) + '%']] });
   return { ok: true, msg: `${p.name} goes out on loan to ${club.s}.` };
 }
 function recallLoan(G, pid) {
@@ -2830,6 +2846,7 @@ function recallLoan(G, pid) {
   me.wageBill = wageOf(me); club.wageBill = wageOf(club);
   ensureLineup(me); ensureLineup(club);
   news(G, 'transfer', `${p.name} is recalled from his loan at ${club.s}.`);
+  mail(G, { cat: 'player', from: 'Chief Executive', p, club: me, status: 'Back from loan', subject: `[Info] ${p.name} recalled from loan`, body: [`${p.name} is back at ${me.n} after being recalled from ${club.n}.`] });
   return { ok: true, msg: `${p.name} is back at ${me.s}.` };
 }
 function endSeasonLoans(G) {
@@ -2844,7 +2861,7 @@ function endSeasonLoans(G) {
           home.squad.push(p);
           t.wageBill = wageOf(t); home.wageBill = wageOf(home);
           ensureLineup(t); ensureLineup(home);
-          if (home.id === G.myTeam || t.id === G.myTeam) news(G, 'transfer', `${p.name}'s loan spell at ${t.s} ends — back to ${home.s}.`);
+            if (home.id === G.myTeam || t.id === G.myTeam) {             news(G, 'transfer', `${p.name}'s loan spell at ${t.s} ends — back to ${home.s}.`);             mail(G, { cat: home.id === G.myTeam ? 'player' : 'leaving', from: 'Chief Executive', p, club: home, status: `Back at ${home.s}`, subject: `[Info] Loan Ended: ${p.name}`,               body: [`${p.name}'s loan spell at ${t.n} has ended and he returns to ${home.n}.`] });           }
         }
       }
     });
