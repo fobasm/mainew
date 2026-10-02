@@ -5281,7 +5281,7 @@ function viewAfrica() {
   const v = $('#v-africa'), A = G.africa;
   const L = A.leagues[afrPick];
   const st = afrTable(L);
-  v.innerHTML = `<div class="panel"><h3>Continental rankings<span class="sub">the ten strongest leagues alongside South Africa</span></h3>
+  v.innerHTML = `<div class="panel"><h3>Continental rankings<span class="sub">the strongest leagues in Africa</span></h3>
     <table class="tbl"><thead><tr><th class="pos">#</th><th>League</th><th>Country</th><th>Top club</th><th>Rating</th></tr></thead><tbody>` +
     ([{ name: TIER_NAMES[0], nat: 'ZA', sa: true }].concat(A.leagues)).map((x, i) => {
       if (x.sa) {
