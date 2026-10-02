@@ -3536,7 +3536,7 @@ function buildSideNav() {
   });
 }
 function goTo(id) {
-  if (liveState) { toast('The match is still running — skip to the result first.'); return; }
+  if (liveState && id !== 'match') { toast('The match is still running — skip to the result first.'); return; }
   if (id !== tab) {
     navStack = navStack.slice(0, navIdx + 1);
     navStack.push(id);
@@ -3545,11 +3545,13 @@ function goTo(id) {
   tab = id; render(); window.scrollTo({ top: 0 });
 }
 function navBack() {
+  if (liveState) { toast('The match is still running — skip to the result first.'); return; }
   if (navIdx <= 0) return;
   navIdx--; navSkip = true;
   tab = navStack[navIdx]; render(); window.scrollTo({ top: 0 });
 }
 function navFwd() {
+  if (liveState) { toast('The match is still running — skip to the result first.'); return; }
   if (navIdx >= navStack.length - 1) return;
   navIdx++; navSkip = true;
   tab = navStack[navIdx]; render(); window.scrollTo({ top: 0 });
@@ -4004,39 +4006,48 @@ function liveSchedule() {
 function liveTick() {
   const ls = liveState;
   if (!ls || ls.paused) return;
-  ls.minute++;
-  const s = ls.ctx.sh.att - ls.ctx.sa.att;
-  const bias = clamp(s * 0.14, -1.6, 1.6);
-  ls.ball.ty = clamp(ls.ballY - bias + (Math.random() - 0.5) * 26, 10, 140);
-  ls.ball.tx = clamp(ls.ballX + (Math.random() - 0.5) * 30, 8, 92);
-  ls.ctx.ev.forEach(e => {
-    if (!e._shown && e.min <= ls.minute) {
-      e._shown = true; pushTick(e);
-      if (e.type === 'goal') {
-        ls.flash = { t: performance.now(), txt: 'GOAL! ' + e.sName };
-        ls.ball.ty = e.side === 'h' ? 12 : 138;
-        crowdRoar();
-        shoutGoal();
+  try {
+    ls.minute++;
+    const s = ls.ctx.sh.att - ls.ctx.sa.att;
+    const bias = clamp(s * 0.14, -1.6, 1.6);
+    ls.ball.ty = clamp(ls.ballY - bias + (Math.random() - 0.5) * 26, 10, 140);
+    ls.ball.tx = clamp(ls.ballX + (Math.random() - 0.5) * 30, 8, 92);
+    ls.ctx.ev.forEach(e => {
+      if (!e._shown && e.min <= ls.minute) {
+        e._shown = true; pushTick(e);
+        if (e.type === 'goal') {
+          ls.flash = { t: performance.now(), txt: 'GOAL! ' + e.sName };
+          ls.ball.ty = e.side === 'h' ? 12 : 138;
+          crowdRoar();
+          shoutGoal();
+        }
+        if (e.scorer) {
+          const xi = e.side === 'h' ? ls.ctx.xiH : ls.ctx.xiA;
+          const slots = e.side === 'h' ? ls.ctx.slotsH : ls.ctx.slotsA;
+          const pi = xi.findIndex(pl => pl.id === e.scorer);
+          const p = pi >= 0 ? xi[pi] : null;
+          const spot = $('#liveSpot');
+                  if (p && spot) spot.innerHTML = `<div class="livespot">${faceSVG(p, 46, G.teams[e.team].c1)}<div><b>${esc(p.name)}</b><span class="hint">#${pi + 1} · ${slots[pi] || p.pos} · ${esc(G.teams[e.team].s)}</span></div></div>`;
+        }
       }
-      if (e.scorer) {
-        const xi = e.side === 'h' ? ls.ctx.xiH : ls.ctx.xiA;
-        const slots = e.side === 'h' ? ls.ctx.slotsH : ls.ctx.slotsA;
-        const pi = xi.findIndex(pl => pl.id === e.scorer);
-        const p = pi >= 0 ? xi[pi] : null;
-        const spot = $('#liveSpot');
-                if (p && spot) spot.innerHTML = `<div class="livespot">${faceSVG(p, 46, G.teams[e.team].c1)}<div><b>${esc(p.name)}</b><span class="hint">#${pi + 1} · ${slots[pi] || p.pos} · ${esc(G.teams[e.team].s)}</span></div></div>`;
-      }
+    });
+    updateLiveScore();
+    const endAt = ls.half === 1 ? 45 : 92;
+    if (ls.minute >= endAt) {
+      ls.timer = null;
+      if (ls.half === 1) { liveBanner('Half-time'); liveControls(); halfTime(); }
+      else { ls.ft = true; liveBanner('Full time'); liveControls(); }
+      return;
     }
-  });
-  updateLiveScore();
-  const endAt = ls.half === 1 ? 45 : 92;
-  if (ls.minute >= endAt) {
-    ls.timer = null;
-    if (ls.half === 1) { liveBanner('Half-time'); liveControls(); halfTime(); }
-    else { ls.ft = true; liveBanner('Full time'); liveControls(); }
-    return;
+    liveSchedule();
+  } catch (err) {
+    if (typeof console !== 'undefined' && console.error) console.error('Mzansi Manager live match error:', err);
+    try { skipLive(); } catch (err2) {
+      liveState = null;
+      tab = 'match'; render();
+      toastWarn('The live match hit a snag and had to be ended early.');
+    }
   }
-  liveSchedule();
 }
 
 function skipLive() {
@@ -4317,6 +4328,7 @@ function myCupResultsHTML(res) {
 }
 
 function viewMatch() {
+  if (liveState) { renderLive(); return; }
   const t = me(), v = $('#v-match'); v.innerHTML = '';
   const nx = myFixture(G.round);
   if (nx) {
