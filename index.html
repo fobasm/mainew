@@ -1537,9 +1537,8 @@ function buildCup(G) {
   const all = shuffle(G.teams.map(t => t.id));
   G.cup = { stage: 0, alive: all, byes: [], ties: [], done: false, winner: null, log: [] };
 }
-function playCupRound(G) {
+function cupPairStage(G) {
   const c = G.cup;
-  if (c.done) return null;
   let ids = c.alive.slice();
   let byes = [];
   if (c.stage === 0) {
@@ -1555,34 +1554,76 @@ function playCupRound(G) {
       ids = shuffle(playing);
     }
   }
-  const ties = [];
+  const pairs = [];
   for (let i = 0; i < ids.length; i += 2) {
     const h = ids[i], a = ids[i + 1];
     if (a == null) { byes.push(h); continue; }
-    const ctx = createMatch(G, h, a, true);
-    runPeriod(G, ctx, 1, 90);
-    let pens = null, winner;
-    if (ctx.hg === ctx.ag) {
-      let ph = 0, pa = 0;
-      do { ph += rnd() < 0.76 ? 1 : 0; pa += rnd() < 0.74 ? 1 : 0; } while (ph === pa);
-      pens = [ph + 3, pa + 3];
-      winner = ph > pa ? h : a;
-    } else winner = ctx.hg > ctx.ag ? h : a;
-    finishMatch(G, ctx);
-    ties.push({ h, a, hg: ctx.hg, ag: ctx.ag, pens, winner, stage: c.stage, ev: ctx.ev });
+    pairs.push({ h, a });
   }
+  c.pendingTies = pairs;
+  c.pendingByes = byes;
+}
+function cupResolveTie(G, h, a, stage) {
+  const ctx = createMatch(G, h, a, true);
+  runPeriod(G, ctx, 1, 90);
+  let pens = null, winner;
+  if (ctx.hg === ctx.ag) {
+    let ph = 0, pa = 0;
+    do { ph += rnd() < 0.76 ? 1 : 0; pa += rnd() < 0.74 ? 1 : 0; } while (ph === pa);
+    pens = [ph + 3, pa + 3];
+    winner = ph > pa ? h : a;
+  } else winner = ctx.hg > ctx.ag ? h : a;
+  finishMatch(G, ctx);
+  return { h, a, hg: ctx.hg, ag: ctx.ag, pens, winner, stage, ev: ctx.ev };
+}
+function cupFinishStage(G, ties) {
+  const c = G.cup;
+  const byes = c.pendingByes || [];
   c.ties = ties;
-  c.log.push({ stage: c.stage, ties: ties.map(t => ({ ...t })) });   ties.forEach(t => payPrize(G, t.winner, 0.03 * Math.pow(1.6, c.stage), 'Nedbank Cup round prize'));   if (ties.length === 1 && byes.length === 0) { const t0 = ties[0]; payPrize(G, t0.winner === t0.h ? t0.a : t0.h, 3, 'Nedbank Cup runners-up prize'); }
+  c.log.push({ stage: c.stage, ties: ties.map(t => ({ ...t })) });   ties.forEach(t => payPrize(G, t.winner, 0.03 * Math.pow(1.6, c.stage), `${CUP_NAME} round prize`));   if (ties.length === 1 && byes.length === 0) { const t0 = ties[0]; payPrize(G, t0.winner === t0.h ? t0.a : t0.h, 3, `${CUP_NAME} runners-up prize`); }
   c.alive = ties.map(t => t.winner).concat(byes);
   if (c.alive.length === 1) {
     c.done = true; c.winner = c.alive[0];
     const w = G.teams[c.winner];
-    w.trophies.push({ season: G.season, name: 'Nedbank Cup' });
-    payPrize(G, w.id, 8, 'Nedbank Cup winners prize');
-    news(G, 'cup', `${w.n} lift the Nedbank Cup.`);
+    w.trophies.push({ season: G.season, name: CUP_NAME });
+    payPrize(G, w.id, 8, `${CUP_NAME} winners prize`);
+    news(G, 'cup', `${w.n} lift the ${CUP_NAME}.`);
   }
   c.stage++;
-  return ties;
+  c.pendingTies = null; c.pendingByes = null; c.mine = null; c.resolved = null;
+}
+function finishMyCupTie(G, result) {
+  const c = G.cup;
+  const ties = (c.resolved || []).concat([result]);
+  const them = G.teams[result.h === G.myTeam ? result.a : result.h];
+  const wonIt = result.winner === G.myTeam;
+  const pensTxt = result.pens ? ` (${result.pens[0]}-${result.pens[1]} on penalties)` : '';
+  news(G, 'cup', wonIt
+    ? `You beat ${them.s} ${result.hg}-${result.ag}${pensTxt} in the ${CUP_NAME}.`
+    : `You're out of the ${CUP_NAME}, beaten by ${them.s} ${result.hg}-${result.ag}${pensTxt}.`);
+  cupFinishStage(G, ties);
+}
+function myCupTieThisRound(G) {
+  const c = G.cup;
+  if (c.done || !CUP_AT.includes(G.round + 1)) return null;
+  if (c.mine) return c.mine;
+  if (!c.pendingTies) cupPairStage(G);
+  return c.pendingTies.find(p => p.h === G.myTeam || p.a === G.myTeam) || null;
+}
+function playCupRound(G, skipMine) {
+  const c = G.cup;
+  if (c.done) return null;
+  if (c.mine) { const r = cupResolveTie(G, c.mine.h, c.mine.a, c.stage); finishMyCupTie(G, r); return c.ties; }
+  if (!c.pendingTies) cupPairStage(G);
+  const others = [];
+  let mine = null;
+  c.pendingTies.forEach(p => {
+    if (skipMine && (p.h === G.myTeam || p.a === G.myTeam)) { mine = p; return; }
+    others.push(cupResolveTie(G, p.h, p.a, c.stage));
+  });
+  if (mine) { c.mine = mine; c.resolved = others; return null; }
+  cupFinishStage(G, others);
+  return others;
 }
 
 /* ---------------- match ---------------- */
@@ -1783,7 +1824,7 @@ function playRound(G, skipMine) {
   G.round++;
   G.teams.forEach(t => { t.fin.wages += t.wageBill / totalRounds(G); }); try { trainingTick(G); } catch (e) { console.error('Training error', e); }
   africaRound(G);
-  if (CUP_AT.includes(G.round) && !G.cup.done) out.cup = playCupRound(G);
+  if (CUP_AT.includes(G.round) && !G.cup.done) out.cup = playCupRound(G, skipMine);
   if (S8_AT.includes(G.round)) out.s8 = playKnockoutRound(G, G.super8, S8_ROUNDS, 6);
   if (KO_AT.includes(G.round)) out.ko = playKnockoutRound(G, G.knockout, KO_ROUNDS, 7);
   if (CAF_AT.includes(G.round)) out.caf = playCAFRound(G);
@@ -3601,7 +3642,12 @@ function renderActions() {
     return;
   }
   const nx = myFixture(G.round);
-  const b1 = el('button', 'btn', G.liveMode ? `Play matchday ${G.round + 1}` : `Sim matchday ${G.round + 1}`);
+  const myCup = myCupTieThisRound(G);
+  let b1Label;
+  if (nx && myCup) b1Label = G.liveMode ? `Play matchday ${G.round + 1} + Cup` : `Sim matchday ${G.round + 1} + Cup`;
+  else if (myCup) b1Label = G.liveMode ? `Play ${CUP_NAME} tie` : `Sim ${CUP_NAME} tie`;
+  else b1Label = G.liveMode ? `Play matchday ${G.round + 1}` : `Sim matchday ${G.round + 1}`;
+  const b1 = el('button', 'btn', b1Label);
   b1.onclick = () => G.liveMode ? startLive() : simRounds(1);
   a.appendChild(b1);
   const b2 = el('button', 'btn ghost', 'Quick sim'); b2.onclick = () => simRounds(1); a.appendChild(b2);
@@ -3610,6 +3656,10 @@ function renderActions() {
   if (nx) {
     const opp = G.teams[nx.h === G.myTeam ? nx.a : nx.h];
     a.appendChild(el('span', 'hint', `${nx.h === G.myTeam ? 'Home to' : 'Away to'} ${opp.s} (${teamOverall(opp)})`));
+  }
+  if (myCup) {
+    const copp = G.teams[myCup.h === G.myTeam ? myCup.a : myCup.h];
+    a.appendChild(el('span', 'hint', `${myCup.h === G.myTeam ? 'Home to' : 'Away to'} ${copp.s} in the ${CUP_NAME}`));
   }
 }
 
@@ -3818,17 +3868,17 @@ function showSponsors() {
    ============================================================ */
 let liveState = null;
 
-function startLive() {
+let pendingRoundResult = null;
+function afterLeaguePortion(res) {
+  if (G.cup.mine) { pendingRoundResult = res; startLiveCup(); }
+  else { afterRound(); showMatchdayModal(res); }
+}
+function beginLiveMatch(ctx, m, kind, tier) {
   playSound('whistle');
   if (bgMusic) bgMusic.volume = 0.05;
-  const t = me(), tier = t.tier;
-  const idx = myMatchIndex(G, G.round);
-  if (idx < 0) { simRounds(1); return; }
-  const m = G.fixtures[tier][G.round][idx];
-  const ctx = createMatch(G, m.h, m.a, false);
   const mySide = m.h === G.myTeam ? 'h' : 'a';
   liveState = {
-    ctx, m, tier, mySide, minute: 0, half: 1,
+    ctx, m, tier, mySide, kind, minute: 0, half: 1,
     speed: 1, paused: false, started: false, ft: false,
     timer: null, raf: null,
     ballX: 50, ballY: 75, ball: { tx: 50, ty: 75 },
@@ -3840,6 +3890,24 @@ function startLive() {
   renderLive();
   requestAnimationFrame(liveDraw);
   startCrowd();
+}
+function startLive() {
+  const t = me(), tier = t.tier;
+  const idx = myMatchIndex(G, G.round);
+  if (idx < 0) {
+    const cup = myCupTieThisRound(G);
+    if (G.liveMode && cup) { const res = playRound(G, true); afterLeaguePortion(res); return; }
+    simRounds(1); return;
+  }
+  const m = G.fixtures[tier][G.round][idx];
+  const ctx = createMatch(G, m.h, m.a, false);
+  beginLiveMatch(ctx, m, 'league', tier);
+}
+function startLiveCup() {
+  const m = G.cup.mine;
+  if (!m) return;
+  const ctx = createMatch(G, m.h, m.a, true);
+  beginLiveMatch(ctx, m, 'cup', null);
 }
 
 function renderLive() {
@@ -4123,11 +4191,26 @@ function endLive() {
   stopCrowd();
   if (bgMusic) bgMusic.volume = 0.25;
   finishMatch(G, ls.ctx);
+  if (ls.kind === 'cup') {
+    let pens = null, winner;
+    if (ls.ctx.hg === ls.ctx.ag) {
+      let ph = 0, pa = 0;
+      do { ph += rnd() < 0.76 ? 1 : 0; pa += rnd() < 0.74 ? 1 : 0; } while (ph === pa);
+      pens = [ph + 3, pa + 3];
+      winner = ph > pa ? ls.m.h : ls.m.a;
+    } else winner = ls.ctx.hg > ls.ctx.ag ? ls.m.h : ls.m.a;
+    const result = { h: ls.m.h, a: ls.m.a, hg: ls.ctx.hg, ag: ls.ctx.ag, pens, winner, stage: G.cup.stage, ev: ls.ctx.ev };
+    finishMyCupTie(G, result);
+    liveState = null;
+    const res = pendingRoundResult; pendingRoundResult = null;
+    afterRound();
+    showMatchdayModal(res);
+    return;
+  }
   commitMatch(G, ls.tier, ls.m, ls.ctx);
   const res = playRound(G, true);
   liveState = null;
-  afterRound();
-  showMatchdayModal(res);
+  afterLeaguePortion(res);
 }
 
 /* ============================================================
