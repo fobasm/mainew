@@ -1961,7 +1961,7 @@ function endSeason(G) {
     const retiring = t.squad.filter(p => (p.age >= 34 && rnd() < (p.age - 32) * 0.28) || p.age >= 39);
     retiring.forEach(p => {
       sum.retired.push({ club: t.id, name: p.name, age: p.age, apps: p.cApps, goals: p.cG });
-      news(G, 'retire', `${p.name} retires at ${p.age} after ${p.cApps} career appearances and ${p.cG} goals.`);
+      news(G, 'retire', `${p.name} retires at ${p.age} after ${p.cApps} career appearances and ${p.cG} goals.`);       if (t.id === G.myTeam) mail(G, { cat: 'leaving', from: 'Chief Executive', p, club: null, status: 'Retired', subject: `[Info] ${p.name} retires`,         body: [`${p.name} has called time on his career at ${p.age}.`, `He made ${p.cApps} career appearances and scored ${p.cG} goals. Thank you for everything, ${p.name}.`] });
     });
     t.squad = t.squad.filter(p => !retiring.includes(p));
     /* contracts: AI clubs re-sign the players they rate, the user must do it by hand */
@@ -1972,7 +1972,12 @@ function endSeason(G) {
       if (keep) {
         p.contract = rint(2, 4);
         p.wage = Math.round(wageFor(p.rating, p.age, t.tier) * 1.12 * 100000) / 100000;
-        if (t.id === G.myTeam) news(G, 'contract', `${p.name} agrees fresh terms at ${t.s} on ${money(p.wage)} a season.`);
+        if (t.id === G.myTeam) {
+          news(G, 'contract', `${p.name} agrees fresh terms at ${t.s} on ${money(p.wage)} a season.`);
+          mail(G, { cat: 'contract', from: 'Chief Executive', p, club: t, status: 'Fresh terms agreed', subject: `[Info] Fresh Terms: ${p.name}`,
+            body: [`${p.name} has agreed fresh terms at ${t.n}.`],
+            rows: [['Wage', money(p.wage) + ' a season'], ['Contract length', `${p.contract} years`], ['Expires', `June ${G.season + 1 + p.contract}`]] });
+        }
       }
     });
     const leaving = t.squad.filter(p => p.contract <= 0);
@@ -3700,12 +3705,12 @@ function afterRound() {
     toastGood(`Training: ${tl.n} improvement${tl.n === 1 ? '' : 's'}${wk}` + (tl.up ? ` · ${tl.up} player${tl.up === 1 ? '' : 's'} gained +1 overall` : ''));
   }
   G.trainTally = null;
-  const bids = generateBids(G);
+  const bids = generateBids(G);   bids.forEach(b => {     const pl = me().squad.find(x => x.id === b.pid), buyer = G.teams[b.from]; if (!pl || !buyer) return;     mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Offer received', flag: true, subject: `Transfer Offer: ${b.name}`,       body: [`${buyer.n} have bid ${money(b.fee)} for ${b.name}.`, `His estimated value is ${money(pl.value)}. Respond to the offer when it appears, or turn it down.`],       rows: [['Bidder', buyer.n], ['Offer', money(b.fee)], ['Estimated value', money(pl.value)], ['Contract', `${pl.contract} year${pl.contract === 1 ? '' : 's'} left`]] });   });   try {     const un = unreadCount(G), fresh = un - (G.lastUnread || 0);     if (fresh > 0) toast(`✉ ${fresh} new message${fresh === 1 ? '' : 's'} in your inbox`);     G.lastUnread = un;   } catch (e) { }
   G.pendingBids = (G.pendingBids || []).concat(bids).slice(-6);
   fxRound = Math.max(0, G.round - 1);
   if (!G.finished && G.round >= 12 && rnd() < 0.05) {
     const offers = jobOffers(G);
-    if (offers.length) G.pendingJobOffers = offers;
+    if (offers.length) {       G.pendingJobOffers = offers;       mail(G, { cat: 'career', from: 'Your Agent', flag: true, subject: 'Job Offer: clubs want to talk',         body: [`${offers.map(o => G.teams[o.id].n).join(' and ')} would like to speak to you about their managerial vacancy.`, 'The offer will be put to you on your next matchday.'] });     }
   }
   save(); render();
 }
