@@ -3788,13 +3788,12 @@ function doEndSeason() {
   const mineRetired = s.retired.filter(r => r.club === G.myTeam);
   if (mineRetired.length) body += `<p style="color:var(--dim);font-size:13.5px">Hanging up the boots: ` +
     mineRetired.map(r => `${esc(r.name)} (${r.age}, ${r.apps} apps)`).join(', ') + `.</p>`;
-  openModal(`${seasonLabel(s.season)} review`, body,
-    `<button class="btn s  body = (last.pos === 1 ? `<div class="rvBanner">🏆 ${esc(my.n)} are champions</div>` : '') +
+  body = (last.pos === 1 ? `<div class="rvBanner">🏆 ${esc(my.n)} are champions</div>` : '') +
     `<div class="rvHero"><div><small>Finished</small><b>${ordinal(last.pos)}</b></div><div><small>Points</small><b>${last.pts}</b></div>
       <div><small>Season result</small><b style="color:${fin.net >= 0 ? '#3ddc84' : '#ff6b6b'}">${money(fin.net)}</b></div><div><small>Reputation</small><b>${G.manager.rep}</b></div></div>` + body;
   openModal(`${seasonLabel(s.season)} review`, body,
     `<button class="btn sm" id="revNext">Continue</button>`);
-  $('#modal').classList.add('mmx'););
+  $('#modal').classList.add('mmx');
   $('#revNext').onclick = () => { closeModal(); postSeasonFlow(s); };
   render();
 }
@@ -4657,10 +4656,10 @@ function playerModal(pid) {
         <div class="hint">potential ${p.pot} ${potGrowthHtml(p)}</div>
       </div>
     </div>
-    ${devLine     <div class="mstats solo"><div><small>Age</small><b>${p.age}</b></div><div><small>Value</small><b>${money(p.value)}</b></div>
+    <div class="mstats solo"><div><small>Age</small><b>${p.age}</b></div><div><small>Value</small><b>${money(p.value)}</b></div>
       <div><small>Wage</small><b>${money(p.wage)}</b></div><div><small>Contract</small><b>${p.contract}y</b></div>
       <div><small>This season</small><b>${p.apps}A ${p.goals}G</b></div><div><small>Fitness</small><b>${p.inj > 0 ? 'Out ' + p.inj : 'Fit'}</b></div></div>
-    ${devLine ? `<p style="margin:0 0 6px;font-size:13px;color:var(--teal)">${devLine}</p>` : ''}? `<p style="margin:0 0 6px;font-size:13px;color:var(--teal)">${devLine}</p>` : ''}
+    ${devLine ? `<p style="margin:0 0 6px;font-size:13px;color:var(--teal)">${devLine}</p>` : ''}
     ${loanLine ? `<p style="margin:0 0 10px;font-size:13px;color:var(--gold)">${loanLine}</p>` : ''}
     <div class="cols">
       <div class="panel"><h3>Growth</h3><div class="pad">${sparkChart(p)}</div></div>
