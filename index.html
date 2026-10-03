@@ -4816,7 +4816,7 @@ function txRow(p, club, opts) {
   return `<tr>
     <td><button class="star ${watched ? 'on' : ''}" data-star="${p.id}" title="Keep an eye on him" aria-label="Keep an eye on him">${watched ? '★' : '☆'}</button></td>
     <td class="txp">${faceSVG(p, 26, club ? club.c1 : null)}<div><b>${esc(p.name)} ${flagSVG(p.nat)}</b>${listing ? `<div class="hint">listed at ${money(listing.ask)}</div>` : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}</div></td>
-    <td>${posTag(p.pos)}</td>
+<td style="white-space:nowrap">${posTag(p.pos)}${(p.alt || []).map(a => `<span class="alt">${a}</span>`).join('')}</td>
     <td class="num">${p.age}</td>
     <td class="num">${ratingTag(p.rating)}</td>
     <td class="num" style="color:var(--faint)">${p.pot}</td>
