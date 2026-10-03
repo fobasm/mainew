@@ -3446,14 +3446,15 @@ $('#startBtn').onclick = () => {
   sel.innerHTML = codes.map(c => `<option value="${c}" ${c === 'ZA' ? 'selected' : ''}>${natName(c)}</option>`).join('');
 })();
 
-$('#homeBtn').onclick = () => {
+function confirmQuit() {
   if (liveState) { toast('The match is still running.'); return; }
   save();
   openModal('Back to Choose Your Club?', '<p style="margin:0;color:var(--dim)">Your career stays saved in this slot. This just takes you back to the landing page.</p>',
     `<button class="btn ghost sm" onclick="closeModal()">Stay in this career</button><button class="btn sm" id="homeYes">Go to Choose Your Club</button>`);
   const yes = $('#homeYes');
   if (yes) yes.onclick = () => { leavingApp = true; try { localStorage.removeItem(LAST_SLOT_KEY); } catch (e) { } location.reload(); };
-};
+}
+$('#homeBtn').onclick = confirmQuit;
 $('#backBtn').onclick = navBack;
 $('#fwdBtn').onclick = navFwd;
 $('#careerBtn').onclick = openCareerModal; function headerContinue() {   if (liveState) { goTo('match'); return; }   if (G.finished) { doEndSeason(); return; }   goTo('match');   if (G.liveMode) startLive(); else simRounds(1); } $('#contBtn').onclick = headerContinue;
