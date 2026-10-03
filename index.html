@@ -4828,7 +4828,7 @@ function txRow(p, club, opts) {
   </tr>`;
 }
 function viewTransfers() {
-  const v = $('#v-transfers'), t = me();
+  const v = $('#v-transfers'), t = me(); v.classList.add('mmx', 'sqv');
   const ageOk = p => txAge === 'ALL' || (txAge === 'U21' ? p.age <= 21 : txAge === '22-28' ? (p.age >= 22 && p.age <= 28) : p.age >= 29);
   const posOk = p => txFilter === 'ALL' || p.pos === txFilter || POS_GROUP[p.pos] === txFilter;
   const searchOk = p => !txSearch || p.name.toLowerCase().includes(txSearch.toLowerCase()) || natName(p.nat).toLowerCase().includes(txSearch.toLowerCase());
