@@ -4877,7 +4877,7 @@ function viewTransfers() {
         ${fa.length ? `<div class="tw"><table class="tbl txtbl"><thead><tr><th></th><th>Player</th><th>Pos</th><th>Age</th><th>Rat</th><th>Pot</th><th>Wage</th><th></th><th></th></tr></thead><tbody>${fa.map(p => txRow(p, null, { free: true })).join('')}</tbody></table></div>`
         : '<div class="empty">No free agents match that right now.</div>'}</div>`;
     }
-  } else if (txSection === 'bids') {
+  } else if (txSection === 'bids') {     html += offersHTML(t, bids);   } else if (txSection === 'bids_old') {
     html += `<div class="panel"><h3>Offers for your players<span class="sub">clubs bid for players who impress, or anyone you shop around</span></h3>` +
       (bids.length ? bids.map((b, i) =>
         `<div class="prow" style="grid-template-columns:auto 1fr auto auto">${ratingTag(b.rating)}
