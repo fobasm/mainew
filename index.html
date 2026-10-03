@@ -1522,17 +1522,23 @@ function dateForRound(round, season) {
   return new Date(seasonStartUTC(season) + round * DAYS_PER_ROUND * 86400000).toISOString().slice(0, 10);
 }
 const DOW_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-function inTransferWindow(G) { return WINDOW_SUMMER.includes(G.round) || WINDOW_JAN.includes(G.round); }
-function currentWindowName(G) { return WINDOW_SUMMER.includes(G.round) ? 'Summer window' : 'January window'; }
-function roundsToNextWindow(G) {
-  const all = WINDOW_SUMMER.concat(WINDOW_JAN).sort((a, b) => a - b);
-  const next = all.find(r => r > G.round);
-  if (next != null) return next - G.round;
-  return (totalRounds(G) - G.round) + WINDOW_SUMMER[0];
+function windowRangeFor(iso) {
+  const d = new Date(iso + 'T00:00:00Z'), y = d.getUTCFullYear(), m = d.getUTCMonth();
+  if (m === 6 || m === 7) return [Date.UTC(y, 6, 1), Date.UTC(y, 8, 1) - 1];
+  if (m === 0) return [Date.UTC(y, 0, 1), Date.UTC(y, 1, 1) - 1];
+  return null;
 }
+function inTransferWindow(G) { return windowRangeFor(dateForRound(G.round, G.season)) != null; }
+function currentWindowName(G) { return new Date(dateForRound(G.round, G.season)).getUTCMonth() === 0 ? 'January window' : 'Summer window'; }
 function windowCloses(G) {
-  const set = WINDOW_SUMMER.includes(G.round) ? WINDOW_SUMMER : WINDOW_JAN;
-  return Math.max(...set) - G.round;
+  const today = dateForRound(G.round, G.season), r = windowRangeFor(today);
+  if (!r) return 0;
+  return Math.max(1, Math.floor((r[1] - new Date(today + 'T00:00:00Z').getTime()) / 86400000) + 1);
+}
+function roundsToNextWindow(G) {
+  const today = dateForRound(G.round, G.season), d = new Date(today + 'T00:00:00Z'), y = d.getUTCFullYear(), m = d.getUTCMonth();
+  const next = m < 6 ? Date.UTC(y, 6, 1) : Date.UTC(y + 1, 0, 1);
+  return Math.max(1, Math.round((next - d.getTime()) / 86400000));
 }
 
 const CUP_AT = [3, 6, 10, 14, 18, 22, 26];
@@ -2230,7 +2236,7 @@ function buyPlayer(G, pid, fee, viaClause, terms) {
   const me = G.teams[G.myTeam], f = findPlayer(G, pid);
   if (!f) return { ok: false, msg: 'He has already moved on.' };
   if (f.t.id === me.id) return { ok: false, msg: 'He already plays for you.' };
-  if (!viaClause && !inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
+  if (!viaClause && !inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} day${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
   if (me.budget < fee) return { ok: false, msg: 'Not enough in the transfer budget.' };
   if (me.wageBill + (terms ? terms.wage : f.p.wage) > me.wageBudget) return { ok: false, msg: `Wage budget won't stretch to ${f.p.name} — ${money(me.wageBill)} of ${money(me.wageBudget)} is already committed. Move funds from the transfer budget in Club & Manager, or free up wages first.` };
   if (f.p.nat !== 'ZA' && me.squad.filter(p => p.nat !== 'ZA').length >= MAX_FOREIGN)
@@ -2262,7 +2268,7 @@ function sellPlayer(G, pid, fee, buyerId) {
   const me = G.teams[G.myTeam];
   const p = me.squad.find(x => x.id === pid);
   if (!p) return { ok: false, msg: 'Not in your squad.' };
-  if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
+  if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} day${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
   if (me.captainId === pid) me.captainId = null;
   if (me.viceCaptainId === pid) me.viceCaptainId = null;
   // no cover check: if you leave a position empty, you pay for it on the pitch
@@ -2350,7 +2356,7 @@ function signFreeAgent(G, pid) {
   const me = G.teams[G.myTeam];
   const i = G.freeAgents.findIndex(p => p.id === pid);
   if (i < 0) return { ok: false, msg: 'He signed elsewhere.' };
-  if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
+  if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} day${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
   const cand = G.freeAgents[i];
   if (cand.nat !== 'ZA' && me.squad.filter(p => p.nat !== 'ZA').length >= MAX_FOREIGN)
     return { ok: false, msg: `You already have ${MAX_FOREIGN} foreign players. Sell or release one before signing another.` };
@@ -2828,7 +2834,7 @@ function loanOut(G, pid, seasons) {
   const me = G.teams[G.myTeam];
   const p = me.squad.find(x => x.id === pid);
   if (!p) return { ok: false, msg: 'Not in your squad.' };
-  if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
+  if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} day${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
   if (me.captainId === pid || me.viceCaptainId === pid) return { ok: false, msg: `${p.name} is captain or vice-captain — can't be loaned out.` };
   const dest = G.teams.filter(t => t.id !== me.id && Math.abs(clubLevel(t) - p.rating) < 14);
   const club = dest.length ? pick(dest) : pick(G.teams.filter(t => t.id !== me.id));
@@ -3586,7 +3592,7 @@ function renderHistoryBtns() {
 document.addEventListener('click', e => {}, false);
 
 /* ---------------- render ---------------- */
-function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 42);   $('#mgrName').textContent = G.manager.name;   renderTicker();   const { m: hdrM, y: hdrY } = roundToMonth(G.round, G.season);   $('#statDate').textContent = `${MONTH_NAMES[hdrM]} ${hdrY}`;   const winOpen = inTransferWindow(G), winPill = $('#winPill');   if (winPill) {     winPill.className = 'winpill ' + (winOpen ? 'open' : 'shut');     winPill.textContent = winOpen       ? `${currentWindowName(G)} open, ${windowCloses(G)} ${windowCloses(G) === 1 ? 'matchday' : 'matchdays'} left`       : `${currentWindowName(G)} opens in ${roundsToNextWindow(G)} ${roundsToNextWindow(G) === 1 ? 'matchday' : 'matchdays'}`;   }   const contBtn = $('#contBtn');   if (contBtn) {     contBtn.textContent = G.finished ? `Start ${seasonLabel(G.season + 1)}` : 'Continue';     contBtn.disabled = !!liveState;   }
+function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 42);   $('#mgrName').textContent = G.manager.name;   renderTicker();   const { m: hdrM, y: hdrY } = roundToMonth(G.round, G.season);   $('#statDate').textContent = `${MONTH_NAMES[hdrM]} ${hdrY}`;   const winOpen = inTransferWindow(G), winPill = $('#winPill');   if (winPill) {     winPill.className = 'winpill ' + (winOpen ? 'open' : 'shut');     winPill.textContent = winOpen       ? `${currentWindowName(G)} open, ${windowCloses(G)} ${windowCloses(G) === 1 ? 'day' : 'days'} left`       : `${currentWindowName(G)} opens in ${roundsToNextWindow(G)} ${roundsToNextWindow(G) === 1 ? 'day' : 'days'}`;   }   const contBtn = $('#contBtn');   if (contBtn) {     contBtn.textContent = G.finished ? `Start ${seasonLabel(G.season + 1)}` : 'Continue';     contBtn.disabled = !!liveState;   }
   const t = me();
   $('#myCrest').innerHTML = crestHTML(t, 30);
   $('#myName').textContent = t.n;
@@ -4578,7 +4584,7 @@ function shopAround(pid) {
   const found = findPlayer(G, pid);
   if (!found || !found.t || found.t.id !== G.myTeam) return { ok: false, msg: 'You can only shop around your own players.' };
   const p = found.p, t = found.t;
-  if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
+  if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} day${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
   const cands = interestedClubs(p, t.id, 4).filter(x => x.budget >= p.value * 0.7);
   if (!cands.length) return { ok: false, msg: `No clubs are interested in ${p.name} right now.` };
   G.pendingBids = G.pendingBids || [];
@@ -4835,7 +4841,7 @@ function viewTransfers() {
   let html = `<div class="rbox">
     <div><b>${money(t.budget)}</b><span>Transfer budget</span></div>
     <div><b style="color:${t.wageBill >= t.wageBudget ? 'var(--down)' : 'var(--ink)'}">${money(t.wageBudget - t.wageBill)}</b><span>Wage budget spare</span></div>
-    <div><b style="color:${winOpen ? 'var(--up)' : 'var(--down)'}">${winOpen ? windowCloses(G) + (windowCloses(G) === 1 ? ' matchday' : ' matchdays') : roundsToNextWindow(G) + (roundsToNextWindow(G) === 1 ? ' matchday' : ' matchdays')}</b><span>${winOpen ? currentWindowName(G) + ' left' : 'Until window opens'}</span></div>
+    <div><b style="color:${winOpen ? 'var(--up)' : 'var(--down)'}">${winOpen ? windowCloses(G) + (windowCloses(G) === 1 ? ' day' : ' days') : roundsToNextWindow(G) + (roundsToNextWindow(G) === 1 ? ' day' : ' days')}</b><span>${winOpen ? currentWindowName(G) + ' left' : 'Until window opens'}</span></div>
     <div><b>${t.squad.length} / 32</b><span>Squad size</span></div>
     <div><b style="${foreignN < 1 || foreignN > MAX_FOREIGN ? 'color:var(--down)' : ''}">${foreignN} / ${MAX_FOREIGN}</b><span>Foreign players</span></div>
   </div>
@@ -4931,7 +4937,7 @@ function viewTransfers() {
 
   v.innerHTML = html;
   v.querySelectorAll('[data-txsec]').forEach(b => b.onclick = () => { txSection = b.dataset.txsec; viewTransfers(); });
-  const skipBtn = $('#skipWindow'); if (skipBtn) skipBtn.onclick = () => simRounds(roundsToNextWindow(G));
+  const skipBtn = $('#skipWindow'); if (skipBtn) skipBtn.onclick = () => simRounds(Math.max(1, Math.ceil(roundsToNextWindow(G) / DAYS_PER_ROUND)));
   v.querySelectorAll('[data-txage]').forEach(b => b.onclick = () => { txAge = b.dataset.txage; viewTransfers(); });
   const sortSel = v.querySelector('#txSortSel'); if (sortSel) sortSel.onchange = e => { txSort = e.target.value; viewTransfers(); };
   v.querySelectorAll('[data-tf]').forEach(b => b.onclick = () => { txFilter = b.dataset.tf; viewTransfers(); });
@@ -5018,7 +5024,7 @@ $('#negGo').onclick = () => {
 
 function loanOfferModal(pid, owner) {
   const p = owner.squad.find(x => x.id === pid); if (!p) return;
-  if (!inTransferWindow(G)) { toastWarn(`The transfer window is shut. It reopens in ${roundsToNextWindow(G)} matchday${roundsToNextWindow(G) === 1 ? '' : 's'}.`); return; }
+  if (!inTransferWindow(G)) { toastWarn(`The transfer window is shut. It reopens in ${roundsToNextWindow(G)} day${roundsToNextWindow(G) === 1 ? '' : 's'}.`); return; }
   const experienced = p.age >= 26 || p.apps >= 15;
   const chance = clamp((experienced ? 0.22 : 0.55) - Math.max(0, p.rating - clubLevel(owner)) * 0.01, 0.04, 0.75);
   openModal(`Ask ${esc(owner.s)} about a loan for ${esc(p.name)}`,
