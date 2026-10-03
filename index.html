@@ -3602,7 +3602,7 @@ function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 42);
   $('#statPos').textContent = ordinal(posOfTeam(G, G.myTeam));
   $('#statSquad').textContent = `${t.squad.length}/32`;
   $('#statBudget').textContent = money(t.budget);
-  document.querySelectorAll('.navlink').forEach(b => b.classList.toggle('on', b.dataset.tab === tab)); try { updateInboxBadge(); } catch (e) { }   const navBadges = { watchlist: (G.watchlist || []).length, youth: me().youth.length, transfers: (G.pendingBids || []).length, manager: (G.pendingJobOffers || []).length }; = { watchlist: (G.watchlist || []).length, youth: me().youth.length, transfers: (G.pendingBids || []).length };   Object.keys(navBadges).forEach(tabId => {     const btn = document.querySelector(`.navlink[data-tab="${tabId}"]`); if (!btn) return;     const n = navBadges[tabId];     let badge = btn.querySelector('.nb');     if (n) { if (!badge) { badge = document.createElement('span'); badge.className = 'nb'; btn.appendChild(badge); } badge.textContent = n; }     else if (badge) badge.remove();   });
+  document.querySelectorAll('.navlink').forEach(b => b.classList.toggle('on', b.dataset.tab === tab)); try { updateInboxBadge(); } catch (e) { }   const navBadges = { watchlist: (G.watchlist || []).length, youth: me().youth.length, transfers: (G.pendingBids || []).length, manager: (G.pendingJobOffers || []).length };   Object.keys(navBadges).forEach(tabId => {     const btn = document.querySelector(`.navlink[data-tab="${tabId}"]`); if (!btn) return;     const n = navBadges[tabId];     let badge = btn.querySelector('.nb');     if (n) { if (!badge) { badge = document.createElement('span'); badge.className = 'nb'; btn.appendChild(badge); } badge.textContent = n; }     else if (badge) badge.remove();   });
   document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
   const active = $('#v-' + tab);
   if (active) active.classList.add('on');
@@ -3716,6 +3716,13 @@ function afterRound() {
   G.pendingBids = (G.pendingBids || []).concat(bids).slice(-6);
   fxRound = Math.max(0, G.round - 1);
   if (!G.finished && G.round >= 12 && rnd() < 0.05) {
+    const offers = jobOffers(G);
+    if (offers.length) {
+      G.pendingJobOffers = offers; G.jobOffersSeen = false;
+      mail(G, { cat: 'career', from: 'Your Agent', flag: true, subject: 'Job Offer: clubs want to talk',
+        body: [`${offers.map(o => G.teams[o.id].n).join(' and ')} would like to speak to you about their managerial vacancy.`, 'The offer will be put to you on your next matchday.'] });
+    }
+  } G.round >= 12 && rnd() < 0.05) {
     const offers = jobOffers(G);
 if (offers.length) { G.pendingJobOffers = offers; G.jobOffersSeen = false; }       mail(G, { cat: 'career', from: 'Your Agent', flag: true, subject: 'Job Offer: clubs want to talk',         body: [`${offers.map(o => G.teams[o.id].n).join(' and ')} would like to speak to you about their managerial vacancy.`, 'The offer will be put to you on your next matchday.'] });     }
   }
