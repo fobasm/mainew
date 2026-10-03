@@ -3724,7 +3724,9 @@ function afterRound() {
     }
   } G.round >= 12 && rnd() < 0.05) {
     const offers = jobOffers(G);
-if (offers.length) { G.pendingJobOffers = offers; G.jobOffersSeen = false; }       mail(G, { cat: 'career', from: 'Your Agent', flag: true, subject: 'Job Offer: clubs want to talk',         body: [`${offers.map(o => G.teams[o.id].n).join(' and ')} would like to speak to you about their managerial vacancy.`, 'The offer will be put to you on your next matchday.'] });     }
+if (offers.length) { G.pendingJobOffers = offers; G.jobOffersSeen = false; }  mail(G, { cat: 'career', from: 'Your Agent', flag: true, subject: 'Job Offer: clubs want to talk',
+        body: [`${offers.map(o => G.teams[o.id].n).join(' and ')} would like to speak to you about their managerial vacancy.`, 'The offer will be put to you on your next matchday.'] });
+    }
   }
   save(); render();
 }
