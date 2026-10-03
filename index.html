@@ -4855,7 +4855,7 @@ function viewTransfers() {
   const sections = [['search', 'Player search'], ['fa', 'Free agents'], ['bids', 'Offers' + (bids.length ? ' (' + bids.length + ')' : '')],
     ['sell', 'Sell players'], ['watch', 'Shortlist' + ((G.watchlist || []).length ? ' (' + G.watchlist.length + ')' : '')],
     ['loans', 'Loans'], ['hist', 'Transfer history'], ['top', 'Leaderboards']];
-  html += `<div class="txtabs">${sections.map(([k, l]) => `<button class="txtab ${txSection === k ? 'on' : ''}" data-txsec="${k}">${l}</button>`).join('')}</div>`;
+  html += `<div class="txtabs">${sections.map(([k, l]) => `<button class="txtab ${txSection === k ? 'on' : ''}" data-txsec="${k}">${l.replace(/ \((\d+)\)$/, ' <i class="txn">$1</i>')}</button>`).join('')}</div>`;
 
   if (txSection === 'search' || txSection === 'fa') {
     html += `<div class="panel"><div class="chipbar">${['ALL', 'GK', 'DEF', 'MID', 'ATT'].map(p => `<button class="chip" data-tf="${p}" aria-pressed="${txFilter === p}">${p === 'ALL' ? 'Any position' : p}</button>`).join('')}
