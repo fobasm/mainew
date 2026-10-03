@@ -3750,10 +3750,9 @@ function showMatchdayModal(res) {
      <button class="btn sm" onclick="closeModal();maybeShowPendingOffer()">Continue</button>`);
 }
 function maybeShowPendingOffer() {
-  if (G.pendingJobOffers && G.pendingJobOffers.length) {
-    const offers = G.pendingJobOffers;
-    G.pendingJobOffers = null;
-    showOffers(offers, () => {});
+  if (G.pendingJobOffers && G.pendingJobOffers.length && !G.jobOffersSeen) {
+    G.jobOffersSeen = true;
+    showOffers(G.pendingJobOffers, () => {});
   }
 }
 function showRunModal(runs) {
