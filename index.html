@@ -3843,6 +3843,7 @@ function showOffers(offers, onDone) {
   document.querySelectorAll('[data-take]').forEach(b => b.onclick = () => {
     takeJob(G, +b.dataset.take);
     G.board = 55; G.boardFired = false;
+    G.pendingJobOffers = null; G.jobOffersSeen = false;
     tableTier = me().tier; statTier = Math.min(me().tier, 2);
     toast(`You are the new manager of ${me().n}.`);
     closeModal(); save(); render();
