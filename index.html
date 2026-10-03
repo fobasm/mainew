@@ -4841,7 +4841,7 @@ function viewTransfers() {
   };
   const winOpen = inTransferWindow(G);
   const foreignN = t.squad.filter(p => p.nat !== 'ZA').length;
-  const bids = G.pendingBids || [];
+  G.pendingBids = (G.pendingBids || []).filter(b => t.squad.some(p => p.id === b.pid));   const bids = G.pendingBids;
 
   let html = `<div class="rbox">
     <div><b>${money(t.budget)}</b><span>Transfer budget</span></div>
