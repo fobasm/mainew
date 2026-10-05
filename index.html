@@ -2793,7 +2793,7 @@ function rescueOffers(G) {
   const pool = cands.length ? cands : sameOrLower;
   return shuffle(pool.slice()).slice(0, 3).map(t => ({ id: t.id, wage: Math.round(t.rep * 1.1 * 10) / 10 }));
 }
-function jobFitChance(G, target) {   const my = G.teams[G.myTeam], rep = G.manager.rep || 40;   if (target.id === G.myTeam) return 0;   const last = my.history && my.history.length ? my.history[my.history.length - 1] : null;   const doingWell = last && last.pos <= boardTargetFor(my);   const cap = (rep / 100) * 7 + 3.2 + (doingWell ? 0.7 : 0);   if (target.rep <= my.rep + 0.4) return 0.85;   if (target.rep > cap) {     const over = target.rep - cap;     return clamp(0.12 - over * 0.05, 0.01, 0.12);   }   const span = Math.max(0.1, cap - (my.rep + 0.4));   const pos = (target.rep - (my.rep + 0.4)) / span;   return clamp(0.75 - pos * 0.55, 0.15, 0.75); } function jobFitLabel(c) {   if (c >= 0.6) return { txt: 'Well within your reach', cls: 'xi' };   if (c >= 0.3) return { txt: 'A realistic step up', cls: '' };   if (c >= 0.12) return { txt: 'A big stretch', cls: 'out' };   return { txt: 'Extremely unlikely', cls: 'inj' }; } function applyForJob(G, id) {   const my = G.teams[G.myTeam], target = G.teams[id];   if (id === G.myTeam) return { ok: false, msg: `You already manage ${target.n}.` };   if (G.lastApplyRound === G.round) return { ok: false, msg: `You've only just gone for a job — wait until next matchday to try again.` };   G.lastApplyRound = G.round;   const chance = jobFitChance(G, target);   if (rnd() > chance) {     const gap = target.rep - my.rep;     const msg = gap > 2.5       ? `${target.n} don't think you're ready for a club of their size yet — build your reputation and try again later.`       : `${target.n} thank you for your interest but appoint another candidate.`;     return { ok: false, msg };   }   const wage = Math.round(target.rep * 1.3 * 10) / 10;   takeJob(G, id, wage);   return { ok: true, msg: `${target.n} appoint you as their new manager.` }; } function takeJob(G, id, wage) {
+let CTR_STYLE_DONE = false; function ctrInjectStyle() {   if (CTR_STYLE_DONE) return; CTR_STYLE_DONE = true;   const css = `   .ctrScrim{position:fixed;inset:0;background:rgba(2,4,8,.78);z-index:999;display:flex;align-items:center;justify-content:center;padding:18px;animation:ctrFade .25s ease}   @keyframes ctrFade{from{opacity:0}to{opacity:1}}   .ctrCard{position:relative;width:100%;max-width:480px;background:linear-gradient(165deg,#333b47,#171a20);border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);padding:18px;color:#e9edf3;font-family:Arial,Helvetica,sans-serif;animation:ctrPop .3s cubic-bezier(.2,.9,.3,1.2)}   @keyframes ctrPop{from{opacity:0;transform:scale(.92) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}   .ctrInner{border:1px solid rgba(255,255,255,.22);border-radius:2px;padding:16px 16px 14px}   .ctrCorner{position:absolute;width:15px;height:15px;pointer-events:none}   .ctrCorner::before,.ctrCorner::after{content:"";position:absolute;background:rgba(255,255,255,.55)}   .ctrCorner::before{width:100%;height:2px;top:0;left:0}   .ctrCorner::after{width:2px;height:100%;top:0;left:0}   .ctrCorner.tl{top:6px;left:6px}   .ctrCorner.tr{top:6px;right:6px;transform:scaleX(-1)}   .ctrCorner.bl{bottom:6px;left:6px;transform:scaleY(-1)}   .ctrCorner.br{bottom:6px;right:6px;transform:scale(-1,-1)}   .ctrHead{display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.18);margin-bottom:12px}   .ctrHead h2{margin:0;font-size:15px;letter-spacing:.06em;font-weight:800;text-transform:uppercase;flex:1}   .ctrDate{font-size:11px;color:#aab2bf;white-space:nowrap;align-self:flex-start;margin-top:2px}   .ctrBody{max-height:34vh;overflow-y:auto;font-size:13px;line-height:1.55;color:#cdd3dc;padding-right:8px;margin-bottom:10px}   .ctrBody p{margin:0 0 10px}   .ctrBody b{color:#fff}   .ctrBody::-webkit-scrollbar{width:5px}   .ctrBody::-webkit-scrollbar-thumb{background:rgba(255,255,255,.25);border-radius:3px}   .ctrOpts{border-top:1px solid rgba(255,255,255,.18);margin-bottom:4px}   .ctrOpt{display:flex;align-items:center;gap:10px;padding:9px 2px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.1);font-size:13px;color:#cdd3dc}   .ctrOpt:hover{color:#fff}   .ctrOpt .dot{width:16px;height:16px;border-radius:50%;border:2px solid #6b7380;flex:0 0 auto;display:flex;align-items:center;justify-content:center;transition:border-color .15s}   .ctrOpt.on{color:#fff}   .ctrOpt.on .dot{border-color:#3ecf5f;background:#3ecf5f}   .ctrOpt .dot svg{width:10px;height:10px;opacity:0;transition:opacity .15s}   .ctrOpt.on .dot svg{opacity:1}   .ctrConfirmWrap{text-align:center;padding:12px 0 14px;border-bottom:1px solid rgba(255,255,255,.18);margin-bottom:14px}   .ctrConfirm{background:none;border:0;color:#fff;font-size:15px;font-weight:700;letter-spacing:.04em;cursor:pointer;padding:4px 18px}   .ctrConfirm:hover{color:#ffd45c}   .ctrConfirm:disabled{opacity:.4;cursor:default}   .ctrSign{display:flex;gap:14px}   .ctrSignCol{flex:1;text-align:center}   .ctrSigBox{height:34px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:4px}   .ctrSigBox svg{width:100%;height:30px;max-width:150px}   .ctrSigPath{fill:none;stroke:#e9edf3;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}   .ctrSigPath.draw{stroke-dasharray:300;stroke-dashoffset:300;animation:ctrDraw 1.15s ease forwards}   @keyframes ctrDraw{to{stroke-dashoffset:0}}   .ctrSignCol .line{border-top:1px solid rgba(255,255,255,.4);margin:0 10px 4px}   .ctrSignCol span{font-size:10.5px;color:#9aa2af;text-transform:uppercase;letter-spacing:.05em}   `;   const el = document.createElement('style'); el.textContent = css; document.head.appendChild(el); } const CTR_SIG_CEO = 'M4 24 C10 10 14 8 18 16 C21 23 24 12 28 10 C32 8 33 20 38 18 C43 16 45 9 50 11 C55 13 54 22 60 20 C68 17 70 8 78 12 C84 15 82 22 90 19 C98 16 100 10 108 13'; const CTR_SIG_MGR = 'M3 22 C8 6 13 6 16 15 C19 24 22 9 27 8 C33 7 31 21 37 19 C44 17 47 6 53 10 C58 13 55 23 62 20 C71 16 70 7 79 11 C86 14 83 23 92 19 C102 15 104 9 113 13'; function ctrDateStr(iso) {   const d = new Date(iso + 'T12:00:00Z');   return `${String(d.getUTCDate()).padStart(2, '0')} ${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCFullYear()}`; } function openContractOffer(cfg) {   ctrInjectStyle();   const old = document.querySelector('.ctrScrim'); if (old) old.remove();   let selected = cfg.defaultKey || (cfg.options[0] && cfg.options[0].key);   const scrim = document.createElement('div');   scrim.className = 'ctrScrim';   scrim.innerHTML = `<div class="ctrCard"><i class="ctrCorner tl"></i><i class="ctrCorner tr"></i><i class="ctrCorner bl"></i><i class="ctrCorner br"></i>     <div class="ctrInner">       <div class="ctrHead">         ${crestHTML(cfg.team, 40)}         <h2>${esc(cfg.heading)}</h2>         <div class="ctrDate">${ctrDateStr(cfg.dateISO)}</div>       </div>       <div class="ctrBody">${cfg.paragraphs.map(p => `<p>${p}</p>`).join('')}</div>       <div class="ctrOpts">${cfg.options.map(o => `<label class="ctrOpt" data-k="${o.key}"><i class="dot"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6" fill="none" stroke="#06240f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></i>${esc(o.label)}</label>`).join('')}</div>       <div class="ctrConfirmWrap"><button class="ctrConfirm">${esc(cfg.confirmLabel || 'Confirm')}</button></div>       <div class="ctrSign">         <div class="ctrSignCol"><div class="ctrSigBox"><svg viewBox="0 0 115 32"><path class="ctrSigPath" d="${CTR_SIG_CEO}"/></svg></div><div class="line"></div><span>Chief Executive</span></div>         <div class="ctrSignCol"><div class="ctrSigBox"><svg viewBox="0 0 115 32"><path class="ctrSigPath" id="ctrMgrSig" d="${CTR_SIG_MGR}" style="opacity:0"/></svg></div><div class="line"></div><span>Manager</span></div>       </div>     </div></div>`;   document.body.appendChild(scrim);   const rows = scrim.querySelectorAll('.ctrOpt');   const paint = () => rows.forEach(r => r.classList.toggle('on', r.dataset.k === selected));   paint();   rows.forEach(r => r.onclick = () => { selected = r.dataset.k; paint(); });   const confirmBtn = scrim.querySelector('.ctrConfirm');   confirmBtn.onclick = () => {     confirmBtn.disabled = true;     if (selected === 'accept') {       const sig = scrim.querySelector('#ctrMgrSig');       sig.style.opacity = '1'; sig.classList.add('draw');       setTimeout(() => { scrim.remove(); cfg.onChoice('accept'); }, 1250);     } else {       scrim.remove(); cfg.onChoice(selected);     }   }; } function jobFitChance(G, target) {   const my = G.teams[G.myTeam], rep = G.manager.rep || 40;   if (target.id === G.myTeam) return 0;   const last = my.history && my.history.length ? my.history[my.history.length - 1] : null;   const doingWell = last && last.pos <= boardTargetFor(my);   const cap = (rep / 100) * 7 + 3.2 + (doingWell ? 0.7 : 0);   if (target.rep <= my.rep + 0.4) return 0.85;   if (target.rep > cap) {     const over = target.rep - cap;     return clamp(0.12 - over * 0.05, 0.01, 0.12);   }   const span = Math.max(0.1, cap - (my.rep + 0.4));   const pos = (target.rep - (my.rep + 0.4)) / span;   return clamp(0.75 - pos * 0.55, 0.15, 0.75); } function jobFitLabel(c) {   if (c >= 0.6) return { txt: 'Well within your reach', cls: 'xi' };   if (c >= 0.3) return { txt: 'A realistic step up', cls: '' };   if (c >= 0.12) return { txt: 'A big stretch', cls: 'out' };   return { txt: 'Extremely unlikely', cls: 'inj' }; } function applyForJob(G, id) {   const my = G.teams[G.myTeam], target = G.teams[id];   if (id === G.myTeam) return { ok: false, msg: `You already manage ${target.n}.` };   if (G.lastApplyRound === G.round) return { ok: false, msg: `You've only just gone for a job — wait until next matchday to try again.` };   G.lastApplyRound = G.round;   const chance = jobFitChance(G, target);   if (rnd() > chance) {     const gap = target.rep - my.rep;     const msg = gap > 2.5       ? `${target.n} don't think you're ready for a club of their size yet — build your reputation and try again later.`       : `${target.n} thank you for your interest but appoint another candidate.`;     return { ok: false, msg };   }   const wage = Math.round(target.rep * 1.3 * 10) / 10;   return { ok: true, id, wage, msg: `${target.n} appoint you as their new manager.` }; } function takeJob(G, id, wage) {
   const oldClub = G.teams[G.myTeam];
   G.myTeam = id;
   G.manager.clubs = G.manager.clubs || [];
@@ -3450,9 +3450,23 @@ $('#startBtn').onclick = () => {
   const nm = ($('#mgrName').value || '').trim() || 'Coach';
   const nat = ($('#mgrNat') && $('#mgrNat').value) || 'ZA';
   if (slotInfo(slot)) slot = firstFreeSlot();
-  G = newGame(pickClub, { name: nm, avatar: pickAvatar, nat });
-  enterApp(); save();
-  showSponsors();
+  const c = CLUBS[pickClub];
+  const wage = Math.max(0.3, c.base * 1.1);
+  openContractOffer({
+    team: c, heading: 'Contract Offer', dateISO: new Date().toISOString().slice(0, 10),
+    paragraphs: [
+      `After carefully reviewing your application, the board are pleased to offer you the position of <b>Head Coach</b> for <b>${esc(c.n)}</b>.`,
+      `The deal is worth <b>${money(wage / 12)}</b> a month — <b>${money(wage)}</b> a season.`,
+      `You will be taking charge in the ${esc(TIER_NAMES[c.t])}.`
+    ],
+    options: [{ key: 'accept', label: 'Accept Offer' }, { key: 'reject', label: 'Reject Offer' }],
+    defaultKey: 'accept',
+    onChoice: (k) => {
+      if (k !== 'accept') return;
+      G = newGame(pickClub, { name: nm, avatar: pickAvatar, nat });
+      enterApp(); save();
+    }
+  });
 };
 (function buildMgrNat() {
   const sel = $('#mgrNat'); if (!sel) return;
@@ -3860,16 +3874,29 @@ function showSacked(sum) {
       const t = G.teams[o.id];
       return `<div class="prow" style="grid-template-columns:auto 1fr auto">${crestHTML(t, 26)}
         <span class="who"><b>${esc(t.n)}</b><small>${TIER_SHORT[t.tier]} · squad rated ${teamOverall(t)} · budget ${money(t.budget)}</small></span>
-        <button class="btn sm" data-take="${o.id}">Take the job</button></div>`;
+        <button class="btn sm" data-take="${o.id}" data-wage="${o.wage}">Take the job</button></div>`;
     }).join('');
   openModal('You have been sacked', body || '<p style="margin:0;color:var(--dim)">No club will have you right now.</p>');
   document.querySelectorAll('[data-take]').forEach(b => b.onclick = () => {
-    takeJob(G, +b.dataset.take);
-    G.board = 55; G.boardFired = false;
-    closeModal(); save();
-    tableTier = me().tier; statTier = Math.min(me().tier, 2);
-    toast(`You are the new manager of ${me().n}.`);
-    showSponsors();
+    const t = G.teams[+b.dataset.take], wage = +b.dataset.wage;
+    openContractOffer({
+      team: t, heading: 'Contract Offer', dateISO: dateForRound(G.round, G.season),
+      paragraphs: [
+        `${esc(t.n)} have agreed to appoint you as their new Head Coach.`,
+        `The deal is worth <b>${money(wage / 12)}</b> a month — <b>${money(wage)}</b> a season.`
+      ],
+      options: [{ key: 'stall', label: 'Stall' }, { key: 'accept', label: 'Accept Offer' }, { key: 'reject', label: 'Reject Offer' }],
+      defaultKey: 'stall',
+      onChoice: (k) => {
+        if (k !== 'accept') return;
+        takeJob(G, t.id, wage);
+        G.board = 55; G.boardFired = false;
+        closeModal(); save();
+        tableTier = me().tier; statTier = Math.min(me().tier, 2);
+        toast(`You are the new manager of ${me().n}.`);
+        showSponsors();
+      }
+    });
   });
 }
 
@@ -3879,20 +3906,32 @@ function showOffers(offers, onDone) {
       const t = G.teams[o.id];
       return `<div class="prow" style="grid-template-columns:auto 1fr auto">${crestHTML(t, 26)}
         <span class="who"><b>${esc(t.n)}</b><small>${TIER_SHORT[t.tier]} · squad rated ${teamOverall(t)} · budget ${money(t.budget)}</small></span>
-        <button class="btn sm" data-take="${o.id}">Take the job</button></div>`;
+        <button class="btn sm" data-take="${o.id}" data-wage="${o.wage}">Take the job</button></div>`;
     }).join('');
   openModal('Job offer', body, `<button class="btn ghost sm" id="offerStay">Stay loyal to my team</button>`);
   const proceed = () => { closeModal(); save(); render(); if (onDone) onDone(); };
   $('#offerStay').onclick = proceed;
   $('#modal .x').onclick = proceed;
   document.querySelectorAll('[data-take]').forEach(b => b.onclick = () => {
-    takeJob(G, +b.dataset.take);
-    G.board = 55; G.boardFired = false;
-    G.pendingJobOffers = null; G.jobOffersSeen = false;
-    tableTier = me().tier; statTier = Math.min(me().tier, 2);
-    toast(`You are the new manager of ${me().n}.`);
-    closeModal(); save(); render();
-    if (onDone) onDone();
+    const t = G.teams[+b.dataset.take], wage = +b.dataset.wage;
+    openContractOffer({
+      team: t, heading: 'Contract Offer', dateISO: dateForRound(G.round, G.season),
+      paragraphs: [
+        `${esc(t.n)} would like to offer you the position of Head Coach.`,
+        `The deal is worth <b>${money(wage / 12)}</b> a month — <b>${money(wage)}</b> a season.`
+      ],
+      options: [{ key: 'stall', label: 'Stall' }, { key: 'accept', label: 'Accept Offer' }, { key: 'reject', label: 'Reject Offer' }],
+      defaultKey: 'stall',
+      onChoice: (k) => {
+        if (k !== 'accept') return;
+        takeJob(G, t.id, wage);
+        G.board = 55; G.boardFired = false;
+        tableTier = me().tier; statTier = Math.min(me().tier, 2);
+        toast(`You are the new manager of ${me().n}.`);
+        closeModal(); save(); render();
+        if (onDone) onDone();
+      }
+    });
   });
 }
 
@@ -5969,12 +6008,28 @@ function viewOtherClubs() {
   v.innerHTML = html;
   v.querySelectorAll('[data-oct]').forEach(b => b.onclick = () => { ocTier = +b.dataset.oct; ocPick = null; viewOtherClubs(); });
   v.querySelectorAll('[data-ocpick]').forEach(b => b.onclick = () => { ocPick = +b.dataset.ocpick; viewOtherClubs(); });
-  v.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => {
+v.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => {
     const res = applyForJob(G, +b.dataset.apply);
-    toast(res.msg);
     save();
-    if (res.ok) { tableTier = me().tier; statTier = me().tier; ocPick = null; render(); }
-    viewOtherClubs();
+    if (!res.ok) { toast(res.msg); viewOtherClubs(); return; }
+    const t = G.teams[res.id];
+    openContractOffer({
+      team: t, heading: 'Contract Offer', dateISO: dateForRound(G.round, G.season),
+      paragraphs: [
+        `${esc(t.n)} appoint you as their new Head Coach.`,
+        `The deal is worth <b>${money(res.wage / 12)}</b> a month — <b>${money(res.wage)}</b> a season.`
+      ],
+      options: [{ key: 'accept', label: 'Accept Offer' }, { key: 'reject', label: 'Reject Offer' }],
+      defaultKey: 'accept',
+      onChoice: (k) => {
+        if (k === 'accept') {
+          takeJob(G, res.id, res.wage);
+          tableTier = me().tier; statTier = me().tier; ocPick = null; save();
+          toast(res.msg);
+        }
+        render(); viewOtherClubs();
+      }
+    });
   });
   bindPlayerRows(v);
 }
