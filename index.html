@@ -3198,7 +3198,7 @@ function svgEscA(s) { return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<
    ============================================================ */
 const SAVE_PREFIX = 'mzansi_manager_2026_slot_';
 const SLOTNAME_PREFIX = 'mzansi_manager_2026_slotname_';
-const SLOT_COUNT = 5;
+const SLOT_COUNT = 3; (function cleanupOldSlots() {   try {     localStorage.removeItem(SAVE_PREFIX + '4'); localStorage.removeItem(SAVE_PREFIX + '5');     localStorage.removeItem(SLOTNAME_PREFIX + '4'); localStorage.removeItem(SLOTNAME_PREFIX + '5');   } catch (e) { } })();
 const LAST_SLOT_KEY = 'mzansi_manager_2026_last';
 const BACKUP_KEY = 'mzansi_manager_2026_lastgood';
 let slot = 1; let leavingApp = false;
