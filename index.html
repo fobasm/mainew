@@ -2768,9 +2768,8 @@ function askForRaise(G) {
   const chance = doingWell ? 0.6 : 0.2;
   if (rnd() > chance) return { ok: false, msg: 'The board turn down your request for a rise.' };
   const rise = 1.15 + rnd() * 0.15;
-  G.manager.wage = Math.round(G.manager.wage * rise * 100) / 100;
-  news(G, 'career', `${G.manager.name} agrees a new deal at ${G.teams[G.myTeam].s} worth ${money(G.manager.wage)} a season.`);
-  return { ok: true, msg: `The board agree — you're now on ${money(G.manager.wage)} a season.` };
+  const wage = Math.round(G.manager.wage * rise * 100) / 100;
+  return { ok: true, wage };
 }
 function jobOffers(G) {
   const my = G.teams[G.myTeam], rep = G.manager.rep || 40;
@@ -5955,7 +5954,7 @@ function viewManager() {
     </div></div>
   <div class="panel"><h3>Earnings<span class="sub">as manager, separate from the club's books</span></h3>
     <dl class="kv">
-      <dt>Wage</dt><dd>${money(m.wage || 0)} a month <span class="hint">(${money((m.wage || 0) / 12)}/mo)</span></dd>
+      <dt>Wage</dt><dd>${money(m.wage || 0)} a season <span class="hint">(${money((m.wage || 0) / 12)}/mo)</span></dd>
       <dt>Career earnings</dt><dd>${money(m.careerEarnings || 0)}</dd>
     </dl>
     <div class="pad" style="border-top:1px solid var(--line)">
@@ -5970,7 +5969,7 @@ function viewManager() {
       <p class="hint" style="margin:8px 0 14px">Tell the board why you want to leave — if another club wants you, you'll negotiate your next job on the spot.</p>
       <button class="btn ghost sm" id="mgrQuit">Quit to main menu</button>
     </div></div>`;
-  const r = $('#mgrRaise'); if (r) r.onclick = () => { const res = askForRaise(G); toast(res.msg); save(); render(); };
+  const r = $('#mgrRaise'); if (r) r.onclick = () => {     const res = askForRaise(G);     if (!res.ok) { toast(res.msg); return; }     const t = G.teams[G.myTeam];     openContractOffer({       team: t, heading: 'New Contract', dateISO: dateForRound(G.round, G.season),       paragraphs: [         `The board at ${esc(t.n)} have agreed to improve your terms.`,         `The new deal is worth <b>${money(res.wage / 12)}</b> a month — <b>${money(res.wage)}</b> a season.`       ],       options: [{ key: 'accept', label: 'Accept Offer' }, { key: 'reject', label: 'Reject Offer' }],       defaultKey: 'accept',       onChoice: (k) => {         if (k !== 'accept') return;         G.manager.wage = res.wage;         news(G, 'career', `${G.manager.name} agrees a new deal at ${t.s} worth ${money(res.wage)} a season.`);         toast(`You're now on ${money(res.wage)} a season.`);         save(); render();       }     });   };
   const q = $('#mgrQuit'); if (q) q.onclick = confirmQuit;   const rs = $('#mgrResign'); if (rs) rs.onclick = openResignModal;
   document.querySelectorAll('[data-mgrtake]').forEach(b => b.onclick = () => {
     takeJob(G, +b.dataset.mgrtake);
@@ -5996,8 +5995,12 @@ function viewOtherClubs() {
   if (ocPick != null && G.teams[ocPick]) {
     const ot = G.teams[ocPick];
     const sq = ot.squad.slice().sort((a, b) => b.rating - a.rating);
-    const fit = jobFitLabel(jobFitChance(G, ot));
+const fit = jobFitLabel(jobFitChance(G, ot));
     html += `<div class="panel"><h3>${esc(ot.n)}<span class="sub">${TIER_NAMES[ot.tier]} · ${esc(ot.city)} · XI rated ${teamOverall(ot)} · budget ${money(ot.budget)}</span></h3>
+    <div class="pad" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="chip ${fit.cls}">${esc(fit.txt)}</span>
+      <button class="btn sm" data-apply="${ot.id}">Apply for this job</button>
+    </div>
     <div class="kits">
       <div class="kitBigWrap">${bigKitSVG(ot, false, 132)}<div class="kitBigBadge">${crestHTML(ot, 26)}</div>${ot.currentSponsor ? `<div class="kitBigSponsor">${esc(ot.currentSponsor.name).toUpperCase()}</div>` : ''}<small>Home</small></div>
       <div class="kitBigWrap">${bigKitSVG(ot, true, 132)}<div class="kitBigBadge">${crestHTML(ot, 26)}</div>${ot.currentSponsor ? `<div class="kitBigSponsor">${esc(ot.currentSponsor.name).toUpperCase()}</div>` : ''}<small>Away</small></div>
