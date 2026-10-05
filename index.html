@@ -485,7 +485,8 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
 
   <div class="step" id="slotStep">
     <h2>Saved careers</h2>
-    <p class="note">Four slots. The game saves after every matchday, and picks up where you left off when you come back.</p>
+    <p class="note">Three slots. The game saves after every matchday, and picks up where you left off when you come back.</p>
+    <p class="note" id="storageNote" style="margin-top:2px"></p>
     <div class="slots" id="slotList"></div>
   </div>
 
@@ -3531,8 +3532,20 @@ function deleteSlot(n) {   try { localStorage.removeItem(slotKey(n)); } catch (e
 function firstFreeSlot() { for (let i = 1; i <= SLOT_COUNT; i++) if (!slotInfo(i)) return i; return 1; }
 function anySave() { for (let i = 1; i <= SLOT_COUNT; i++) if (slotInfo(i)) return true; return false; }
 
+function storageUsageKB() {
+  let total = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('mzansi_manager_2026_') === 0) total += (localStorage.getItem(k) || '').length + k.length;
+    }
+  } catch (e) { }
+  return Math.round(total / 1024);
+}
 function buildSlots() {
   const w = $('#slotList'); if (!w) return;
+  const note = $('#storageNote');
+  if (note) { const kb = storageUsageKB(); note.textContent = `~${kb > 1024 ? (kb / 1024).toFixed(1) + 'MB' : kb + 'KB'} of local storage used by Mzansi Manager saves on this browser.`; }
   w.innerHTML = '';
   for (let i = 1; i <= SLOT_COUNT; i++) {
     const s = slotInfo(i);
