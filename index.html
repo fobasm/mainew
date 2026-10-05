@@ -2268,7 +2268,6 @@ function sellPlayer(G, pid, fee, buyerId) {
   const me = G.teams[G.myTeam];
   const p = me.squad.find(x => x.id === pid);
   if (!p) return { ok: false, msg: 'Not in your squad.' };
-  if (!inTransferWindow(G)) return { ok: false, msg: `The transfer window is shut. It reopens in ${roundsToNextWindow(G)} day${roundsToNextWindow(G) === 1 ? '' : 's'}.` };
   if (me.captainId === pid) me.captainId = null;
   if (me.viceCaptainId === pid) me.viceCaptainId = null;
   // no cover check: if you leave a position empty, you pay for it on the pitch
