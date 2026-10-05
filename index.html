@@ -1944,7 +1944,7 @@ function endSeason(G) {
     t.fin.wages = t.wageBill;
     t.budget -= t.wageBill;
     t.squad.forEach(p => {
-      p.career.push({ season: G.season, club: t.id, tier: t.tier, apps: p.apps, g: p.goals, a: p.assists, rating: p.rating });
+      p.career.push({ season: G.season, club: t.id, tier: t.tier, apps: p.apps, g: p.goals, a: p.assists, rating: p.rating });       if (p.career.length > 20) p.career.shift();
       p.age++;
       let d;
       if (p.age <= 22) d = rint(1, 5);
