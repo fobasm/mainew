@@ -3200,6 +3200,7 @@ const SAVE_PREFIX = 'mzansi_manager_2026_slot_';
 const SLOTNAME_PREFIX = 'mzansi_manager_2026_slotname_';
 const SLOT_COUNT = 5;
 const LAST_SLOT_KEY = 'mzansi_manager_2026_last';
+const BACKUP_KEY = 'mzansi_manager_2026_lastgood';
 let slot = 1; let leavingApp = false;
 let G = null, tab = 'match';
 let pickTier = 2, pickClub = null, pickAvatar = 'mgr-01';
@@ -3469,13 +3470,25 @@ function enterApp() { try { inboxTick(G); } catch (e) { } $('#landing').style.di
 function slotKey(n) { return SAVE_PREFIX + n; }
 function save(n) {
   const k = n || slot;
+  let payload;
+  try { payload = JSON.stringify({ G, seed: SEED, pid: PID, saved: Date.now() }); }
+  catch (e) { console.error('save() stringify failed:', e); toastWarn('Could not save — try again.'); return false; }
   try {
-    localStorage.setItem(slotKey(k), JSON.stringify({ G, seed: SEED, pid: PID, saved: Date.now() }));
+    localStorage.setItem(slotKey(k), payload);
     localStorage.setItem(LAST_SLOT_KEY, String(k));
+    try { localStorage.setItem(BACKUP_KEY, JSON.stringify({ slot: k, saved: Date.now() })); localStorage.setItem(BACKUP_KEY + '_data', payload); } catch (eb) { }
+    return true;
   } catch (e) {
-    let size = -1;
-    try { size = JSON.stringify({ G, seed: SEED, pid: PID }).length; } catch (_) { }
-    console.error('save() failed:', e && e.name, e && e.message, 'approx size (KB):', size > 0 ? (size / 1024).toFixed(0) : '?');
+    try { localStorage.removeItem(BACKUP_KEY); localStorage.removeItem(BACKUP_KEY + '_data'); } catch (e2) { }
+    try {
+      localStorage.setItem(slotKey(k), payload);
+      localStorage.setItem(LAST_SLOT_KEY, String(k));
+      return true;
+    } catch (e3) {
+      console.error('save() failed:', e3 && e3.name, e3 && e3.message, 'approx size (KB):', (payload.length / 1024).toFixed(0));
+      toastWarn('Storage is full — this save did NOT go through. Delete an old career slot to free up space.');
+      return false;
+    }
   }
 }
 function slotNameKey(n) { return SLOTNAME_PREFIX + n; }
@@ -3492,10 +3505,20 @@ function slotInfo(n) {
   } catch (e) { return null; }
 }
 function load(n) {
+  const want = n || slot;
+  const tryParse = (raw) => { try { const d = JSON.parse(raw); return (d && d.G && d.G.teams) ? d : null; } catch (e) { return null; } };
   try {
-    const raw = localStorage.getItem(slotKey(n || slot)); if (!raw) return false;
-    const d = JSON.parse(raw); if (!d.G || !d.G.teams) return false;
-    G = d.G; SEED = d.seed; PID = d.pid; slot = n || slot;
+    let d = null;
+    const raw = localStorage.getItem(slotKey(want));
+    if (raw) d = tryParse(raw);
+    if (!d) {
+      try {
+        const meta = JSON.parse(localStorage.getItem(BACKUP_KEY) || 'null');
+        if (meta && meta.slot === want) d = tryParse(localStorage.getItem(BACKUP_KEY + '_data'));
+      } catch (eb) { }
+    }
+    if (!d) return false;
+    G = d.G; SEED = d.seed; PID = d.pid; slot = want;
     G.teams.forEach(t => { t.fin = t.fin || newFin(); t.youth = t.youth || []; t.squad.forEach(p => { p.value = valueOf(p); }); ensureLineup(t); });     G.watchlist = G.watchlist || []; G.pendingBids = G.pendingBids || [];
     if (!G.africa) { initAfrica(G); initAfcon(G); buildCAF(G); }
     if (!G.super8) buildExtraCups(G);     if (!G.watchlist) G.watchlist = [];
@@ -3504,7 +3527,7 @@ function load(n) {
     return true;
   } catch (e) { return false; }
 }
-function deleteSlot(n) { try { localStorage.removeItem(slotKey(n)); } catch (e) { } setSlotName(n, ''); }
+function deleteSlot(n) {   try { localStorage.removeItem(slotKey(n)); } catch (e) { }   try { const meta = JSON.parse(localStorage.getItem(BACKUP_KEY) || 'null'); if (meta && meta.slot === n) { localStorage.removeItem(BACKUP_KEY); localStorage.removeItem(BACKUP_KEY + '_data'); } } catch (e) { }   setSlotName(n, ''); }
 function firstFreeSlot() { for (let i = 1; i <= SLOT_COUNT; i++) if (!slotInfo(i)) return i; return 1; }
 function anySave() { for (let i = 1; i <= SLOT_COUNT; i++) if (slotInfo(i)) return true; return false; }
 
@@ -3639,7 +3662,7 @@ function openCareerModal() {
       <button class="btn ghost sm" id="cmSwitch">Switch save slot</button>
     </div>`;
   openModal('Save & Load', body, `<button class="btn ghost sm" onclick="closeModal()">Close</button>`);
-  $('#cmSave').onclick = () => { save(); toast('Saved.'); };
+  $('#cmSave').onclick = () => { if (save()) toast('Saved.'); };
   $('#cmRename').onclick = () => {
     openModal('Name slot ' + slot, `<input type="text" id="slotNameI2" maxlength="24" value="${esc(getSlotName(slot))}" placeholder="e.g. My Bright PMB save" style="width:100%">`,
       `<button class="btn ghost sm" onclick="closeModal()">Cancel</button><button class="btn sm" id="slotNameGo2">Save</button>`);
