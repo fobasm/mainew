@@ -3459,7 +3459,7 @@ $('#startBtn').onclick = () => {
   sel.innerHTML = codes.map(c => `<option value="${c}" ${c === 'ZA' ? 'selected' : ''}>${natName(c)}</option>`).join('');
 })();
 
-function confirmQuit() {
+const RESIGN_REASONS = [   { id: 'challenge', label: 'I want a new challenge' },   { id: 'ambition', label: "I'm unhappy with the club's ambition" },   { id: 'bigger', label: 'I want to manage a bigger club' },   { id: 'done', label: "I've taken this club as far as I can" },   { id: 'personal', label: 'Personal reasons' } ]; function openResignModal() {   const t = me();   const body = `<p class="hint" style="margin:0 0 10px">The board want to understand before they let you go. Why do you want to leave ${esc(t.n)}?</p>` +     RESIGN_REASONS.map(r => `<button class="btn ghost sm" data-reason="${r.id}" style="display:block;width:100%;text-align:left;margin-bottom:6px">${esc(r.label)}</button>`).join('');   openModal('Resign as manager', body, `<button class="btn ghost sm" onclick="closeModal()">Stay for now</button>`);   document.querySelectorAll('[data-reason]').forEach(b => b.onclick = () => resignFromClub(b.dataset.reason)); } function resignFromClub(reasonId) {   const oldClub = me();   const offers = jobOffers(G);   closeModal();   if (!offers.length) {     openModal('No takers yet', '<p style="margin:0;color:var(--dim)">You raise it with the board, but no club has come forward for you right now. Build your reputation a little more and try again.</p>',       `<button class="btn sm" onclick="closeModal()">Understood</button>`);     return;   }   const REASON_RESPONSES = {     challenge: `The board accept your decision and wish you well in a new challenge.`,     ambition: `The board acknowledge they haven't always matched your ambition, and part on good terms.`,     bigger: `The board understand — some managers outgrow a club, just like players do.`,     done: `The board agree you've taken ${esc(oldClub.n)} as far as you fairly could, and thank you for everything.`,     personal: `The board respect your reasons and thank you for your honesty.`   };   const offerRows = offers.map(o => { const ot = G.teams[o.id]; return `<div class="prow" style="grid-template-columns:auto 1fr auto">${crestHTML(ot, 26)}       <span class="who"><b>${esc(ot.n)}</b><small>${TIER_SHORT[ot.tier]} · squad rated ${teamOverall(ot)} · budget ${money(ot.budget)}</small></span>       <button class="btn sm" data-resigntake="${ot.id}" data-wage="${o.wage}">Take the job</button></div>`; }).join('');   openModal('Goodbye, and hello', `<p style="margin:0 0 10px;color:var(--dim)">${REASON_RESPONSES[reasonId] || REASON_RESPONSES.challenge}</p>     <p style="margin:0 0 8px;font-weight:600">${offers.length === 1 ? 'A club has' : 'Clubs have'} already come forward:</p>` + offerRows,     `<button class="btn ghost sm" id="resignBrowse">Browse all clubs instead</button>`);   document.querySelectorAll('[data-resigntake]').forEach(b => b.onclick = () => {     takeJob(G, +b.dataset.resigntake, +b.dataset.wage);     G.board = 55; G.boardFired = false;     G.pendingJobOffers = null; G.jobOffersSeen = false;     tableTier = me().tier; statTier = Math.min(me().tier, 2);     toast(`You are the new manager of ${me().n}.`);     closeModal(); save(); render();   });   const browse = $('#resignBrowse'); if (browse) browse.onclick = () => { closeModal(); goTo('otherclubs'); }; } function confirmQuit() {
   if (liveState) { toast('The match is still running.'); return; }
   save();
   openModal('Back to Choose Your Club?', '<p style="margin:0;color:var(--dim)">Your career stays saved in this slot. This just takes you back to the landing page.</p>',
@@ -5923,10 +5923,14 @@ function viewManager() {
     </div></div>
   <div class="panel"><h3>Career history</h3>
     ${clubs ? `<table class="tbl"><thead><tr><th>Club</th><th>Spell</th></tr></thead><tbody>${clubs}</tbody></table>` : '<div class="empty">Just getting started.</div>'}</div>
-  <div class="panel"><h3>Leave the club<span class="sub">step away any time — your save stays put</span></h3>
-    <div class="pad"><button class="btn ghost sm" id="mgrQuit">Quit to main menu</button></div></div>`;
+<div class="panel"><h3>Looking for a new challenge?</h3>
+    <div class="pad">
+      <button class="btn sm" id="mgrResign">Resign and talk to other clubs</button>
+      <p class="hint" style="margin:8px 0 14px">Tell the board why you want to leave — if another club wants you, you'll negotiate your next job on the spot.</p>
+      <button class="btn ghost sm" id="mgrQuit">Quit to main menu</button>
+    </div></div>`;
   const r = $('#mgrRaise'); if (r) r.onclick = () => { const res = askForRaise(G); toast(res.msg); save(); render(); };
-  const q = $('#mgrQuit'); if (q) q.onclick = confirmQuit;
+  const q = $('#mgrQuit'); if (q) q.onclick = confirmQuit;   const rs = $('#mgrResign'); if (rs) rs.onclick = openResignModal;
   document.querySelectorAll('[data-mgrtake]').forEach(b => b.onclick = () => {
     takeJob(G, +b.dataset.mgrtake);
     G.board = 55; G.boardFired = false;
