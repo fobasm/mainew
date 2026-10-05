@@ -3477,19 +3477,11 @@ function save(n) {
   try {
     localStorage.setItem(slotKey(k), payload);
     localStorage.setItem(LAST_SLOT_KEY, String(k));
-    try { localStorage.setItem(BACKUP_KEY, JSON.stringify({ slot: k, saved: Date.now() })); localStorage.setItem(BACKUP_KEY + '_data', payload); } catch (eb) { }
     return true;
   } catch (e) {
-    try { localStorage.removeItem(BACKUP_KEY); localStorage.removeItem(BACKUP_KEY + '_data'); } catch (e2) { }
-    try {
-      localStorage.setItem(slotKey(k), payload);
-      localStorage.setItem(LAST_SLOT_KEY, String(k));
-      return true;
-    } catch (e3) {
-      console.error('save() failed:', e3 && e3.name, e3 && e3.message, 'approx size (KB):', (payload.length / 1024).toFixed(0));
-      toastWarn('Storage is full — this save did NOT go through. Delete an old career slot to free up space.');
-      return false;
-    }
+    console.error('save() failed:', e && e.name, e && e.message, 'approx size (KB):', (payload.length / 1024).toFixed(0));
+    toastWarn('Storage is full — this save did NOT go through. Delete an old career slot to free up space.');
+    return false;
   }
 }
 function slotNameKey(n) { return SLOTNAME_PREFIX + n; }
