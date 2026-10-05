@@ -3452,6 +3452,7 @@ $('#startBtn').onclick = () => {
   if (slotInfo(slot)) slot = firstFreeSlot();
   G = newGame(pickClub, { name: nm, avatar: pickAvatar, nat });
   enterApp(); save();
+  showSponsors();
 };
 (function buildMgrNat() {
   const sel = $('#mgrNat'); if (!sel) return;
@@ -5799,6 +5800,7 @@ function viewCreateClub() {
         tab = 'match'; navStack = ['match']; navIdx = 0;
         toast(`Welcome to ${G.teams[idx].n}.`);
         render();
+        showSponsors();
       };
     };
   };
