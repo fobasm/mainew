@@ -798,9 +798,43 @@ const NAT_SKIN_GROUP = {
 };
 function skinGroupFor(nat) {
   const g = NAT_SKIN_GROUP[nat];
-  if (g === 'sa') return SKINS; // South Africa: full mix (black, coloured, white, Indian)
+  if (g === 'sa') return SKINS;
   return SKIN_GROUPS[g] || SKINS;
 }
+
+/* ---------------- portraits & ethnic groups ---------------- */
+const PLAYER_PORTRAITS = {
+  black: ['plr-158', /* …81 more, see players.zip */ 'plr-240'],
+  coloured: ['plr-001', /* …12 more */ 'plr-013'],
+  white: ['plr-060', /* …97 more */ 'plr-157'],
+  indian: ['plr-040','plr-041','plr-042','plr-043','plr-044','plr-045'],
+  asian: ['plr-014', /* …19 more */ 'plr-033'],
+  mena: ['plr-034','plr-035','plr-036','plr-037','plr-038','plr-039'],
+  latin: ['plr-046', /* …13 more */ 'plr-059'],
+};
+function portraitFromGroup(group) {
+  const arr = PLAYER_PORTRAITS[group];
+  return (arr && arr.length) ? pick(arr) : null;
+}
+const NAT_ETHNIC = {
+  ZA: [['black', 70], ['coloured', 15], ['white', 10], ['indian', 5]],
+  FR: [['black', 50], ['white', 50]],
+  GB: [['white', 60], ['black', 40]]
+};
+const EURO_NATIONS = ['PT','ES','FR','RS','NL','BE','DE','IT','HR'];
+const LATIN_NATIONS = ['BR','AR','UY','CO','CL','VE','PY'];
+const ASIAN_NATIONS = ['JP','KR','CN'];
+const MENA_NATIONS = ['SA'];
+function ethnicGroupFor(nat) {
+  if (NAT_ETHNIC[nat]) return wpick(NAT_ETHNIC[nat].map(([g,w])=>({g,w})), x=>x.w).g;
+  if (ASIAN_NATIONS.includes(nat)) return 'asian';
+  if (MENA_NATIONS.includes(nat)) return 'mena';
+  if (LATIN_NATIONS.includes(nat)) return wpick([{g:'white',w:45},{g:'latin',w:35},{g:'black',w:15},{g:'coloured',w:5}], x=>x.w).g;
+  if (EURO_NATIONS.includes(nat)) return wpick([{g:'white',w:95},{g:'black',w:5}], x=>x.w).g;
+  return wpick([{g:'black',w:95},{g:'coloured',w:5}], x=>x.w).g;
+}
+const GROUP_SKIN_KEY = { black:'black', white:'white', asian:'asian', mena:'mena', latin:'latin', coloured:'latin', indian:'mena' };
+
 const HAIRS = ['fade','afro','dreads','braids','bald','cornrows','curls','buzz','hightop','mohawk','lineup','locs'];
 const HAIR_COLOURS = ['#14100e','#1d1713','#241c16','#2f241b','#4a3320','#7a5326','#c9a227'];
 const MANAGER_AVATARS = ['mgr-01','mgr-02','mgr-03','mgr-04','mgr-05','mgr-06','mgr-07','mgr-08','mgr-09','mgr-10','mgr-11','mgr-12','mgr-13','mgr-14','mgr-15','mgr-16','mgr-17','mgr-18','mgr-19','mgr-20','mgr-21','mgr-22','mgr-23','mgr-24','mgr-25','mgr-26','mgr-27','mgr-28'];
@@ -1167,12 +1201,14 @@ function birthDate(age, season) {
   const day = rint(1, 28);
   return `${day} ${MONTH_NAMES[month]} ${year}`;
 }
-function personName(nat) {
-  const p = NAMES[nat] || NAMES.ZA;
+function personName(nat, group) {
+  const p = (nat === 'ZA' && group && NAMES['ZA_' + group.toUpperCase()]) || NAMES[nat] || NAMES.ZA;
   return { first: pick(p.f), last: pick(p.l) };
 }
-function makeFace(nat) {
-  const skin = wpick(skinGroupFor(nat), s => s.w);
+function makeFace(nat, group) {
+  const skKey = group && GROUP_SKIN_KEY[group];
+  const pool = skKey ? (SKIN_GROUPS[skKey] || SKINS) : skinGroupFor(nat);
+  const skin = wpick(pool, s => s.w);
   return {
     sk: skin.c,
     hr: pick(HAIRS),
@@ -1208,7 +1244,7 @@ function valueOf(p) {
 function makePlayer(opts) {
   const o = opts || {};
   const nat = o.nat || 'ZA';
-  const nm = personName(nat);
+  const group = ethnicGroupFor(nat); const nm = personName(nat, group);
   const age = o.age != null ? o.age : rint(18, 34);
   const pos = o.pos || pick(POS_LIST);
   let base = 48 + (o.strength != null ? o.strength : 5) * 2.95;
@@ -1218,7 +1254,7 @@ function makePlayer(opts) {
   const pot = Math.round(clamp(rating + potBump, rating, 95));
   const p = {
     id: PID++, first: nm.first, last: nm.last, name: nm.first + ' ' + nm.last,
-    nat, pos, alt: o.alt || rollAlt(pos), age, rating, pot, face: makeFace(nat),
+    nat, pos, alt: o.alt || rollAlt(pos), age, rating, pot, face: makeFace(nat, group), portrait: portraitFromGroup(group),
     wage: wageFor(rating, age, o.tier), contract: o.contract != null ? o.contract : rint(1, 4),
     goals: 0, assists: 0, apps: 0, cs: 0, inj: 0, form: 0, yellow: 0,
     cG: 0, cA: 0, cApps: 0, earned: 0,
@@ -2974,6 +3010,7 @@ function eyeGroup(cx, cy, browTilt, hc) {
 }
 function faceSVG(p, size, kit) {
   const s = size || 38;
+  if (p && p.portrait) return `<img class="face" src="players/${p.portrait}.jpg" width="${s}" height="${s}" style="object-fit:cover" loading="lazy" alt="">`;
   const f = (p && p.face) || { sk: '#5c3620', hr: 'fade', hc: '#1d1713', bd: 0, ey: 1, nose: 1 };
   const id = ++FACE_UID;
   const sk = f.sk, hc = f.hc;
