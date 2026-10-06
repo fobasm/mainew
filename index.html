@@ -229,6 +229,18 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .gseasonbar select{background:#2c2c2e;color:#e7e8ea;border:1px solid #3a3a3d;border-radius:6px;padding:6px 10px;font-family:inherit;font-size:14px}
 .glegend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 13px;font-size:12px;color:#9e9ea0;border-top:1px solid #2c2c2e;background:#1f1f1f}
 .glegend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.tbl-google h4{color:#e7e8ea;background:#1f1f1f;margin:0}
+.tbl-google .chipbar{background:#1f1f1f;border-color:#2c2c2e}
+.tbl-google .chip{background:#2c2c2e;color:#e7e8ea;border-color:#3a3a3d}
+.tbl-google .chip[aria-pressed="true"]{background:#f5c518;color:#1f1f1f;border-color:#f5c518}
+.tbl-google .prow{background:#1f1f1f;border-bottom:1px solid #2a2a2c;color:#e7e8ea}
+.tbl-google .prow:hover{background:#262628}
+.tbl-google .prow b{color:#e7e8ea}
+.tbl-google .prow small,.tbl-google .hint{color:#9e9ea0}
+.tbl-google .res{background:#1f1f1f;border-bottom:1px solid #2a2a2c}
+.tbl-google .res .sc{background:#2c2c2e;color:#e7e8ea}
+.tbl-google .res.mine{background:rgba(245,197,24,.1)}
+.tbl-google .tag.xi{background:rgba(245,197,24,.15);color:#f5c518;border-color:#f5c518}
 .form{display:inline-flex;gap:2px}
 .form i{width:15px;height:15px;border-radius:3px;font-style:normal;font-size:10px;font-weight:700;display:grid;place-items:center;color:#0c110e;font-family:var(--head)}
 .form i.W{background:var(--up)}.form i.D{background:var(--faint)}.form i.L{background:var(--down)}
@@ -4537,15 +4549,40 @@ function viewTable() {
         <td>${p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
         <td class="hide-s muted">${r.gf}</td><td class="hide-s muted">${r.ga}</td>
         <td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td><b>${r.pts}</b></td>
-        ${isCurrent ? `<td class="hide-s">${formHtml(t.form)}</td>` : ''}</tr>`;
+    ${isCurrent ? `<td class="hide-s">${formHtml(t.form)}</td>` : ''}</tr>`;
     }).join('') : `<tr><td colspan="11" style="text-align:center;padding:20px;color:#7a7a7d">No completed table for this season yet.</td></tr>`) + `</tbody></table>
     <div class="glegend">${tableTier === 0
       ? '<span><i style="background:#4286f5"></i>Champions League</span><span><i style="background:#fb7b18"></i>Confederation Cup</span><span><i style="background:#ff5a5a"></i>Relegated</span>'
       : tableTier === TIER_NAMES.length - 1
         ? '<span><i style="background:#34c471"></i>Promoted</span>'
         : `<span><i style="background:#34c471"></i>Promoted</span><span><i style="background:#fb7b18"></i>Promotion playoff</span><span><i style="background:#ff5a5a"></i>Relegated</span>`}</div></div>`;
+  const t2 = me();
+  const mine = G.fixtures[t2.tier].map((rd, i) => ({ i, m: rd.find(m => m.h === G.myTeam || m.a === G.myTeam) }));
+  v.innerHTML += `<div class="panel tbl-google"><h4 style="padding:12px 13px 4px">${esc(t2.s)} fixtures<span class="sub" style="color:#9e9ea0;font-weight:400;margin-left:6px">${seasonLabel(G.season)} · ${TIER_SHORT[t2.tier]}</span></h4>` +
+    mine.map(({ i, m }) => {
+      const opp = G.teams[m.h === G.myTeam ? m.a : m.h], home = m.h === G.myTeam;
+      let right = `<span class="hint">${home ? 'home' : 'away'}</span>`;
+      if (m.played) {
+        const mi = home ? m.hg : m.ag, th = home ? m.ag : m.hg;
+        const r = mi > th ? 'W' : mi === th ? 'D' : 'L';
+        right = `<b class="num">${mi}–${th}</b> <span class="form"><i class="${r}">${r}</i></span>`;
+      } else if (i === G.round) right = `<span class="tag xi">next up</span>`;
+      return `<div class="prow" style="grid-template-columns:30px auto 1fr auto">
+        <span class="num hint">${i + 1}</span>${crestHTML(opp, 20)}
+        <span class="who"><b>${esc(opp.n)}</b><small>${home ? 'at home' : 'away in ' + esc(opp.city)}</small></span>
+        <span style="text-align:right">${right}</span></div>`;
+    }).join('') + '</div>';
+
+  const r = Math.min(Math.max(fxRound, 0), totalRounds(G) - 1);
+  v.innerHTML += `<div class="panel tbl-google"><h4 style="padding:12px 13px 4px">All results<span class="sub" style="color:#9e9ea0;font-weight:400;margin-left:6px">every division, matchday by matchday</span></h4>
+    <div class="chipbar" style="overflow-x:auto;flex-wrap:nowrap">` +
+    G.fixtures[0].map((_, i) => `<button class="chip" data-fr="${i}" aria-pressed="${i === r}">${i + 1}</button>`).join('') +
+    `</div>` + [0,1,2].map(tier =>
+      `<h4 style="padding:9px 13px 3px;font-size:16px">${TIER_NAMES[tier]}</h4>` +
+      G.fixtures[tier][r].map(resRow).join('')).join('') + `</div>`;
   v.querySelectorAll('[data-tt]').forEach(b => b.onclick = () => { tableTier = +b.dataset.tt; viewTable(); });
   const sel = $('#gseason'); if (sel) sel.onchange = e => { tableSeason = e.target.value; viewTable(); };
+  v.querySelectorAll('[data-fr]').forEach(b => b.onclick = () => { fxRound = +b.dataset.fr; viewTable(); });
 }
 
 /* ---------------- fixtures ---------------- */
