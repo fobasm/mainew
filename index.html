@@ -2848,6 +2848,7 @@ const SPONSORS = [
 ];
 function sponsorLogoSVG(s, size) {
   size = size || 56;
+  if (s.img) return `<img src="${s.img}" width="${size}" height="${size}" style="border-radius:12px;object-fit:cover;display:block;background:#fff" alt="">`;
   const icons = {
     globe: `<circle cx="28" cy="28" r="16" fill="none" stroke="${s.c1}" stroke-width="3"/><ellipse cx="28" cy="28" rx="16" ry="7" fill="none" stroke="${s.c1}" stroke-width="2"/><line x1="12" y1="28" x2="44" y2="28" stroke="${s.c1}" stroke-width="2"/><line x1="28" y1="12" x2="28" y2="44" stroke="${s.c1}" stroke-width="2"/>`,
     bank: `<rect x="12" y="30" width="32" height="6" rx="1" fill="${s.c1}"/><polygon points="28,10 46,22 10,22" fill="${s.c1}"/><rect x="15" y="22" width="4" height="8" fill="${s.c1}"/><rect x="24" y="22" width="4" height="8" fill="${s.c1}"/><rect x="33" y="22" width="4" height="8" fill="${s.c1}"/>`,
@@ -2868,7 +2869,8 @@ function buildSponsorOffers(G) {
   return SPONSORS.map(s => {
     if (mult[s.base] == null) mult[s.base] = 0.85 + rnd() * 0.3;
     const amount = Math.max(0.15, Math.round(s.base * tierMult * repMult * mult[s.base] * 100) / 100);
-    return { name: s.name, icon: s.icon, c1: s.c1, c2: s.c2, amount };
+    const freq = rnd() < 0.5 ? 'monthly' : 'upfront';
+    return { name: s.name, icon: s.icon, img: s.img, c1: s.c1, c2: s.c2, amount, freq };
   });
 }
 function me_(G) { return G.teams[G.myTeam]; }
@@ -3973,23 +3975,24 @@ function showOffers(offers, onDone) {
 function showSponsors() {
   const t = me();
   const offers = buildSponsorOffers(G);
-   const bestAmt = Math.max.apply(null, offers.map(x => x.amount));   const cards = offers.map((o, i) => `<div class="sponsorCard" data-sponsor="${i}">${o.amount === bestAmt ? '<i class="spBest">Best offer</i>' : ''}
+  const cards = offers.map((o, i) => `<div class="sponsorCard" data-sponsor="${i}">
       ${sponsorLogoSVG(o, 56)}
       <b>${esc(o.name)}</b>
-      <span class="samt">${money(o.amount)}</span>
+      ${o.freq === 'monthly'
+        ? `<span class="samt">${money(o.amount / 10)}/mo</span><span class="shint">${money(o.amount)} over the season</span>`
+        : `<span class="samt">${money(o.amount)}</span><span class="shint">Paid immediately</span>`}
     </div>`).join('') +
     `<div class="sponsorCard none" data-sponsor="none">
       ${sponsorLogoSVG({ c1: 'var(--faint)', c2: 'var(--panel)', icon: 'bolt' }, 56)}
       <b>No sponsor</b>
       <span class="samt">Go it alone</span>
     </div>`;
-  const body = `<p style="margin:0 0 12px;color:var(--dim)">Pick a sponsor for ${seasonLabel(G.season)}. The money lands in your transfer budget right away.</p>
+  const body = `<p style="margin:0 0 12px;color:var(--dim)">Pick a sponsor for ${seasonLabel(G.season)}. The deal runs for this season only — some pay the full fee immediately, others pay monthly.</p>
     <div class="sponsorGrid">${cards}</div>`;
   openModal('Sponsorship offers', body + `<div id="sponsorAnim" style="text-align:center;padding:14px 0 0;display:none">
       <div style="font-family:var(--head);font-size:15px;color:var(--faint)">Transfer budget</div>
       <div style="font-family:var(--head);font-size:34px" id="sponsorNum">${money(t.budget)}</div>
     </div>`);
-  $('#modal').classList.add('mmx');
   document.querySelectorAll('[data-sponsor]').forEach(b => b.onclick = () => {
     document.querySelectorAll('[data-sponsor]').forEach(x => x.setAttribute('disabled', ''));
     if (b.dataset.sponsor === 'none') {
@@ -4000,9 +4003,11 @@ function showSponsors() {
       return;
     }
     const o = offers[+b.dataset.sponsor];
-    t.currentSponsor = o;
-    const from = t.budget, to = t.budget + o.amount;
-    t.budget = Math.round(to * 100) / 100; t.fin.sponsor += o.amount;
+    const installments = 10;
+    const firstPay = o.freq === 'monthly' ? Math.round((o.amount / installments) * 100) / 100 : o.amount;
+    t.currentSponsor = { name: o.name, icon: o.icon, img: o.img, c1: o.c1, c2: o.c2, amount: o.amount, freq: o.freq, paidSoFar: firstPay, installments };
+    const from = t.budget, to = t.budget + firstPay;
+    t.budget = Math.round(to * 100) / 100; t.fin.sponsor = (t.fin.sponsor || 0) + firstPay;
     $('#sponsorAnim').style.display = 'block';
     playSound('coin');
     let steps = 20, i = 0;
@@ -4012,7 +4017,9 @@ function showSponsors() {
       const numEl = $('#sponsorNum'); if (numEl) numEl.textContent = money(v);
       if (i >= steps) {
         clearInterval(timer);
-        news(G, 'transfer', `${t.s} sign a sponsorship deal with ${o.name} worth ${money(o.amount)}.`);
+        news(G, 'transfer', o.freq === 'monthly'
+          ? `${t.s} sign a sponsorship deal with ${o.name} worth ${money(o.amount)} this season, paid monthly.`
+          : `${t.s} sign a sponsorship deal with ${o.name} worth ${money(o.amount)}.`);
         save();
         setTimeout(() => { closeModal(); render(); }, 500);
       }
