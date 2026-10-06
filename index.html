@@ -1323,7 +1323,7 @@ function newGame(clubIndex, manager, seed) {
   const G = {
     v: 2, season, teams, myTeam: clubIndex,
     manager: manager || { name: 'Coach', avatar: 'mgr-01' },
-    tables: [], fixtures: [], round: 0, cup: null,
+    tables: [], fixtures: [], round: 0, curDay: 0, cup: null,
     news: [], market: [], freeAgents: [], transferLog: [], pendingBids: [],
     records: { seasons: [] }, finished: false, liveMode: true, watchlist: []
   };
@@ -1494,7 +1494,7 @@ function roundRobin(ids) {
 function blankRow(id) { return { id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }; }
 
 function buildSeason(G, first) {
-  G.round = 0; G.fixtures = []; G.tables = []; G.finished = false;
+  G.round = 0; G.curDay = 0; G.fixtures = []; G.tables = []; G.finished = false;
   for (let tier = 0; tier < TIER_NAMES.length; tier++) {
     const ids = shuffle(G.teams.filter(t => t.tier === tier).map(t => t.id));
     G.fixtures.push(roundRobin(ids).map(rd => rd.map(m => ({ ...m, hg: 0, ag: 0, played: false, ev: [] }))));
@@ -1546,21 +1546,24 @@ function dateForRound(round, season) {
   return new Date(seasonStartUTC(season) + round * DAYS_PER_ROUND * 86400000).toISOString().slice(0, 10);
 }
 const DOW_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function currentDateISO() { return new Date(seasonStartUTC(G.season) + (G.curDay || 0) * 86400000).toISOString().slice(0, 10); }
+function isMatchdayToday() { return !G.finished && currentDateISO() === dateForRound(G.round, G.season); }
+function advanceOneDay() { if (G.finished) return; G.curDay = (G.curDay || 0) + 1; save(); }
 function windowRangeFor(iso) {
   const d = new Date(iso + 'T00:00:00Z'), y = d.getUTCFullYear(), m = d.getUTCMonth();
   if (m === 6 || m === 7) return [Date.UTC(y, 6, 1), Date.UTC(y, 8, 1) - 1];
   if (m === 0) return [Date.UTC(y, 0, 1), Date.UTC(y, 1, 1) - 1];
   return null;
 }
-function inTransferWindow(G) { return windowRangeFor(dateForRound(G.round, G.season)) != null; }
-function currentWindowName(G) { return new Date(dateForRound(G.round, G.season)).getUTCMonth() === 0 ? 'January window' : 'Summer window'; }
+function inTransferWindow(G) { return windowRangeFor(currentDateISO()) != null; }
+function currentWindowName(G) { return new Date(currentDateISO()).getUTCMonth() === 0 ? 'January window' : 'Summer window'; }
 function windowCloses(G) {
-  const today = dateForRound(G.round, G.season), r = windowRangeFor(today);
+  const today = currentDateISO(), r = windowRangeFor(today);
   if (!r) return 0;
   return Math.max(1, Math.floor((r[1] - new Date(today + 'T00:00:00Z').getTime()) / 86400000) + 1);
 }
 function roundsToNextWindow(G) {
-  const today = dateForRound(G.round, G.season), d = new Date(today + 'T00:00:00Z'), y = d.getUTCFullYear(), m = d.getUTCMonth();
+  const today = currentDateISO(), d = new Date(today + 'T00:00:00Z'), y = d.getUTCFullYear(), m = d.getUTCMonth();
   const next = m < 6 ? Date.UTC(y, 6, 1) : Date.UTC(y + 1, 0, 1);
   return Math.max(1, Math.round((next - d.getTime()) / 86400000));
 }
@@ -3553,7 +3556,7 @@ function load(n) {
     G.teams.forEach(t => { t.fin = t.fin || newFin(); t.youth = t.youth || []; t.squad.forEach(p => { p.value = valueOf(p); if (p.portrait) PORTRAIT_USE[p.portrait] = (PORTRAIT_USE[p.portrait] || 0) + 1; }); ensureLineup(t); });     G.watchlist = G.watchlist || []; G.pendingBids = G.pendingBids || [];
     if (!G.africa) { initAfrica(G); initAfcon(G); buildCAF(G); }
     if (!G.super8) buildExtraCups(G);     if (!G.watchlist) G.watchlist = [];
-    G.manager.rep = G.manager.rep || 40;
+    G.manager.rep = G.manager.rep || 40;     G.curDay = G.curDay != null ? G.curDay : G.round * DAYS_PER_ROUND;
     try { localStorage.setItem(LAST_SLOT_KEY, String(slot)); } catch (e) { }
     return true;
   } catch (e) { return false; }
