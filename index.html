@@ -693,7 +693,7 @@ const NATIONS = {
   EC:{name:'Ecuador'}, BO:{name:'Bolivia'}, PT:{name:'Portugal'}, ES:{name:'Spain'},
   FR:{name:'France'}, RS:{name:'Serbia'}, NL:{name:'Netherlands'}, BE:{name:'Belgium'},
   DE:{name:'Germany'}, IT:{name:'Italy'}, HR:{name:'Croatia'},
-  JP:{name:'Japan'}, KR:{name:'South Korea'}, CN:{name:'China'}, SA:{name:'Saudi Arabia'}
+  JP:{name:'Japan'}, KR:{name:'South Korea'}, CN:{name:'China'}, SA:{name:'Saudi Arabia'},   US:{name:'United States'}, CA:{name:'Canada'}, MX:{name:'Mexico'}, CR:{name:'Costa Rica'}, JM:{name:'Jamaica'},   GB:{name:'England'}, PL:{name:'Poland'}, SE:{name:'Sweden'}, DK:{name:'Denmark'}, NO:{name:'Norway'},   CH:{name:'Switzerland'}, AT:{name:'Austria'}, CZ:{name:'Czechia'}, GR:{name:'Greece'}, TR:{name:'Turkey'},   UA:{name:'Ukraine'}, IE:{name:'Ireland'}, RO:{name:'Romania'}, HU:{name:'Hungary'}, FI:{name:'Finland'}, SK:{name:'Slovakia'},   AU:{name:'Australia'}, IR:{name:'Iran'}, AE:{name:'UAE'}, IN:{name:'India'}, ID:{name:'Indonesia'}, TH:{name:'Thailand'}, VN:{name:'Vietnam'}
 };
 function natName(c){ return (NATIONS[c]||{name:c}).name; }
 const CAF_NATIONS = Object.keys(NATIONS).filter(c => NATIONS[c].caf);
@@ -709,10 +709,12 @@ const NAT_STRENGTH = {
 };
 
 const SCOUT_POOLS = {
-  AFR: ['ZW','ZW','ZM','MZ','MW','LS','SZ','NA','BW','CD','CD','GH','NG','CM','SN','CI','BI','RW','TZ','KE','UG','AO'],
-  SAM: ['BR','BR','AR','AR','UY','CO','CL','VE','PY','BR','AR','PT','RS','ZW','ZM','CD'],
-  EUR: ['PT','ES','FR','RS','NL','BE','DE','IT','HR'],
-  ASIA: ['JP','KR','CN','SA']
+  AFR: ['ZW','ZW','ZM','MZ','MW','LS','SZ','NA','BW','CD','CD','GH','NG','CM','SN','CI','BI','RW','TZ','KE','UG','AO',
+        'MA','EG','DZ','TN','LY','SD','ML','BF','GN','ET','CV','MG','MU','LR','SL','TG','BJ','GA','CG','GM','GW','MR'],
+  SAM: ['BR','BR','AR','AR','UY','CO','CL','VE','PY','PE','EC','BO','BR','AR','PT','RS','ZW','ZM','CD'],
+  EUR: ['PT','ES','FR','RS','NL','BE','DE','IT','HR','GB','PL','SE','DK','NO','CH','AT','CZ','GR','TR','UA','IE','RO','HU','FI','SK'],
+  ASIA: ['JP','KR','CN','SA','AU','IR','AE','IN','ID','TH','VN'],
+  NAM: ['US','US','CA','MX','MX','CR','JM']
 };
 
 /* ---------------- names ---------------- */
@@ -853,8 +855,22 @@ function portraitFromGroup(group) {
 const NAT_ETHNIC = {
   ZA: [['black', 70], ['coloured', 15], ['white', 10], ['indian', 5]],
   FR: [['black', 50], ['white', 50]],
-  GB: [['white', 60], ['black', 40]]
+  GB: [['white', 72], ['black', 22], ['indian', 4], ['asian', 2]],
+  US: [['white', 52], ['black', 30], ['latin', 14], ['asian', 4]],
+  CA: [['white', 70], ['black', 12], ['asian', 10], ['indian', 8]],
+  AU: [['white', 80], ['black', 6], ['asian', 8], ['coloured', 6]],
+  MX: [['latin', 80], ['white', 20]],
+  CR: [['latin', 70], ['white', 25], ['black', 5]],
+  JM: [['black', 100]],
+  IN: [['indian', 100]],
+  TR: [['white', 75], ['mena', 25]],
+  IR: [['mena', 100]],
+  SD: [['mena', 55], ['black', 45]],
+  MR: [['mena', 50], ['black', 50]],
+  SO: [['black', 70], ['mena', 30]],
+  DJ: [['black', 60], ['mena', 40]]
 };
+const NORTH_AFRICA = ['MA','DZ','TN','LY','EG'];
 const EURO_NATIONS = ['PT','ES','FR','RS','NL','BE','DE','IT','HR'];
 const LATIN_NATIONS = ['BR','AR','UY','CO','CL','VE','PY'];
 const ASIAN_NATIONS = ['JP','KR','CN'];
