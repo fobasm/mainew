@@ -3684,7 +3684,7 @@ function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 42);
   const t = me();
   $('#myCrest').innerHTML = crestHTML(t, 30);
   $('#myName').textContent = t.n;
-  $('#mySub').textContent = `${TIER_SHORT[t.tier]} · ${seasonLabel(G.season)} · ${G.manager.name}`;
+  $('#mySub').textContent = `${TIER_SHORT[t.tier]} · $ · ${G.manager.name}`;
   $('#statOvr').textContent = teamOverall(t);
   $('#statPos').textContent = ordinal(posOfTeam(G, G.myTeam));
   $('#statSquad').textContent = `${t.squad.length}/32`;
@@ -5568,17 +5568,26 @@ function viewClub() {
     </div></div>
 
   <div class="cols">
-    <div class="panel"><h3>This season's books<span class="sub">${seasonLabel(G.season)} so far</span></h3>
-      <dl class="kv">
-        <dt>Prize money</dt><dd>${money(fin.prize)}</dd>
-        <dt>Sponsorship</dt><dd>${money(fin.sponsor)}</dd>
-        <dt>Gate receipts</dt><dd>${money(fin.gate)}</dd>
-        <dt>Player sales</dt><dd>${money(fin.sales)}</dd>
-        <dt>Signings and fees</dt><dd style="color:var(--down)">−${money(fin.buys)}</dd>
-        <dt>Wages paid</dt><dd style="color:var(--down)">−${money(fin.wages)}</dd>
-        <dt style="color:var(--ink);font-weight:600">Running total</dt>
-        <dd style="color:${finNet(fin) >= 0 ? 'var(--up)' : 'var(--down)'}">${money(finNet(fin))}</dd>
-      </dl>
+    <div class="panel"><h3>Finances<span class="sub">${seasonLabel(G.season)} so far</span></h3>
+      <div class="stilegrid">
+        <div class="stile"><b>${money(t.budget)}</b><small>Transfer budget</small></div>
+        <div class="stile"><b>${money(t.wageBill)}</b><small>Wage bill / season</small></div>
+        <div class="stile up"><b>${money(fin.prize + fin.sponsor + fin.gate + fin.sales)}</b><small>Income so far</small></div>
+        <div class="stile down"><b>−${money(fin.buys + fin.wages)}</b><small>Spending so far</small></div>
+        <div class="stile ${finNet(fin) >= 0 ? 'up' : 'down'}"><b>${money(finNet(fin))}</b><small>Running total</small></div>
+      </div>
+      <div class="pad" style="border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div><h4 style="margin:0 0 6px">Money in</h4>
+          ${[['Prize money', fin.prize], ['Sponsorship', fin.sponsor], ['Gate receipts', fin.gate], ['Player sales', fin.sales]].map(([l, a]) => {
+            const tot = fin.prize + fin.sponsor + fin.gate + fin.sales;
+            return `<div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:13px"><span>${l}</span><b>${money(a)}</b></div><div class="bar"><i style="width:${tot > 0 ? Math.min(100, a / tot * 100) : 0}%"></i></div></div>`;
+          }).join('')}</div>
+        <div><h4 style="margin:0 0 6px">Money out</h4>
+          ${[['Wages paid', fin.wages], ['Signings and fees', fin.buys]].map(([l, a]) => {
+            const tot = fin.buys + fin.wages;
+            return `<div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:13px"><span>${l}</span><b>${money(a)}</b></div><div class="bar"><i style="width:${tot > 0 ? Math.min(100, a / tot * 100) : 0}%"></i></div></div>`;
+          }).join('')}</div>
+      </div>
       ${t.finHistory.length ? `<table class="tbl"><thead><tr><th>Season</th><th>In</th><th>Out</th><th>Net</th></tr></thead><tbody>` +
         t.finHistory.slice().reverse().map(f => `<tr><td>${seasonLabel(f.season)}</td>
           <td class="num">${money(f.prize + f.sponsor + f.gate + f.sales)}</td>
