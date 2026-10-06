@@ -3499,7 +3499,7 @@ const RESIGN_REASONS = [   { id: 'challenge', label: 'I want a new challenge' },
 $('#homeBtn').onclick = confirmQuit;
 $('#backBtn').onclick = navBack;
 $('#fwdBtn').onclick = navFwd;
-$('#careerBtn').onclick = openCareerModal; function headerContinue() {   if (liveState) { goTo('match'); return; }   if (G.finished) { doEndSeason(); return; }   goTo('match');   if (G.liveMode) startLive(); else simRounds(1); } $('#contBtn').onclick = headerContinue;
+$('#careerBtn').onclick = openCareerModal; function headerContinue() {   if (liveState) { goTo('match'); return; }   if (G.finished) { doEndSeason(); return; }   if (isMatchdayToday()) { goTo('match'); if (G.liveMode) startLive(); else simRounds(1); return; }   advanceOneDay(); render(); if (typeof renderActions === 'function') renderActions();   toast(isMatchdayToday() ? 'Matchday today \u2014 play below.' : 'No match today.'); } $('#contBtn').onclick = headerContinue;
 window.addEventListener('beforeunload', e => {
   if (!G || leavingApp) return;
   save();
@@ -3661,7 +3661,7 @@ function renderHistoryBtns() {
 document.addEventListener('click', e => {}, false);
 
 /* ---------------- render ---------------- */
-function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 42);   $('#mgrName').textContent = G.manager.name;   renderTicker();   const { m: hdrM, y: hdrY } = roundToMonth(G.round, G.season);   $('#statDate').textContent = `${MONTH_NAMES[hdrM]} ${hdrY}`;   const winOpen = inTransferWindow(G), winPill = $('#winPill');   if (winPill) {     winPill.className = 'winpill ' + (winOpen ? 'open' : 'shut');     winPill.textContent = winOpen       ? `${currentWindowName(G)} open, ${windowCloses(G)} ${windowCloses(G) === 1 ? 'day' : 'days'} left`       : `${currentWindowName(G)} opens in ${roundsToNextWindow(G)} ${roundsToNextWindow(G) === 1 ? 'day' : 'days'}`;   }   const contBtn = $('#contBtn');   if (contBtn) {     contBtn.textContent = G.finished ? `Start ${seasonLabel(G.season + 1)}` : 'Continue';     contBtn.disabled = !!liveState;   }
+function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 42);   $('#mgrName').textContent = G.manager.name;   renderTicker();   const curD = new Date(currentDateISO() + 'T12:00:00Z');   $('#statDate').textContent = `${MONTH_NAMES[curD.getUTCMonth()]} ${curD.getUTCFullYear()}`;   const cb = $('#contBtn'); if (cb) cb.textContent = isMatchdayToday() ? 'Matchday' : 'Continue';   const winOpen = inTransferWindow(G), winPill = $('#winPill');   if (winPill) {     winPill.className = 'winpill ' + (winOpen ? 'open' : 'shut');     winPill.textContent = winOpen       ? `${currentWindowName(G)} open, ${windowCloses(G)} ${windowCloses(G) === 1 ? 'day' : 'days'} left`       : `${currentWindowName(G)} opens in ${roundsToNextWindow(G)} ${roundsToNextWindow(G) === 1 ? 'day' : 'days'}`;   }   const contBtn = $('#contBtn');   if (contBtn) {     contBtn.textContent = G.finished ? `Start ${seasonLabel(G.season + 1)}` : 'Continue';     contBtn.disabled = !!liveState;   }
   const t = me();
   $('#myCrest').innerHTML = crestHTML(t, 30);
   $('#myName').textContent = t.n;
@@ -3734,7 +3734,7 @@ function openSoundModal() {
   };
   $('#sfxChk').onchange = e => { soundOn = e.target.checked; if (soundOn) playSound('click'); };
 }
-function renderActions() {
+let autoSimTimer = null; function autoSimBody() {   const d = new Date(currentDateISO() + 'T12:00:00Z');   return `<div style="text-align:center;padding:20px 0">     <div style="font-family:var(--head);font-size:12px;letter-spacing:.5px;color:var(--faint);text-transform:uppercase">Simulating</div>     <div style="font-family:var(--head);font-size:30px;margin:6px 0">${DOW_NAMES[d.getUTCDay()]} ${d.getUTCDate()} ${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCFullYear()}</div>     <div class="hint">${isMatchdayToday() ? 'Matchday reached' : 'No match today'}</div>   </div>`; } function startAutoSim() {   if (autoSimTimer || isMatchdayToday()) return;   openModal('Simulating days', autoSimBody(), `<button class="btn" id="autoStopBtn">Stop</button>`);   $('#autoStopBtn').onclick = stopAutoSim;   autoSimTimer = setInterval(() => {     if (isMatchdayToday() || G.finished) { stopAutoSim(); render(); renderActions(); return; }     advanceOneDay();     const bodyEl = document.querySelector('#modal .body'); if (bodyEl) bodyEl.innerHTML = autoSimBody();   }, 150); } function stopAutoSim() { if (autoSimTimer) { clearInterval(autoSimTimer); autoSimTimer = null; } closeModal(); render(); renderActions(); } function renderActions() {
   const a = $('#actions'); a.innerHTML = '';
   if (liveState) return;
   if (G.finished) {
@@ -3749,6 +3749,8 @@ function renderActions() {
   if (nx && myCup) b1Label = G.liveMode ? `Play matchday ${G.round + 1} + Cup` : `Sim matchday ${G.round + 1} + Cup`;
   else if (myCup) b1Label = G.liveMode ? `Play ${CUP_NAME} tie` : `Sim ${CUP_NAME} tie`;
   else b1Label = G.liveMode ? `Play matchday ${G.round + 1}` : `Sim matchday ${G.round + 1}`;
+const ndBtn = el('button', 'btn ghost', 'Next day'); ndBtn.disabled = isMatchdayToday(); ndBtn.title = isMatchdayToday() ? 'Play today\'s match first' : 'Advance one day'; ndBtn.onclick = () => { advanceOneDay(); render(); renderActions(); toast(isMatchdayToday() ? 'Matchday today.' : 'No match today.'); }; a.appendChild(ndBtn);
+  const autoBtn = el('button', 'btn ghost', 'Keep going'); autoBtn.disabled = isMatchdayToday(); autoBtn.onclick = startAutoSim; a.appendChild(autoBtn);
   const b1 = el('button', 'btn', b1Label);
   b1.onclick = () => G.liveMode ? startLive() : simRounds(1);
   a.appendChild(b1);
@@ -5693,7 +5695,7 @@ function fx3Row(e) {
 let calSelRound = null;
 function viewCalendar() {
   const v = $('#v-calendar'), t = me();
-  const todayISO = dateForRound(G.round, G.season);
+   const todayISO = currentDateISO();
   const todayD = new Date(todayISO);
   if (calY == null) { calY = todayD.getUTCFullYear(); calM = todayD.getUTCMonth(); }
   const minD = new Date(seasonStartUTC(G.season));
