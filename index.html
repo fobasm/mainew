@@ -302,7 +302,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .livebar .nm.a{text-align:right}
 .livebar .sc{font-family:var(--head);font-size:26px;font-weight:700;text-align:center;min-width:86px}
 .livebar .clock{display:block;font-family:var(--body);font-size:11.5px;color:var(--gold);font-weight:600}
-.pitch{display:block;width:100%;height:auto;background:var(--pitch);margin:0 auto} .fifa{position:relative;width:100%;aspect-ratio:1/1.12;max-width:560px;margin:0 auto;border-radius:6px;overflow:hidden;border:2px solid rgba(255,255,255,.75);background:repeating-linear-gradient(180deg,#22894f 0 12.5%,#1c7a45 12.5% 25%)} .fifa i{position:absolute;border:2px solid rgba(255,255,255,.55);pointer-events:none} .fifa .hl{left:0;right:0;top:50%;height:0;border-width:2px 0 0} .fifa .cc{left:50%;top:50%;width:26%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%} .fifa .bx1{left:22%;right:22%;top:0;height:16%;border-top:0} .fifa .bx2{left:22%;right:22%;bottom:0;height:16%;border-bottom:0} .fpl{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:78px;background:none;border:0;padding:0;cursor:pointer;color:#fff} .fpl .prow3{display:flex;align-items:center;justify-content:center;gap:3px} .fpl .prate{font-family:var(--head);font-weight:800;font-size:12px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7);min-width:14px;text-align:right} .fpl .ppos{font-size:8.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.55);border-radius:3px;padding:1px 3px} .fpl .pface{width:32px;height:32px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.45);position:relative;flex:0 0 auto;overflow:hidden} .fpl .pface .face{width:100%!important;height:100%!important;border-radius:50%!important} .fpl .cband{position:absolute;top:-3px;right:-3px;background:var(--gold);color:#111;font-size:7px;font-weight:900;width:11px;height:11px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid #fff} .fpl .fnm2{margin-top:2px;max-width:76px;padding:1px 5px;border-radius:3px;background:rgba(0,0,0,.65);font-size:9.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .fsubs{display:flex;gap:8px;overflow-x:auto;padding:10px 12px} .fpl.sel .pface{box-shadow:0 0 0 3px var(--gold),0 1px 3px rgba(0,0,0,.45)} .fsub{flex:0 0 92px;text-align:center;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px 4px;color:inherit;cursor:pointer} .fsub b{display:block;font-size:18px;font-family:var(--head);color:var(--gold)} .fsub small{display:block;color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pitch{display:block;width:100%;height:auto;background:var(--pitch);margin:0 auto} .fifa{position:relative;width:100%;aspect-ratio:1/1.12;max-width:560px;margin:0 auto;border-radius:6px;overflow:hidden;border:2px solid rgba(255,255,255,.75);background:repeating-linear-gradient(180deg,#22894f 0 12.5%,#1c7a45 12.5% 25%)} .fifa.livepitch{max-width:430px} .ball{position:absolute;width:3.2%;aspect-ratio:1;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.5);transform:translate(-50%,-50%);z-index:5} .fpl.live{transition:left .12s linear,top .12s linear} .fifa i{position:absolute;border:2px solid rgba(255,255,255,.55);pointer-events:none} .fifa .hl{left:0;right:0;top:50%;height:0;border-width:2px 0 0} .fifa .cc{left:50%;top:50%;width:26%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%} .fifa .bx1{left:22%;right:22%;top:0;height:16%;border-top:0} .fifa .bx2{left:22%;right:22%;bottom:0;height:16%;border-bottom:0} .fpl{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:78px;background:none;border:0;padding:0;cursor:pointer;color:#fff} .fpl .prow3{display:flex;align-items:center;justify-content:center;gap:3px} .fpl .prate{font-family:var(--head);font-weight:800;font-size:12px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7);min-width:14px;text-align:right} .fpl .ppos{font-size:8.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.55);border-radius:3px;padding:1px 3px} .fpl .pface{width:32px;height:32px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.45);position:relative;flex:0 0 auto;overflow:hidden} .fpl .pface .face{width:100%!important;height:100%!important;border-radius:50%!important} .fpl .cband{position:absolute;top:-3px;right:-3px;background:var(--gold);color:#111;font-size:7px;font-weight:900;width:11px;height:11px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid #fff} .fpl .fnm2{margin-top:2px;max-width:76px;padding:1px 5px;border-radius:3px;background:rgba(0,0,0,.65);font-size:9.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .fsubs{display:flex;gap:8px;overflow-x:auto;padding:10px 12px} .fpl.sel .pface{box-shadow:0 0 0 3px var(--gold),0 1px 3px rgba(0,0,0,.45)} .fsub{flex:0 0 92px;text-align:center;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px 4px;color:inherit;cursor:pointer} .fsub b{display:block;font-size:18px;font-family:var(--head);color:var(--gold)} .fsub small{display:block;color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .liveticker{max-height:180px;overflow:auto;border-top:1px solid var(--line)}
 .tick{display:grid;grid-template-columns:38px 20px 1fr;gap:8px;padding:6px 12px;border-bottom:1px solid var(--line);font-size:13.5px;align-items:baseline}
 .tick .m{font-family:var(--head);color:var(--gold)}
@@ -1326,7 +1326,7 @@ function newGame(clubIndex, manager, seed) {
   const teams = CLUBS.map((c, i) => {
     const t = {
       id: i, ...c, tier: c.t, squad: makeSquad(c, season),
-      budget: c.fin, academy: c.youth, formation: '4-4-2', lineup: null,
+      budget: c.fin, academy: c.youth, formation: pick(Object.keys(FORMATIONS)), lineup: null,
       trophies: [], history: [], form: [], rep: c.base,
       youth: [], fin: newFin(), finHistory: [], captainId: null, viceCaptainId: null
     };
@@ -4087,17 +4087,27 @@ function startLiveCup() {
   beginLiveMatch(ctx, m, 'cup', null);
 }
 
+function liveFplHTML(p, i, slots, teamObj, prefix, flip) {
+  const coords = FORM_COORDS[teamObj.formation] || FORM_COORDS['4-4-2'];
+  const [x, y] = coords[i];
+  const left = 8 + x * 0.84, top = flip ? 8 + y * 0.84 : 8 + (100 - y) * 0.84;
+  return `<button class="fpl live" id="lv-${prefix}${i}" style="left:${left}%;top:${top}%">
+    <div class="prow3"><span class="prate">${p.rating}</span><div class="pface">${faceSVG(p, 26, teamObj.c1)}${teamObj.captainId === p.id ? '<span class="cband">C</span>' : ''}</div><span class="ppos">${slots[i] || p.pos}</span></div>
+    <span class="fnm2">${esc(p.last || p.name)}</span></button>`;
+}
 function renderLive() {
   const ls = liveState, ctx = ls.ctx;
   const H = G.teams[ctx.h], A = G.teams[ctx.a];
   const v = $('#v-match');
+  const homeCards = ctx.xiH.map((p, i) => liveFplHTML(p, i, ctx.slotsH, H, 'h', false)).join('');
+  const awayCards = ctx.xiA.map((p, i) => liveFplHTML(p, i, ctx.slotsA, A, 'a', true)).join('');
   v.innerHTML = `<div class="livewrap">
     <div class="livebar">
       <div class="nm">${crestHTML(H, 24)} ${esc(H.s)}</div>
       <div class="sc"><span id="liveScore">0–0</span><span class="clock" id="liveClock">Kick-off</span></div>
       <div class="nm a">${esc(A.s)} ${crestHTML(A, 24)}</div>
     </div>
-    <canvas id="livePitch" class="pitch" width="560" height="360" aria-label="Live match view"></canvas>
+    <div class="fifa livepitch" id="livePitch" aria-label="Live match view"><i class="hl"></i><i class="cc"></i><i class="bx1"></i><i class="bx2"></i><div class="ball" id="liveBall"></div>${homeCards}${awayCards}</div>
     <div id="liveBanner"></div>
     <div class="chipbar" id="liveCtl"></div>
     <div id="liveSpot"></div>
