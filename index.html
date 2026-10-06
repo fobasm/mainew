@@ -2415,7 +2415,7 @@ function sellPlayer(G, pid, fee, buyerId) {
   mail(G, { cat: 'leaving', from: 'Chief Executive', p, club: buyer, status: `Sold to ${buyer.s}`, subject: `[Info] Transfer Completed: ${p.name} leaves`,
     body: [`${p.name} has left ${me.n} and joined ${buyer.n}.`, 'The fee has been added to your transfer budget.'],
     rows: [['Buyer', buyer.n], ['Fee received', money(fee)], ['Transfer budget now', money(me.budget)], ['Wages freed', money(p.wage) + ' a season'], ['This season', `${p.apps} apps, ${p.goals} goals`]] });
-  G.pendingBids = (G.pendingBids || []).filter(b => b.pid !== pid); // other clubs' offers for him are withdrawn   return { ok: true, msg: `${p.name} sold to ${buyer.s} for ${money(fee)}.` };
+  G.pendingBids = (G.pendingBids || []).filter(b => b.pid !== pid); /* other clubs' offers for him are withdrawn */   return { ok: true, msg: `${p.name} sold to ${buyer.s} for ${money(fee)}.` };
 }
 
 function pickBuyer(G, p) {
