@@ -1921,6 +1921,37 @@ function moraleTick(G) {
       const wasOut = p.wantsOut;
       p.wantsOut = (gap > 11 && p.age < 31 && rnd() < 0.5) || (p.contract <= 1 && p.apps < 3 && rnd() < 0.2);
        if (p.wantsOut && !wasOut && t.id === G.myTeam) {         news(G, 'transfer', `${p.name} hands in a transfer request at ${t.s}.`);         const why = p.rating - clubLevel(t) > 11 ? 'he believes he has outgrown the club and wants a bigger stage' : `he is frustrated at a lack of playing time (${p.apps} appearances)`;         mail(G, { cat: 'request', from: `${p.name}'s Agent`, p, club: t, status: 'Wants to leave', flag: true,           subject: `Transfer Request: ${p.name}`,           body: [`${p.name} has asked to leave ${t.n}; ${why}.`, 'You can talk him round with an improved contract from his profile, or listen to offers.'],           rows: [['Current wage', money(p.wage) + ' a season'], ['Contract', `${p.contract} year${p.contract === 1 ? '' : 's'} left`], ['Appearances', p.apps]], act: 'contract' });       }
+      if (t.id === G.myTeam && !p.wantsOut) {
+        /* wants more game time */
+        if (G.round >= 8 && p.apps <= Math.floor(G.round * 0.25) && p.rating >= clubLevel(t) - 6 && p.age <= 30 && rnd() < 0.12) {
+          mail(G, { key: 'games_' + p.id + '_' + G.season, cat: 'request', from: `${p.name}'s Agent`, p, club: t, status: 'Wants more game time', flag: true,
+            subject: `Playing Time: ${p.name}`,
+            body: [`${p.name} is unsettled about his lack of first-team action — just ${p.apps} appearance${p.apps === 1 ? '' : 's'} this season.`, `He feels he's good enough to be featuring regularly and wants reassurance about his role, or he may push for a move.`],
+            rows: [['Appearances this season', p.apps], ['Rating', p.rating], ['Contract', `${p.contract} year${p.contract === 1 ? '' : 's'} left`]], act: 'squad' });
+        }
+        /* wants a loan */
+        if (p.age <= 21 && G.round >= 10 && p.apps <= 3 && p.contract >= 2 && rnd() < 0.10) {
+          mail(G, { key: 'loan_' + p.id + '_' + G.season, cat: 'request', from: `${p.name}'s Agent`, p, club: t, status: 'Wants a loan move', flag: true,
+            subject: `Loan Request: ${p.name}`,
+            body: [`${p.name} is finding first-team chances hard to come by at ${t.n} and has asked to go out on loan to get regular football elsewhere.`, 'You can arrange a loan move from his profile, or ask him to be patient and fight for his place.'],
+            rows: [['Age', p.age], ['Appearances this season', p.apps], ['Potential', potTxt(p)]], act: 'loan' });
+        }
+        /* wants more money */
+        const fairWage = wageFor(p.rating, p.age, t.tier != null ? t.tier : t.t);
+        if (p.contract >= 2 && p.apps >= 5 && p.wage < fairWage * 0.6 && rnd() < 0.10) {
+          mail(G, { key: 'wage_' + p.id + '_' + G.season, cat: 'request', from: `${p.name}'s Agent`, p, club: t, status: 'Wants a pay rise', flag: true,
+            subject: `Wage Review: ${p.name}`,
+            body: [`${p.name}'s form has moved him well past his current terms — he feels he is underpaid for his level and is asking for improved wages.`, 'You can open contract talks from his profile to offer new terms, or risk him growing unhappy.'],
+            rows: [['Current wage', money(p.wage) + ' a season'], ['Estimated fair wage', money(fairWage) + ' a season'], ['Rating', p.rating]], act: 'contract' });
+        }
+        /* happy & wants to extend his stay */
+        if (p.contract <= 2 && p.contract >= 1 && p.apps >= 10 && p.rating <= clubLevel(t) + 4 && p.age <= 32 && rnd() < 0.12) {
+          mail(G, { key: 'stay_' + p.id + '_' + G.season, cat: 'request', from: `${p.name}'s Agent`, p, club: t, status: 'Wants to stay', flag: true,
+            subject: `Contract Talks: ${p.name}`,
+            body: [`${p.name} has enjoyed his football at ${t.n} this season and has asked his agent to open talks over a new contract.`, 'You can offer him fresh terms from his profile whenever you’re ready.'],
+            rows: [['Contract', `${p.contract} year${p.contract === 1 ? '' : 's'} left`], ['Appearances this season', p.apps], ['Rating', p.rating]], act: 'contract' });
+        }
+      }
     });
   });
   scoutTick(G);
