@@ -575,7 +575,7 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
     <div class="view" id="v-news"></div>     <div class="view" id="v-inbox"></div>
     <div class="view" id="v-cups"></div>
     <div class="view" id="v-africa"></div>
-    <div class="view" id="v-nations"></div>
+    <div class="view" id="v-nations"></div>     <div class="view" id="v-world"></div>
     <div class="view" id="v-calendar"></div>
     <div class="view" id="v-info"></div>
     <div class="view" id="v-createclub"></div>
@@ -3717,7 +3717,7 @@ function buildSlots() {
 const MENU_SECTIONS = [
   ['Career', [['inbox','Inbox'],['match','Matchday'],['calendar','Calendar'],['table','League tables & fixtures']]],
   ['Squad', [['squad','Squad'], ['youth','Academy'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist']]],
-  ['Competitions', [['cups','Cups'],['africa','Africa'],['nations','Nations'],['stats','Stats']]],
+  ['Competitions', [['cups','Cups'],['africa','Africa'],['nations','Nations'],['world','World players'],['stats','Stats']]],
   ['Club', [['club','Club'],['trophies','Trophy room'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
   ['More', [['careerfile','Save & Load'],['soundsettings','Music & sound effects'],['info','How to play']]]
 ];
@@ -3777,7 +3777,7 @@ function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 42);
   if (active) active.classList.add('on');
   const dispatch = { match: viewMatch, table: viewTable, fixtures: viewFixtures, squad: viewSquadHub, tactics: viewSquadHub, finances: viewFinances, trophies: viewTrophies,
      transfers: viewTransfers, youth: viewYouthHub, training: viewYouthHub, inbox: viewInbox, stats: viewStats, news: viewNews,
-      cups: viewCups, africa: viewAfrica, nations: viewNations, calendar: viewCalendar, watchlist: viewWatchlist,
+      cups: viewCups, africa: viewAfrica, nations: viewNations, world: viewWorld, calendar: viewCalendar, watchlist: viewWatchlist,
      info: viewInfo, createclub: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub };
   try {
     (dispatch[tab] || viewMatch)();
@@ -5057,7 +5057,7 @@ function tacticsPitchSpots(t, xi, slots, coords) {   return xi.map((p, i) => {  
 }
 
 /* ---------------- transfers ---------------- */
-let txSection = 'search', txAge = 'ALL', txSort = 'rating', txHistFilter = 'all';
+let txSection = 'search', txAge = 'ALL', txSort = 'rating', txHistFilter = 'all', txNat = 'ALL'; const REGION_NAMES = { AFR: 'Africa', EUR: 'Europe', SAM: 'South America', NAM: 'North America', ASI: 'Asia & Oceania' }; function regionOf(c) {   if (NATIONS[c] && NATIONS[c].caf) return 'AFR';   if (LATIN_NATIONS.includes(c)) return 'SAM';   if (['US', 'CA', 'MX', 'CR', 'JM'].includes(c)) return 'NAM';   if (EURO_NATIONS.includes(c) || ['GB', 'TR'].includes(c)) return 'EUR';   return 'ASI'; } function natMatch(p, f) {   if (!f || f === 'ALL') return true;   if (f === 'FOREIGN') return p.nat !== 'ZA';   if (f.indexOf('R:') === 0) return regionOf(p.nat) === f.slice(2);   return p.nat === f; } function natSelectHTML(id, cur) {   const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`;   const grp = r => Object.keys(NATIONS).filter(c => c !== 'ZA' && regionOf(c) === r).sort((a, b) => natName(a).localeCompare(natName(b)));   return `<select id="${id}">${opt('ALL', 'Any nationality')}${opt('ZA', 'South Africa')}${opt('FOREIGN', 'All foreign players')}` +     Object.keys(REGION_NAMES).map(r => `<optgroup label="${REGION_NAMES[r]}">${opt('R:' + r, 'All of ' + REGION_NAMES[r])}${grp(r).map(c => opt(c, natName(c))).join('')}</optgroup>`).join('') + '</select>'; }
 function txRow(p, club, opts) {
   opts = opts || {};
   const listing = G.market.find(m => m.pid === p.id);
@@ -5081,7 +5081,7 @@ function viewTransfers() {
   const v = $('#v-transfers'), t = me(); v.classList.add('mmx', 'sqv');
   const ageOk = p => txAge === 'ALL' || (txAge === 'U21' ? p.age <= 21 : txAge === '22-28' ? (p.age >= 22 && p.age <= 28) : p.age >= 29);
   const posOk = p => txFilter === 'ALL' || p.pos === txFilter || POS_GROUP[p.pos] === txFilter;
-  const searchOk = p => !txSearch || p.name.toLowerCase().includes(txSearch.toLowerCase()) || natName(p.nat).toLowerCase().includes(txSearch.toLowerCase());
+  const searchOk = p => natMatch(p, txNat) && (!txSearch || p.name.toLowerCase().includes(txSearch.toLowerCase()) || natName(p.nat).toLowerCase().includes(txSearch.toLowerCase()));
   const sorter = (a, b) => {
     if (txSort === 'age') return a.age - b.age;
     if (txSort === 'potential') return b.pot - a.pot;
@@ -5112,7 +5112,7 @@ function viewTransfers() {
       ${['ALL', 'U21', '22-28', '29+'].map(a => `<button class="chip" data-txage="${a}" aria-pressed="${txAge === a}">${a === 'ALL' ? 'Any age' : a}</button>`).join('')}
       <select id="txSortSel">${[['rating', 'Highest rated'], ['potential', 'Highest potential'], ['value', 'Most valuable'], ['age', 'Youngest'], ['fit', 'Most likely to join you']]
         .map(([k, l]) => `<option value="${k}" ${txSort === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
-      <input type="search" id="txs" placeholder="Search name or country" value="${esc(txSearch)}" style="margin-left:auto;min-width:160px"></div>`;
+      ${natSelectHTML('txNatSel', txNat)}<input type="search" id="txs" placeholder="Search name or country" value="${esc(txSearch)}" style="margin-left:auto;min-width:160px"></div>`;
 
     if (txSection === 'search') {
       const all = [];
@@ -5195,7 +5195,7 @@ function viewTransfers() {
   const skipBtn = $('#skipWindow'); if (skipBtn) skipBtn.onclick = () => simRounds(Math.max(1, Math.ceil(roundsToNextWindow(G) / DAYS_PER_ROUND)));
   v.querySelectorAll('[data-txage]').forEach(b => b.onclick = () => { txAge = b.dataset.txage; viewTransfers(); });
   const sortSel = v.querySelector('#txSortSel'); if (sortSel) sortSel.onchange = e => { txSort = e.target.value; viewTransfers(); };
-  v.querySelectorAll('[data-tf]').forEach(b => b.onclick = () => { txFilter = b.dataset.tf; viewTransfers(); });
+  v.querySelectorAll('[data-tf]').forEach(b => b.onclick = () => { txFilter = b.dataset.tf; viewTransfers(); });   const natSel = v.querySelector('#txNatSel'); if (natSel) natSel.onchange = e => { txNat = e.target.value; viewTransfers(); };
   v.querySelectorAll('[data-txhist]').forEach(b => b.onclick = () => { txHistFilter = b.dataset.txhist; viewTransfers(); });
   const si = v.querySelector('#txs');
   if (si) si.oninput = () => { const pos = si.selectionStart; txSearch = si.value; viewTransfers(); const n = $('#txs'); n.focus(); n.setSelectionRange(pos, pos); };
@@ -5581,7 +5581,7 @@ function viewAfrica() {
 
 /* ---------------- national teams ---------------- */
 let natPick = 'ZA';
-function viewNations() {
+let wNat = 'ALL', wPos = 'ALL', wSort = 'rating', wSearch = '', wLimit = 60; function viewWorld() {   const v = $('#v-world'); v.classList.add('mmx', 'sqv');   const all = [];   G.teams.forEach(c => c.squad.forEach(p => all.push({ p, club: c })));   (G.freeAgents || []).forEach(p => all.push({ p, club: null }));   const by = {}, reg = {};   all.forEach(x => {     const o = by[x.p.nat] || (by[x.p.nat] = { n: 0, best: null });     o.n++; if (!o.best || x.p.rating > o.best.rating) o.best = x.p;     const r = regionOf(x.p.nat); reg[r] = (reg[r] || 0) + 1;   });   const natList = Object.keys(by).sort((a, b) => by[b].n - by[a].n);   const foreignN = all.filter(x => x.p.nat !== 'ZA').length;   const q = wSearch.toLowerCase();   const posOk = p => wPos === 'ALL' || p.pos === wPos || POS_GROUP[p.pos] === wPos;   const sorter = (a, b) => wSort === 'age' ? a.p.age - b.p.age : wSort === 'potential' ? b.p.pot - a.p.pot : wSort === 'value' ? b.p.value - a.p.value : b.p.rating - a.p.rating;   const rows = all.filter(x => natMatch(x.p, wNat) && posOk(x.p) && (!q || x.p.name.toLowerCase().includes(q) || natName(x.p.nat).toLowerCase().includes(q) || (x.club && x.club.n.toLowerCase().includes(q)))).sort(sorter);   const row = x => {     const p = x.p, c = x.club;     return `<tr data-pid="${p.id}" style="cursor:pointer"><td class="txp">${faceSVG(p, 26, c ? c.c1 : null)}<div><b>${esc(p.name)}</b></div></td>       <td style="white-space:nowrap">${flagSVG(p.nat)} ${esc(natName(p.nat))}</td><td>${posTag(p.pos)}</td><td class="num">${p.age}</td>       <td class="num">${ratingTag(p.rating)}</td><td class="num" style="color:var(--faint);white-space:nowrap">${potTxt(p)}</td>       <td>${c ? `${crestHTML(c, 13)} ${esc(c.s)}` : '<span class="hint">Free agent</span>'}</td><td class="num">${money(p.value)}</td></tr>`;   };   const chip = (val, label, cur) => `<button class="chip" data-wn="${val}" aria-pressed="${cur === val}">${label}</button>`;   let html = `<div class="rbox">     <div><b>${all.length}</b><span>Players in the world</span></div>     <div><b>${natList.length}</b><span>Nationalities</span></div>     <div><b>${Math.round(100 * foreignN / Math.max(1, all.length))}%</b><span>Foreign-born</span></div>     <div><b>${all.filter(x => !x.club).length}</b><span>Free agents</span></div>   </div>   <div class="panel"><h3>Browse by nationality<span class="sub">tap a country to see its players</span></h3>     <div class="chipbar" style="padding:0 13px 6px">${chip('ALL', 'Everyone', wNat)}${chip('FOREIGN', 'All foreign', wNat)}       ${Object.keys(REGION_NAMES).filter(r => reg[r]).map(r => chip('R:' + r, REGION_NAMES[r] + ' (' + reg[r] + ')', wNat)).join('')}</div>     <div class="chipbar" style="padding:0 13px 10px;max-height:140px;overflow:auto">${natList.map(c =>       `<button class="chip" data-wn="${c}" aria-pressed="${wNat === c}" title="Best: ${esc(by[c].best.name)} (${by[c].best.rating})">${flagSVG(c, 15)} ${esc(natName(c))} <span class="hint">${by[c].n}</span></button>`).join('')}</div></div>   <div class="panel"><div class="chipbar">${['ALL', 'GK', 'DEF', 'MID', 'ATT'].map(p => `<button class="chip" data-wp="${p}" aria-pressed="${wPos === p}">${p === 'ALL' ? 'Any position' : p}</button>`).join('')}     <select id="wSortSel">${[['rating', 'Highest rated'], ['potential', 'Highest potential'], ['value', 'Most valuable'], ['age', 'Youngest']].map(([k, l]) => `<option value="${k}" ${wSort === k ? 'selected' : ''}>${l}</option>`).join('')}</select>     ${natSelectHTML('wNatSel', wNat)}     <input type="search" id="wS" placeholder="Search player, country or club" value="${esc(wSearch)}" style="margin-left:auto;min-width:180px"></div>     <h3 style="padding:10px 13px 0">${wNat === 'ALL' ? 'All players' : wNat === 'FOREIGN' ? 'Foreign players' : wNat.indexOf('R:') === 0 ? REGION_NAMES[wNat.slice(2)] : esc(natName(wNat))}<span class="sub">${rows.length} found, ${Math.min(wLimit, rows.length)} shown</span></h3>     ${rows.length ? `<div class="tw"><table class="tbl txtbl"><thead><tr><th>Player</th><th>Nationality</th><th>Pos</th><th>Age</th><th>Rat</th><th>Pot</th><th>Club</th><th>Value</th></tr></thead><tbody>${rows.slice(0, wLimit).map(row).join('')}</tbody></table></div>       ${rows.length > wLimit ? `<div style="padding:10px 13px"><button class="btn ghost sm" id="wMore">Show 60 more</button></div>` : ''}`       : '<div class="empty">Nobody matches those filters.</div>'}</div>`;   v.innerHTML = html;   v.querySelectorAll('[data-wn]').forEach(b => b.onclick = () => { wNat = b.dataset.wn; wLimit = 60; viewWorld(); });   v.querySelectorAll('[data-wp]').forEach(b => b.onclick = () => { wPos = b.dataset.wp; wLimit = 60; viewWorld(); });   const ss = v.querySelector('#wSortSel'); if (ss) ss.onchange = e => { wSort = e.target.value; viewWorld(); };   const ns = v.querySelector('#wNatSel'); if (ns) ns.onchange = e => { wNat = e.target.value; wLimit = 60; viewWorld(); };   const si = v.querySelector('#wS'); if (si) si.oninput = () => { const pos = si.selectionStart; wSearch = si.value; wLimit = 60; viewWorld(); const n = $('#wS'); n.focus(); n.setSelectionRange(pos, pos); };   const more = v.querySelector('#wMore'); if (more) more.onclick = () => { wLimit += 60; viewWorld(); };   v.querySelectorAll('tr[data-pid]').forEach(r => r.onclick = () => playerModal(+r.dataset.pid)); } function viewNations() {
   const v = $('#v-nations'), A = G.africa.afcon;
   const ranked = CAF_NATIONS.slice().sort((a, b) => natRating(G, b) - natRating(G, a));
   const squad = natSquad(G, natPick);
