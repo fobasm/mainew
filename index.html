@@ -279,7 +279,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .sponsorCard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 10px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .15s,transform .15s}
 .sponsorCard:hover{border-color:var(--teal);transform:translateY(-2px)}
 .sponsorCard b{font-size:12.5px;line-height:1.25}
-.sponsorCard .samt{font-family:var(--head);font-size:16px;color:var(--teal)}
+.sponsorCard .samt{font-family:var(--head);font-size:16px;color:var(--teal)} .sponsorCard .shint{font-size:10.5px;color:var(--faint);margin-top:-6px}
 .sponsorCard[disabled]{opacity:.5;pointer-events:none}
 .sponsorCard.none{opacity:.8;border-style:dashed}
 .sponsorCard.none .samt{color:var(--faint);font-size:12px}
@@ -1877,7 +1877,20 @@ function playRound(G, skipMine) {
     });
   }
   G.round++;
-  G.teams.forEach(t => { t.fin.wages += t.wageBill / totalRounds(G); }); try { trainingTick(G); } catch (e) { console.error('Training error', e); }
+  G.teams.forEach(t => { t.fin.wages += t.wageBill / totalRounds(G); });
+  if (G.round % 3 === 0) {
+    G.teams.forEach(t => {
+      const sp = t.currentSponsor;
+      if (sp && sp.freq === 'monthly' && sp.paidSoFar < sp.amount - 0.001) {
+        const per = Math.round((sp.amount / sp.installments) * 100) / 100;
+        const pay = Math.min(per, Math.round((sp.amount - sp.paidSoFar) * 100) / 100);
+        t.budget = Math.round((t.budget + pay) * 100) / 100;
+        t.fin.sponsor = Math.round(((t.fin.sponsor || 0) + pay) * 100) / 100;
+        sp.paidSoFar = Math.round((sp.paidSoFar + pay) * 100) / 100;
+      }
+    });
+  }
+  try { trainingTick(G); } catch (e) { console.error('Training error', e); }
   africaRound(G);
   if (CUP_AT.includes(G.round) && !G.cup.done) out.cup = playCupRound(G, skipMine);
   if (S8_AT.includes(G.round)) out.s8 = playKnockoutRound(G, G.super8, S8_ROUNDS, 6);
@@ -2837,12 +2850,12 @@ let CTR_STYLE_DONE = false; function ctrInjectStyle() {   if (CTR_STYLE_DONE) re
 
 /* ---------------- sponsors ---------------- */
 const SPONSORS = [
-  { name: 'panar.co.za', base: 22, c1: '#29e0ff', c2: '#0b1a22', icon: 'globe' },
+  { name: 'panar.co.za', base: 22, c1: '#29e0ff', c2: '#0b1a22', icon: 'globe', img: 'assets/sponsor-panar.png' },
   { name: "Wesley's Theory Holdings", base: 14, c1: '#c9a227', c2: '#1c1200', icon: 'bank' },
   { name: 'Sana Logistics', base: 14, c1: '#ff8a00', c2: '#231200', icon: 'truck' },
   { name: 'Haibo (Pty) Ltd', base: 9, c1: '#39ff8c', c2: '#031b10', icon: 'building' },
-  { name: '@brightntuliart', base: 9, c1: '#ff2d6e', c2: '#22030d', icon: 'brush' },
-  { name: 'Fatcat Clothing', base: 3.6, c1: '#a970ff', c2: '#160a26', icon: 'shirt' },
+  { name: '@brightntuliart', base: 9, c1: '#ff2d6e', c2: '#22030d', icon: 'brush', img: 'assets/sponsor-bna.png' },
+  { name: 'Fatcat Clothing', base: 3.6, c1: '#a970ff', c2: '#160a26', icon: 'shirt', img: 'assets/sponsor-fatcat.png' },
   { name: 'Thenga X', base: 3.6, c1: '#ffe14d', c2: '#241d00', icon: 'bolt' },
   { name: 'Football Is Life Organisation', base: 1.4, c1: '#3ddc84', c2: '#04150b', icon: 'ball' }
 ];
