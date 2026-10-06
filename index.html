@@ -4203,7 +4203,7 @@ function pushTick(e) {
   const icon = e.type === 'goal' ? '⚽' : e.type === 'card' ? '🟨' : e.type === 'injury' ? '＋' : '⇄';
   const team = G.teams[e.team];
   let txt;
-  if (e.type === 'goal') txt = `<b>${esc(e.sName)}</b> scores for ${esc(team.s)}${e.aName ? `, set up by ${esc(e.aName)}` : ''}`;
+  if (e.type === 'goal') txt = `<b>${esc(e.sName)}</b> scores ${e.penalty ? 'from the penalty spot' : 'for ' + esc(team.s)}${e.aName && !e.penalty ? `, set up by ${esc(e.aName)}` : ''}`;
   else if (e.type === 'card') txt = `${esc(e.sName)} (${esc(team.s)}) is booked`;
   else if (e.type === 'injury') txt = `${esc(e.sName)} (${esc(team.s)}) goes down injured`;
   else txt = `${esc(team.s)} bring on ${esc(e.sName)}`;
@@ -4217,6 +4217,43 @@ function liveSchedule() {
   ls.timer = setTimeout(liveTick, 460 / ls.speed);
 }
 
+function pushSetPieceTick(label) {
+  const t = $('#liveTicker'); if (!t) return;
+  const row = el('div', 'tick', `<span class="m">${liveState.minute}'</span><span>⚑</span><span>${esc(label)}</span>`);
+  t.insertBefore(row, t.firstChild);
+}
+function triggerSetPiece(ls, type) {
+  const side = Math.random() < 0.5 ? 'h' : 'a';
+  const name = side === 'h' ? G.teams[ls.ctx.h].s : G.teams[ls.ctx.a].s;
+  let label, by, bx, hold = 2000;
+  if (type === 'corner') {
+    label = `Corner to ${name}`;
+    by = side === 'h' ? 8 : 142; bx = Math.random() < 0.5 ? 6 : 94;
+  } else if (type === 'throwin') {
+    label = `Throw-in, ${name}`;
+    by = 15 + Math.random() * 120; bx = Math.random() < 0.5 ? 6 : 94;
+    hold = 1300;
+  } else if (type === 'freekick') {
+    label = `Free kick to ${name}`;
+    by = side === 'h' ? 20 + Math.random() * 70 : 60 + Math.random() * 70;
+    bx = 30 + Math.random() * 40;
+  } else {
+    const goalEv = ls.ctx.ev.find(e => e.type === 'goal' && e.side === side && !e._shown && e.min >= ls.minute && e.min <= ls.minute + 2);
+    if (goalEv) goalEv.penalty = true;
+    label = `PENALTY to ${name}!`;
+    by = side === 'h' ? 18 : 132; bx = 50;
+    hold = goalEv ? 1200 : 2800;
+    if (!goalEv) {
+      setTimeout(() => { if (liveState === ls) liveBanner(Math.random() < 0.5 ? `${name} fire it wide!` : 'Saved! Great stop by the keeper!'); }, 1300);
+    }
+  }
+  ls.ball.ty = by; ls.ball.tx = bx; ls.ballY = by; ls.ballX = bx;
+  ls.ballHoldUntil = performance.now() + hold;
+  liveBanner(label);
+  pushSetPieceTick(label);
+  clearTimeout(ls.flashT);
+  ls.flashT = setTimeout(() => { if (liveState === ls && !ls.paused) liveBanner(''); }, hold);
+}
 function liveTick() {
   const ls = liveState;
   if (!ls || ls.paused) return;
@@ -4227,12 +4264,17 @@ function liveTick() {
       const bias = clamp(s * 0.4, -5, 5);
       ls.ball.ty = clamp(ls.ballY - bias + (Math.random() - 0.5) * 70, 6, 144);
       ls.ball.tx = clamp(ls.ballX + (Math.random() - 0.5) * 46, 8, 92);
+      const roll = Math.random();
+      if (roll < 0.03) triggerSetPiece(ls, 'corner');
+      else if (roll < 0.07) triggerSetPiece(ls, 'throwin');
+      else if (roll < 0.10) triggerSetPiece(ls, 'freekick');
+      else if (roll < 0.103) triggerSetPiece(ls, 'penalty');
     }
     ls.ctx.ev.forEach(e => {
       if (!e._shown && e.min <= ls.minute) {
         e._shown = true; pushTick(e);
         if (e.type === 'goal') {
-          liveBanner('⚽ GOAL! ' + e.sName);
+          liveBanner((e.penalty ? '⚽ PENALTY SCORED! ' : '⚽ GOAL! ') + e.sName);
           clearTimeout(ls.flashT);
           ls.flashT = setTimeout(() => { if (liveState === ls && !ls.paused) liveBanner(''); }, 1800);
           const netY = e.side === 'h' ? 8 : 142, netX = 50;
@@ -4303,17 +4345,21 @@ function liveDraw() {
     const wobX = Math.sin(now / 320) * 1.6, wobY = Math.cos(now / 410) * 1.6;
     const ballLeft = (1 - ls.ballY / 150) * 100 + wobX, ballTop = ls.ballX + wobY;
     const ball = $('#liveBall'); if (ball) { ball.style.left = ballLeft + '%'; ball.style.top = ballTop + '%'; }
+    const terr = (ballLeft - 50) / 50;
+    ls.shapeShift = (ls.shapeShift || 0) + (terr * 11 - (ls.shapeShift || 0)) * 0.012;
     const drawSide = (coords, prefix, away) => {
       coords.forEach((cc, i) => {
         const el = $('#lv-' + prefix + i); if (!el) return;
         const isGK = i === 0, role = cc[1] / 100;
         const advX = cc[1] * 0.48;
-        const bx = away ? (100 - advX) : advX, by = away ? (100 - cc[0]) : cc[0];
-        const pull = isGK ? 0.03 : 0.14 + role * 0.55;
+        let bx = away ? (100 - advX) : advX, by = away ? (100 - cc[0]) : cc[0];
+        bx += ls.shapeShift * (isGK ? 0.08 : 0.35 + role * 0.65);
+        const pull = isGK ? 0.04 : 0.2 + role * 0.5;
         let tx = bx + (ballLeft - bx) * pull, ty = by + (ballTop - by) * pull;
-        tx += Math.sin(now / 850 + i * 1.9 + (prefix === 'a' ? 3 : 0)) * (isGK ? 0.2 : 0.7 + role * 0.9);
-        ty += Math.cos(now / 760 + i * 2.3) * (isGK ? 0.3 : 0.9 + role * 1.1);
-        if (isGK) { tx = Math.max(bx - 2.5, Math.min(bx + 2.5, tx)); ty = Math.max(by - 10, Math.min(by + 10, ty)); }
+        tx += Math.sin(now / 850 + i * 1.9 + (prefix === 'a' ? 3 : 0)) * (isGK ? 0.4 : 1.3 + role * 1.3);
+        ty += Math.cos(now / 760 + i * 2.3) * (isGK ? 0.4 : 1.2 + role * 1.5);
+        if (isGK) { tx = Math.max(bx - 3, Math.min(bx + 3, tx)); ty = Math.max(by - 10, Math.min(by + 10, ty)); }
+        tx = Math.max(4, Math.min(96, tx)); ty = Math.max(5, Math.min(95, ty));
         const key = prefix + i;
         const q = ls.pos[key] || (ls.pos[key] = { x: bx, y: by });
         q.x += (tx - q.x) * 0.1; q.y += (ty - q.y) * 0.1;
@@ -4327,7 +4373,6 @@ function liveDraw() {
   }
   requestAnimationFrame(liveDraw);
 }
-
 function halfTime() {
   const ls = liveState;
   const T = me();
