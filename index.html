@@ -1445,11 +1445,32 @@ function effRating(p, slot) { return clamp(p.rating - posPenalty(p, slot) + p.fo
 
 function ensureLineup(t) {
   const slots = FORMATIONS[t.formation] || FORMATIONS['4-4-2'];
-  const valid = t.lineup && t.lineup.length === 11 &&
-    t.lineup.every(id => { const p = t.squad.find(x => x.id === id); return p && p.inj <= 0; }) &&
-    new Set(t.lineup).size === 11;
-  if (valid) return t.lineup;
-  t.lineup = autoLineup(t);
+  const lineOk = t.lineup && t.lineup.length === 11 && new Set(t.lineup).size === 11 &&
+    t.lineup.every(id => t.squad.some(x => x.id === id));
+  if (!lineOk) { t.lineup = autoLineup(t); t.subFor = {}; return t.lineup; }
+  t.subFor = t.subFor || {};
+  const fit = p => p && p.inj <= 0;
+  /* 1. a recovered player takes his slot back from the stand-in */
+  Object.keys(t.subFor).forEach(i => {
+    const rec = t.subFor[i], cur = t.lineup[i];
+    const orig = t.squad.find(x => x.id === rec.orig);
+    if (cur !== rec.sub || !orig) { delete t.subFor[i]; return; }   /* you changed that slot yourself */
+    if (fit(orig) && !t.lineup.includes(orig.id)) { t.lineup[i] = orig.id; delete t.subFor[i]; }
+  });
+  /* 2. replace ONLY injured players, one slot each, position first */
+  t.lineup.forEach((id, i) => {
+    if (fit(t.squad.find(x => x.id === id))) return;
+    const slot = slots[i];
+    let pool = t.squad.filter(p => fit(p) && !p.reserve && !t.lineup.includes(p.id));
+    if (!pool.length) pool = t.squad.filter(p => fit(p) && !t.lineup.includes(p.id));
+    let best = null, bv = -1e9;
+    pool.forEach(p => { const v = effRating(p, slot) - posPenalty(p, slot) * 4; if (v > bv) { bv = v; best = p; } });
+    if (best) {
+      const prev = t.subFor[i] ? t.subFor[i].orig : id;   /* remember the original starter */
+      t.lineup[i] = best.id;
+      t.subFor[i] = { orig: prev, sub: best.id };
+    }
+  });
   return t.lineup;
 }
 function autoLineup(t) {
