@@ -229,6 +229,13 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .gseasonbar select{background:#2c2c2e;color:#e7e8ea;border:1px solid #3a3a3d;border-radius:6px;padding:6px 10px;font-family:inherit;font-size:14px}
 .glegend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 13px;font-size:12px;color:#9e9ea0;border-top:1px solid #2c2c2e;background:#1f1f1f}
 .glegend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.stilegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:13px}
+.stile{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stile b{display:block;font-family:var(--head);font-size:20px}
+.stile small{color:var(--faint);font-size:11px}
+.stile.up b{color:var(--up)}
+.stile.down b{color:var(--down)}
+.stile.gold b{color:var(--gold)}
 .tbl-google h4{color:#e7e8ea;background:#1f1f1f;margin:0}
 .tbl-google .chipbar{background:#1f1f1f;border-color:#2c2c2e}
 .tbl-google .chip{background:#2c2c2e;color:#e7e8ea;border-color:#3a3a3d}
@@ -3629,7 +3636,7 @@ const MENU_SECTIONS = [
   ['Career', [['inbox','Inbox'],['match','Matchday'],['calendar','Calendar'],['table','League tables & fixtures']]],
   ['Squad', [['squad','Squad'], ['youth','Academy'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist']]],
   ['Competitions', [['cups','Cups'],['africa','Africa'],['nations','Nations'],['stats','Stats']]],
-  ['Club', [['club','Club'],['finances','Finances'],['trophies','Trophy room'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
+  ['Club', [['club','Club'],['trophies','Trophy room'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
   ['More', [['careerfile','Save & Load'],['soundsettings','Music & sound effects'],['info','How to play']]]
 ];
 function buildSideNav() {
