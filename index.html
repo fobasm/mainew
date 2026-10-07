@@ -4142,6 +4142,7 @@ function afterLeaguePortion(res) {
   else { afterRound(); showMatchdayModal(res); }
 }
 function beginLiveMatch(ctx, m, kind, tier) {
+  if (tab !== 'match') { tab = 'match'; document.querySelectorAll('.view').forEach(v => v.classList.remove('on')); const av = $('#v-match'); if (av) av.classList.add('on'); }
   playSound('whistle');
   if (bgMusic) bgMusic.volume = 0.05;
   const mySide = m.h === G.myTeam ? 'h' : 'a';
