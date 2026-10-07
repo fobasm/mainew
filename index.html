@@ -5716,13 +5716,14 @@ let wNat = 'ALL', wPos = 'ALL', wSort = 'rating', wSearch = '', wLimit = 60; fun
   }
   html += `</div>
 
-  <div class="panel"><h3>National team ratings<span class="sub">all ${CAF_NATIONS.length} CAF nations</span></h3>
+  <div class="panel"><h3>National team ratings<span class="sub">${ranked.length} of ${worldOrder.length} nations, world ranking</span></h3>
+    <div class="chipbar" style="padding:0 13px 8px">${[['ALL', 'World']].concat(Object.keys(REGION_NAMES).map(r => [r, REGION_NAMES[r]])).map(([k, l]) => `<button class="chip" data-nreg="${k}" aria-pressed="${natReg === k}">${l}</button>`).join('')}</div>
     <table class="tbl"><thead><tr><th class="pos">#</th><th>Nation</th><th>Rating</th><th class="hide-s">In these leagues</th></tr></thead><tbody>` +
     ranked.map((c, i) => {
       const n = natSquad(G, c).length;
-      return `<tr class="${c === natPick ? 'me' : ''}"><td class="pos num">${i + 1}</td>
+      return `<tr class="${c === natPick ? 'me' : ''}"><td class="pos num">${worldRank[c]}</td>
         <td><button class="chip" data-nat="${c}" style="border:none;background:none;padding:0;color:inherit">${flagSVG(c)} <b>${esc(natName(c))}</b></button></td>
-        <td class="num">${natRating(G, c)}</td><td class="num hide-s" style="color:var(--dim)">${n}</td></tr>`;
+        <td class="num">${ratingOf[c]}</td><td class="num hide-s" style="color:var(--dim)">${n}</td></tr>`;
     }).join('') + `</tbody></table></div>
 
   <div class="panel"><h3>${esc(natName(natPick))} squad<span class="sub">best ${Math.min(23, squad.length)} eligible players in the game</span></h3>` +
@@ -5734,6 +5735,7 @@ let wNat = 'ALL', wPos = 'ALL', wSort = 'rating', wSearch = '', wLimit = 60; fun
 
   v.innerHTML = html;
   v.querySelectorAll('[data-nat]').forEach(b => b.onclick = () => { natPick = b.dataset.nat; viewNations(); window.scrollTo({ top: 0 }); });
+  v.querySelectorAll('[data-nreg]').forEach(b => b.onclick = () => { natReg = b.dataset.nreg; viewNations(); });
   bindPlayerRows(v);
 }
 
