@@ -4192,6 +4192,7 @@ function renderLive() {
   const ls = liveState, ctx = ls.ctx;
   const H = G.teams[ctx.h], A = G.teams[ctx.a];
   const v = $('#v-match'); v.classList.add('mmx');
+  setLiveFullscreen(true);
   const homeCards = ctx.xiH.map((p, i) => liveFplHTML(p, i, ctx.slotsH, H, 'h', false)).join('');
   const awayCards = ctx.xiA.map((p, i) => liveFplHTML(p, i, ctx.slotsA, A, 'a', true)).join('');
   v.innerHTML = `<div class="livewrap">
@@ -4489,6 +4490,7 @@ function halfTime() {
 
 function endLive() {
   const ls = liveState;
+  setLiveFullscreen(false);
   stopCrowd();
   if (bgMusic) bgMusic.volume = 0.25;
   finishMatch(G, ls.ctx);
