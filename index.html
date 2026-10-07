@@ -6039,15 +6039,19 @@ function viewCalendar() {
 /* ---------------- how to play ---------------- */
 function viewInfo() {
   const v = $('#v-info');
-  v.innerHTML = `<div class="panel"><h3>How to play Mzansi Manager<span class="sub">a quick guide</span></h3>
-    <div class="pad" style="font-size:14px;line-height:1.65">
+  v.innerHTML = `<div class="mb">
+    <div class="mb-tabs"><span style="padding:11px 16px;font:600 15px var(--head);color:#fff">How to play Mzansi Manager</span></div>
+    <div class="pad" style="font-size:14px;line-height:1.7">
       <p><b>The idea.</b> You manage a South African football club through as many seasons as you like. You don't control players on the pitch — you pick the squad, set the tactics, work the transfer market, and watch results unfold.</p>
-      <p><b>Matchday.</b> Hit "Play matchday" to watch your game live on a pitch, or turn off live mode in Team talk to sim instantly. Half time lets you make up to five substitutions.</p>
-      <p><b>Team talk.</b> Pick a formation, tap a shirt then a bench player to swap them, and see who's injured.</p>
-      <p><b>Transfers.</b> Bid on listed players, sign free agents, sell or release your own, and renew contracts before they run out — a player who runs down his deal for nothing is on you, not the game.</p>
+      <p><b>The calendar.</b> Continue in the top bar steps forward one real day at a time, and tells you plainly when there's nothing on and when there's a match. Next day does the same from the Matchday page, and Keep going fast-forwards day by day until a match turns up or you hit Stop. The Calendar tab shows the whole month, your last three results and next three fixtures, and highlights the transfer windows.</p>
+      <p><b>Matchday.</b> Hit "Play matchday" to watch your game live on a pitch, or turn off live mode in Tactics to sim instantly. Half time lets you make up to five substitutions.</p>
+      <p><b>Squad and Tactics.</b> Both show your line-up as player photos on the pitch, rating on the left and position on the right, with the captain marked underneath. Tap anyone on the Squad pitch for a quick profile card; in Tactics, tap a player then a bench player to swap them.</p>
+      <p><b>Transfers.</b> Bid on listed players, sign free agents, sell or release your own, and renew contracts before they run out. The transfer window runs the whole of July and August, and all of January — the Transfers page and top bar always show exactly how many days are left.</p>
       <p><b>Academy.</b> Upgrade your youth setup and promote prospects into the senior squad. A strong academy is the cheapest way to build a team.</p>
       <p><b>Five divisions.</b> ${TIER_NAMES.join(' → ')}. Two up, two down between each, every season.</p>
+      <p><b>League tables & fixtures.</b> One tab now holds the full league table, your own fixture list, and every division's results by matchday.</p>
       <p><b>Cups and Africa.</b> The ${CUP_NAME} is open to every club in the country. The top clubs also chase the ${SUPER8}, the ${KNOCKOUT}, and a place in the ${CAF_NAME} against the best of the continent. Your best South African players can be called up for ${AFCON_NAME} qualifiers and finals.</p>
+      <p><b>Club.</b> Your badge, kit designs, sponsor, and finances all live here now — budget, wage bill, income and spending, and your history season by season.</p>
       <p><b>Reputation.</b> Finish well and win things, and bigger clubs come calling with job offers. Finish badly and the board's patience runs out.</p>
       <p><b>Saving.</b> The game saves itself after every matchday, in this browser, across four slots.</p>
       <p style="color:var(--dim)">Mzansi Manager works on your phone and on a computer — everything here is one page, nothing to install.</p>
