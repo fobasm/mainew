@@ -6076,9 +6076,7 @@ const CC_ICONS = ['ball','lion','star','crown','flame','wave','building','flower
 function viewCreateClub() {
   const v = $('#v-createclub');
   const preview = { s: (ccName || 'Your Club').slice(0, 3).toUpperCase(), n: ccName || 'Your Club', c1: ccC1, c2: ccC2, icon: ccIcon, shape: ccShape };
-  v.innerHTML = `<div class="panel"><h3>Create a club<span class="sub">design a badge, pick colours, choose where you start</span></h3>
-    <div class="pad">
-    v.innerHTML = `<div class="mb"><div class="mb-tabs"><span style="padding:11px 16px;font:600 15px var(--head);color:#fff">Create a club</span></div>
+  v.innerHTML = `<div class="mb"><div class="mb-tabs"><span style="padding:11px 16px;font:600 15px var(--head);color:#fff">Create a club</span></div>
     <div class="pad">
       <div style="display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
         ${crestCustomHTML(preview, 84)}
@@ -6090,7 +6088,7 @@ function viewCreateClub() {
       <p class="hint" style="margin:0 0 6px">Badge icon</p>
       <div class="chipbar" style="border:none;padding:0 0 10px">${CC_ICONS.map(i => `<button class="chip" data-icon="${i}" aria-pressed="${ccIcon === i}">${i}</button>`).join('')}</div>
       <p class="hint" style="margin:0 0 6px">Badge shape</p>
-      <div class="chipbar" style="border:none;padding:0 0 10px">${['shield','circle','diamond','hexagon','pentagon','roundsquare']].map(s => `<button class="chip" data-shape="${s}" aria-pressed="${ccShape === s}">${s}</button>`).join('')}</div>
+<div class="chipbar" style="border:none;padding:0 0 10px">${['shield','circle','diamond','hexagon','pentagon','roundsquare'].map(s => `<button class="chip" data-shape="${s}" aria-pressed="${ccShape === s}">${s}</button>`).join('')}</div>
       <p class="hint" style="margin:0 0 6px">Colours</p>
       <div style="display:flex;gap:10px;margin-bottom:12px">
         <label class="hint">Primary <input type="color" id="ccC1I" value="${ccC1}"></label>
