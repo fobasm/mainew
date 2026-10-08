@@ -2044,7 +2044,7 @@ function scoutTick(G) {
 }
 
 /* ---------------- season rollover ---------------- */
-function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('rank snapshot', e); }   const N_TIERS = TIER_NAMES.length;) {
+function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('rank snapshot', e); }
   const N_TIERS = TIER_NAMES.length;
   const sum = { season: G.season, champions: [], promoted: [], relegated: [], cup: G.cup.winner, retired: [], breakout: [] };
   const tables = [];
