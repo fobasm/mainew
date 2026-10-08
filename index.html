@@ -4109,6 +4109,7 @@ function showSponsors() {
       <div style="font-family:var(--head);font-size:15px;color:var(--faint)">Transfer budget</div>
       <div style="font-family:var(--head);font-size:34px" id="sponsorNum">${money(t.budget)}</div>
     </div>`);
+  $('#modal').classList.add('mmx');
   document.querySelectorAll('[data-sponsor]').forEach(b => b.onclick = () => {
     document.querySelectorAll('[data-sponsor]').forEach(x => x.setAttribute('disabled', ''));
     if (b.dataset.sponsor === 'none') {
