@@ -4283,7 +4283,7 @@ function showFullTimeCard() {   const pitch = $('#livePitch'); if (!pitch || $('
   const pa = $('#livePause'); if (pa) pa.onclick = livePause;
   const done = $('#liveDone');   if (done) {     showFullTimeCard();     done.onclick = () => {       if (ls.leaving) return; ls.leaving = true;       const app = document.getElementById('app');       if (!app) { endLive(); return; }       app.style.transition = 'opacity .35s ease'; app.style.opacity = '0';       setTimeout(() => {         endLive();         app.style.opacity = '';         setTimeout(() => { app.style.transition = ''; }, 400);       }, 350);     };   }
   c.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { ls.speed = +b.dataset.sp; liveControls(); if (ls.timer) liveSchedule(); });
-  const sk = $('#liveSkip'); if (sk) sk.onclick = skipLive;   const sb = $('#liveSubs'); if (sb) sb.onclick = openLiveSubs;   const sb = $('#liveSubs'); if (sb) sb.onclick = openLiveSubs;
+  const sk = $('#liveSkip'); if (sk) sk.onclick = skipLive;   const sb = $('#liveSubs'); if (sb) sb.onclick = openLiveSubs;
 }
 
 function liveGo() {
