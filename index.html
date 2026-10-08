@@ -1819,7 +1819,7 @@ function makeSub(ctx, side, outId, inPlayer) {
   const i = xi.findIndex(p => p.id === outId);
   if (i < 0) return false;
   const slots = side === 'h' ? ctx.slotsH : ctx.slotsA;
-  xi[i] = inPlayer;
+  (ctx.subbedOff || (ctx.subbedOff = new Set())).add(xi[i].id);   xi[i] = inPlayer;
   ctx.ev.push({ min: ctx.minute || 45, type: 'sub', side, team: side === 'h' ? ctx.h : ctx.a, sName: inPlayer.name, outName: null });
   if (side === 'h') ctx.subsH++; else ctx.subsA++;
   inPlayer._subbedIn = true;
@@ -4200,7 +4200,7 @@ function clubInitials(n) {   return ((n || '').split(/\s+/).filter(Boolean).map(
   const advX = cy * 0.48;
   const left = away ? (100 - advX) : advX;
   const top = away ? (100 - cx) : cx;
-  return `<button class="fpl live" id="lv-${prefix}${i}" style="left:${left}%;top:${top}%">
+  return `<button class="fpl live" id="lv-${prefix}${i}" data-lpid="${p.id}" style="left:${left}%;top:${top}%">
     <div class="prow3"><div class="pface">${faceSVG(p, 18, teamObj.c1)}${teamObj.captainId === p.id ? '<span class="cband">C</span>' : ''}</div></div>
     <span class="fnm2">${esc(p.last || p.name)}</span></button>`;
 }
@@ -4273,7 +4273,7 @@ function showFullTimeCard() {   const pitch = $('#livePitch'); if (!pitch || $('
   else h = `<button class="chip" id="livePause" aria-pressed="${!!ls.paused}">${ls.paused ? 'Resume' : 'Pause'}</button>`;
   if (!ls.ft) {
     h += [1, 2, 4, 8].map(s => `<button class="chip" data-sp="${s}" aria-pressed="${ls.speed === s}">${s}x</button>`).join('');
-    h += `<button class="chip" id="liveSkip">Skip to result</button>`;
+    if (ls.started) { const su = ls.mySide === 'h' ? ls.ctx.subsH : ls.ctx.subsA; h += `<button class="chip" id="liveSubs"${su >= 5 ? ' disabled' : ''}>Subs (${Math.max(0, 5 - su)})</button>`; }     h += `<button class="chip" id="liveSkip">Skip to result</button>`;
   }
   c.innerHTML = h;
   const pitchEl = $('#livePitch'); if (pitchEl) pitchEl.classList.toggle('paused', !!ls.paused && !ls.ft);
@@ -4322,7 +4322,7 @@ function pushTick(e) {
   if (e.type === 'goal') txt = `<b>${esc(e.sName)}</b> scores ${e.penalty ? 'from the penalty spot' : 'for ' + esc(team.s)}${e.aName && !e.penalty ? `, set up by ${esc(e.aName)}` : ''}`;
   else if (e.type === 'card') txt = e.card === 'red' ? `<b>${esc(e.sName)}</b> (${esc(team.s)}) is sent off!` : `${esc(e.sName)} (${esc(team.s)}) is booked`;
   else if (e.type === 'injury') txt = `${esc(e.sName)} (${esc(team.s)}) goes down injured`;
-  else txt = `${esc(team.s)} bring on ${esc(e.sName)}`;
+  else txt = `${esc(team.s)} bring on ${esc(e.sName)}${e.outName ? ' for ' + esc(e.outName) : ''}`;
   const row = el('div', 'tick' + (e.type === 'goal' ? ' goal' : ''), `<span class="m">${e.min}'</span><span>${icon}</span><span>${txt}</span>`);
   t.insertBefore(row, t.firstChild);
 }
@@ -4495,7 +4495,7 @@ function halfTime() {
   const onPitch = ls.mySide === 'h' ? ls.ctx.xiH : ls.ctx.xiA;
   const slots = ls.mySide === 'h' ? ls.ctx.slotsH : ls.ctx.slotsA;
   const used = ls.mySide === 'h' ? ls.ctx.subsH : ls.ctx.subsA;
-  const bench = T.squad.filter(p => !onPitch.includes(p) && p.inj <= 0);
+  const bench = T.squad.filter(p => !onPitch.includes(p) && p.inj <= 0 && !(ls.ctx.subbedOff && ls.ctx.subbedOff.has(p.id)));
   const goals = ls.ctx.ev.filter(e => e.type === 'goal' && e.min <= 45);
   const hg = goals.filter(e => e.side === 'h').length, ag = goals.filter(e => e.side === 'a').length;
   const body = `<p style="margin:0 0 10px;color:var(--dim)">Half time: <b style="color:var(--ink)">${esc(G.teams[ls.ctx.h].s)} ${hg}–${ag} ${esc(G.teams[ls.ctx.a].s)}</b>.
@@ -4510,6 +4510,7 @@ function halfTime() {
     ls.half = 2; ls.minute = 45;
     aiSubs(G, ls.ctx);
     runPeriod(G, ls.ctx, 46, 92);
+    refreshLiveMarkers();
     ls.started = true; ls.paused = false;
     liveControls();
     liveSchedule();
