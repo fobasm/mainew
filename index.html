@@ -1977,7 +1977,7 @@ function moraleTick(G) {
     t.squad.forEach(p => {
       const gap = p.rating - clubLevel(t);
       const wasOut = p.wantsOut;
-      p.wantsOut = (gap > 11 && p.age < 31 && rnd() < 0.5) || (p.contract <= 1 && p.apps < 3 && rnd() < 0.2);
+      p.wantsOut = G.round >= 8 && ((gap > 11 && p.age < 31 && rnd() < 0.5) || (p.contract <= 1 && p.apps < 3 && rnd() < 0.2));
        if (p.wantsOut && !wasOut && t.id === G.myTeam) {         news(G, 'transfer', `${p.name} hands in a transfer request at ${t.s}.`);         const why = p.rating - clubLevel(t) > 11 ? 'he believes he has outgrown the club and wants a bigger stage' : `he is frustrated at a lack of playing time (${p.apps} appearances)`;         mail(G, { cat: 'request', from: `${p.name}'s Agent`, p, club: t, status: 'Wants to leave', flag: true,           subject: `Transfer Request: ${p.name}`,           body: [`${p.name} has asked to leave ${t.n}; ${why}.`, 'You can talk him round with an improved contract from his profile, or listen to offers.'],           rows: [['Current wage', money(p.wage) + ' a season'], ['Contract', `${p.contract} year${p.contract === 1 ? '' : 's'} left`], ['Appearances', p.apps]], act: 'contract' });       }
       if (t.id === G.myTeam && !p.wantsOut) {
         /* wants more game time */
