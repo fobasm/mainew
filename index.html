@@ -3789,7 +3789,9 @@ function buildSideNav() {
   c.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => {
     if (b.dataset.tab === 'careerfile') { openCareerModal(); return; }
     if (b.dataset.tab === 'soundsettings') { openSoundModal(); return; }
+    const keepY = window.scrollY;
     goTo(b.dataset.tab);
+    window.scrollTo({ top: keepY });
   });
 }
 function goTo(id) {   if (id === 'manager') mgrTab = (G.pendingJobOffers && G.pendingJobOffers.length) ? 'offers' : 'profile';   if (id === 'finances') { clubTab = 'finances'; id = 'club'; } else if (id === 'club') clubTab = 'overview';   if (id === 'training') { youthTab = 'training'; id = 'youth'; } else if (id === 'youth') youthTab = 'academy';   if (id === 'tactics') { squadTab = 'tactics'; id = 'squad'; } else if (id === 'squad') squadTab = 'squad';
