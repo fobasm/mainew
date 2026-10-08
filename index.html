@@ -4231,13 +4231,14 @@ function renderLive() {
       <div id="livePcard"></div>
     </div>
     <div class="liveside">
-      <div class="livesideHead"><span>Commentary</span><span class="kbhint">Space pause · 1-4 speed · B subs · S skip</span></div>
+      <div class="livesideHead"><span>Commentary</span><span class="kbhint">Space pause · 1-4 speed · B subs · S skip</span></div>       <div class="liveStats" id="liveStats"></div>
       <div class="liveticker" id="liveTicker"><div class="hint" style="padding:8px 12px">Kick-off is moments away.</div></div>
     </div>
   </div>`;
   $('#actions').innerHTML = '';
   liveControls();
   updateLiveScore();
+  renderLiveStats();
   const pitchClick = $('#livePitch');
   if (pitchClick) pitchClick.onclick = e => {
     const b = e.target.closest('.fpl.live'); if (!b) return;
@@ -4303,7 +4304,7 @@ function liveBanner(txt) {
   const b = $('#liveBanner'); if (b) b.innerHTML = txt ? `<div class="banner">${txt}</div>` : '';
 }
 
-function updateLiveScore() {
+/* live match stats: generated for display from team strength, consistent with the score (does not affect results) */ function liveStatsStep(ls) {   const s = ls.st, c = ls.ctx;   const hS = c.sh.att + c.sh.def, aS = c.sa.att + c.sa.def;   const target = clamp(50 + (hS - aS) * 0.55, 32, 68);   s.pH = clamp(s.pH + (target - s.pH) * 0.06 + (Math.random() - 0.5) * 1.6, 25, 75);   s.pSum += s.pH; s.pn++;   [['h', c.sh, c.sa, s.pH], ['a', c.sa, c.sh, 100 - s.pH]].forEach(([side, me, op, poss], k) => {     const f = clamp(Math.pow(me.att / Math.max(1, op.def), 2), 0.65, 1.3);     if (Math.random() < 0.13 * f * Math.pow(poss / 50, 0.8)) { s.sh[k]++; if (Math.random() < 0.36) s.sot[k]++; }   }); } function liveStatsTick(ls) {   ls.st = ls.st || { pH: 50, pSum: 0, pn: 0, sh: [0, 0], sot: [0, 0], at: 0 };   while (ls.st.at < ls.minute) { ls.st.at++; liveStatsStep(ls); }   ls.ctx.ev.forEach(e => {     if (e.type === 'goal' && e._shown && !e._statd) { e._statd = true; const k = e.side === 'h' ? 0 : 1; ls.st.sh[k]++; ls.st.sot[k]++; }   });   renderLiveStats(); } function renderLiveStats() {   const ls = liveState, box = $('#liveStats'); if (!ls || !box) return;   const s = ls.st || { pSum: 0, pn: 0, sh: [0, 0], sot: [0, 0] };   const ph = s.pn ? Math.round(s.pSum / s.pn) : 50, pa = 100 - ph;   box.innerHTML = `<div class="lsrow"><b>${ph}%</b><span>Possession</span><b>${pa}%</b></div>     <div class="lsbar"><i style="width:${ph}%"></i></div>     <div class="lsrow"><b>${s.sh[0]}</b><span>Shots</span><b>${s.sh[1]}</b></div>     <div class="lsrow"><b>${s.sot[0]}</b><span>On target</span><b>${s.sot[1]}</b></div>`; } function updateLiveScore() {
   const ls = liveState;
   const goals = ls.ctx.ev.filter(e => e.type === 'goal' && e.min <= ls.minute);
   const hg = goals.filter(e => e.side === 'h').length, ag = goals.filter(e => e.side === 'a').length;
@@ -4410,6 +4411,7 @@ function liveTick() {
         }
       }
     });
+    liveStatsTick(ls);
     updateLiveScore();
     const endAt = ls.half === 1 ? 45 : 92;
     if (ls.minute >= endAt) {
@@ -4440,6 +4442,7 @@ function skipLive() {
   ls.minute = 92;
   ls.started = true;
   ls.ctx.ev.forEach(e => { if (!e._shown) { e._shown = true; pushTick(e); } });
+  liveStatsTick(ls);
   updateLiveScore();
   ls.ft = true;
   liveBanner('Full time');
