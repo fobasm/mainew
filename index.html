@@ -693,7 +693,10 @@ const NATIONS = {
   EC:{name:'Ecuador'}, BO:{name:'Bolivia'}, PT:{name:'Portugal'}, ES:{name:'Spain'},
   FR:{name:'France'}, RS:{name:'Serbia'}, NL:{name:'Netherlands'}, BE:{name:'Belgium'},
   DE:{name:'Germany'}, IT:{name:'Italy'}, HR:{name:'Croatia'},
-  JP:{name:'Japan'}, KR:{name:'South Korea'}, CN:{name:'China'}, SA:{name:'Saudi Arabia'},   US:{name:'United States'}, CA:{name:'Canada'}, MX:{name:'Mexico'}, CR:{name:'Costa Rica'}, JM:{name:'Jamaica'},   GB:{name:'England'}, PL:{name:'Poland'}, SE:{name:'Sweden'}, DK:{name:'Denmark'}, NO:{name:'Norway'},   CH:{name:'Switzerland'}, AT:{name:'Austria'}, CZ:{name:'Czechia'}, GR:{name:'Greece'}, TR:{name:'Turkey'},   UA:{name:'Ukraine'}, IE:{name:'Ireland'}, RO:{name:'Romania'}, HU:{name:'Hungary'}, FI:{name:'Finland'}, SK:{name:'Slovakia'},   AU:{name:'Australia'}, IR:{name:'Iran'}, AE:{name:'UAE'}, IN:{name:'India'}, ID:{name:'Indonesia'}, TH:{name:'Thailand'}, VN:{name:'Vietnam'}
+JP:{name:'Japan'}, KR:{name:'South Korea'}, CN:{name:'China'}, SA:{name:'Saudi Arabia'},
+  GB:{name:'England'}, US:{name:'United States'}, MX:{name:'Mexico'}, CA:{name:'Canada'},
+  TR:{name:'Turkey'}, SE:{name:'Sweden'}, PL:{name:'Poland'}, GR:{name:'Greece'},
+  AU:{name:'Australia'}, IN:{name:'India'}
 };
 function natName(c){ return (NATIONS[c]||{name:c}).name; }
 const CAF_NATIONS = Object.keys(NATIONS).filter(c => NATIONS[c].caf);
@@ -1385,7 +1388,7 @@ function newGame(clubIndex, manager, seed) {
   G.manager.rep = 40; G.manager.seasons = 0; G.manager.trophies = 0;
   G.manager.wage = Math.max(0.3, teams[clubIndex].rep * 1.1);
   G.manager.careerEarnings = 0;
-  G.manager.nat = (manager && manager.nat) || 'ZA';
+    G.manager.nat = (manager && manager.nat) || 'ZA';   G.manager.dob = (manager && manager.dob) || '1988-06-15';
   G.manager.clubs = [{ id: clubIndex, from: season }];
   initAfrica(G);
   initAfcon(G);
@@ -3605,6 +3608,7 @@ buildTierChips();
 $('#startBtn').onclick = () => {
   const nm = ($('#mgrName').value || '').trim() || 'Coach';
   const nat = ($('#mgrNat') && $('#mgrNat').value) || 'ZA';
+  const dob = ($('#mgrDob') && $('#mgrDob').value) || '1988-06-15';
   if (slotInfo(slot)) slot = firstFreeSlot();
   const c = CLUBS[pickClub];
   const wage = Math.max(0.3, c.base * 1.1);
@@ -3619,7 +3623,7 @@ $('#startBtn').onclick = () => {
     defaultKey: 'accept',
     onChoice: (k) => {
       if (k !== 'accept') return;
-      G = newGame(pickClub, { name: nm, avatar: pickAvatar, nat });
+      G = newGame(pickClub, { name: nm, avatar: pickAvatar, nat, dob });
       enterApp(); save();
     }
   });
@@ -6412,8 +6416,9 @@ if (lccGoBtn) lccGoBtn.onclick = () => {
   if (!lccName.trim()) { toast('Give your new club a name first.'); return; }
   const nm = ($('#mgrName').value || '').trim() || 'Coach';
   const nat = ($('#mgrNat') && $('#mgrNat').value) || 'ZA';
+  const dob = ($('#mgrDob') && $('#mgrDob').value) || '1988-06-15';
   if (slotInfo(slot)) slot = firstFreeSlot();
-  G = newGame(pickClub, { name: nm, avatar: pickAvatar, nat });
+  G = newGame(pickClub, { name: nm, avatar: pickAvatar, nat, dob });
   const idx = foundClub(G, { name: lccName.trim(), city: lccCity.trim() || 'Mzansi', tier: lccTier, c1: lccC1, c2: lccC2, icon: lccIcon, shape: lccShape });
   G.myTeam = idx;
   enterApp(); save();
