@@ -1967,12 +1967,7 @@ function playRound(G, skipMine) {
   }
   aiTransferTick(G);
   moraleTick(G);
-  try { inboxTick(G); } catch (e) { console.error('Inbox error', e); }
-  return out;
-}
-
-/* ---------------- morale / unrest ---------------- */
-function moraleTick(G) {
+  try { inboxTick(G); } catch (e) { console.error('Inbox error', e); }   try { personalFlavorTick(G); } catch (e) { console.error('Personal mail error', e); }   return out; }  function personalFlavorTick(G) {   const t = G.teams[G.myTeam]; if (!t) return;   const sender = () => pick(['Mom', 'Dad', 'Your Brother', 'Your Sister', 'An Old Friend', 'Your Cousin']);   if (G.manager.dob) {     const cur = dateForRound(G.round, G.season);     const cy = cur.split('-')[0], cm = cur.split('-')[1], cd = cur.split('-')[2];     const bm = G.manager.dob.split('-')[1], bd = G.manager.dob.split('-')[2];     if (cm === bm && cd === bd) {       mail(G, { key: 'bday_' + cy, cat: 'personal', from: sender(), subject: 'Happy Birthday!', flag: true,         body: [`Happy birthday! Hope ${t.n} are treating you well.`, `We've sent something in the post for you — should arrive any day now. Have a great one.`] });     }   }   if ((G.manager.clubs || []).length > 1 && rnd() < 0.015) {     const prev = G.manager.clubs[G.manager.clubs.length - 2];     const prevClub = G.teams[prev.id];     if (prevClub) mail(G, { key: 'oldboss_' + G.season, cat: 'personal', from: `Former Chairman, ${prevClub.n}`, subject: 'Just checking in',       body: [`Thought I'd drop you a line to see how things are going at ${t.n}.`, `We still talk about your time here at ${prevClub.n}. The door's always open if you ever fancy a reunion.`] });   }   if ((G.manager.clubs || []).length > 1 && rnd() < 0.015) {     const prev = G.manager.clubs[rint(0, G.manager.clubs.length - 2)];     const prevClub = G.teams[prev.id];     if (prevClub) {       const nm = personName(prevClub.squad && prevClub.squad[0] ? prevClub.squad[0].nat : 'ZA');       mail(G, { key: 'oldplayer_' + G.season, cat: 'personal', from: `${nm.first} ${nm.last}`, subject: 'Thank you, Boss',         body: [`You probably don't remember me, but you gave me one of my first chances back at ${prevClub.n}.`, `Just wanted to say thank you — I think about that often. Hope you're doing well.`] });     }   } }  /* ---------------- morale / unrest ---------------- */ function moraleTick(G) {
   G.teams.forEach(t => {
     t.squad.forEach(p => {
       const gap = p.rating - clubLevel(t);
@@ -2051,7 +2046,7 @@ function scoutTick(G) {
 }
 
 /* ---------------- season rollover ---------------- */
-function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('rank snapshot', e); }
+function personalSeasonMail(G, sum) {   const t = G.teams[G.myTeam]; if (!t) return;   const sender = () => pick(['Mom', 'Dad', 'Your Brother', 'Your Sister', 'An Old Friend', 'Your Cousin']);   if (sum.champions.includes(G.myTeam)) {     mail(G, { key: 'fam_champ_' + sum.season, cat: 'personal', from: sender(), subject: 'You did it!!', flag: true,       body: [`CHAMPIONS! We saw the news about ${t.n} winning the league and we are so, so proud of you.`, `Call us when you get a chance, we want to hear all about it.`] });   }   if (sum.cup === G.myTeam) {     mail(G, { key: 'fam_cup_' + sum.season, cat: 'personal', from: sender(), subject: 'Cup winners!', flag: true,       body: [`A cup win! We watched the final and couldn't stop cheering.`, `So happy for you — you deserve this.`] });   }   if (sum.promoted.includes(G.myTeam)) {     mail(G, { key: 'fam_promo_' + sum.season, cat: 'personal', from: sender(), subject: 'Promotion!', flag: true,       body: [`Heard the news about ${t.n} going up — congratulations!`, `Knew you could do it.`] });   }   if (sum.relegated.includes(G.myTeam)) {     mail(G, { key: 'fam_releg_' + sum.season, cat: 'personal', from: sender(), subject: 'Thinking of you',       body: [`Sorry to hear about the relegation. It's a tough business.`, `Don't be too hard on yourself — we know how much work you put in. Chin up.`] });   }   if (sum.fired) {     mail(G, { key: 'fam_fired_' + sum.season, cat: 'personal', from: sender(), subject: 'We\u2019re here for you',       body: [`Heard ${t.n} let you go. That's rough, and it's not fair after everything you put in.`, `Take some time, then get back out there. We believe in you.`] });   } } function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('rank snapshot', e); }
   const N_TIERS = TIER_NAMES.length;
   const sum = { season: G.season, champions: [], promoted: [], relegated: [], cup: G.cup.winner, retired: [], breakout: [] };
   const tables = [];
@@ -2173,6 +2168,7 @@ function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('ra
   else if (G.africa.afcon.phase === 'qualified') { runAfconFinals(G); sum.afcon = G.africa.afcon.winner; }
   updateReputation(G, sum);
   sum.fired = updateBoard(G, sum);
+  personalSeasonMail(G, sum);
   sum.board = G.board;
   sum.offers = sum.fired ? rescueOffers(G) : jobOffers(G);
   G.season++;
