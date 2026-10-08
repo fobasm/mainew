@@ -4261,7 +4261,7 @@ function showLivePlayerCard(side, i) {
   if (assists) bits.push('🅰️ ' + assists);
   if (yel) bits.push('🟨 ' + yel);
   if (red) bits.push('🟥');
-  box.innerHTML = `<div class="livepcard">${faceSVG(p, 46, T.c1)}<div><b>${esc(p.name)}</b><span class="hint">${esc(slots[i] || p.pos)} · ${p.rating}</span><span class="hint">${esc(T.s)}</span><span class="hint">${bits.length ? bits.join(' ') : 'Quiet so far'}</span></div>
+  box.innerHTML = `<div class="livepcard">${faceSVG(p, 46, T.c1)}<div><b>${esc(p.name)}</b><span class="hint">${esc(slots[i] || p.pos)} · ${p.rating}</span><span class="hint">${esc(T.s)}</span><span class="hint">${bits.length ? bits.join(' ') : 'Quiet so far'}</span></div></div>`;
   clearTimeout(ls.pcardT);
   ls.pcardT = setTimeout(() => { const b = $('#livePcard'); if (b) b.innerHTML = ''; }, 4500);
 }
