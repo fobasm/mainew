@@ -4099,10 +4099,20 @@ function doEndSeason() {
   body = (last.pos === 1 ? `<div class="rvBanner">🏆 ${esc(my.n)} are champions</div>` : '') +
     `<div class="rvHero"><div><small>Finished</small><b>${ordinal(last.pos)}</b></div><div><small>Points</small><b>${last.pts}</b></div>
       <div><small>Season result</small><b style="color:${fin.net >= 0 ? '#3ddc84' : '#ff6b6b'}">${money(fin.net)}</b></div><div><small>Reputation</small><b>${G.manager.rep}</b></div></div>` + body;
-  openModal(`${seasonLabel(s.season)} review`, body,
-    `<button class="btn sm" id="revNext">Continue</button>`);
-  $('#modal').classList.add('mmx');
-  $('#revNext').onclick = () => { closeModal(); postSeasonFlow(s); };
+  const showReview = () => {
+    openModal(`${seasonLabel(s.season)} review`, body,
+      `<button class="btn sm" id="revNext">Continue</button>`);
+    $('#modal').classList.add('mmx');
+    $('#revNext').onclick = () => { closeModal(); postSeasonFlow(s); };
+  };
+  if (totsXI.length) {
+    openModal(`Team of the Season — ${TIER_SHORT[totsTier]}`, xiCardsHTML(totsXI),
+      `<button class="btn sm" id="totsNext">Continue to season review</button>`);
+    $('#modal').classList.add('mmx');
+    const totsBtn = $('#totsNext'); if (totsBtn) totsBtn.onclick = () => { closeModal(); showReview(); };
+  } else {
+    showReview();
+  }
   render();
 }
 
