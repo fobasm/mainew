@@ -1593,7 +1593,7 @@ function buildSeason(G, first) {
   G.teams.forEach(t => {
     t.form = [];
     t.fin = newFin();
-    t.squad.forEach(p => { p.goals = 0; p.assists = 0; p.apps = 0; p.cs = 0; p.inj = 0; p.form = 0; p.yellow = 0; p.red = 0; p.red = 0; p.red = 0; p.startRating = p.rating; p.startPot = p.pot; });
+    t.squad.forEach(p => { p.goals = 0; p.assists = 0; p.apps = 0; p.cs = 0; p.inj = 0; p.form = 0; p.yellow = 0; p.red = 0; p.red = 0; p.red = 0; p.startRating = p.rating; p.startPot = p.pot; p.ratingSum = 0; p.ratingApps = 0; p.monthRatings = {}; });
     ensureLineup(t);
   });
   buildCup(G);
@@ -1856,6 +1856,42 @@ function aiSubs(G, ctx) {
   }
 }
 
+function computeMatchRatings(G, ctx) {
+  const goalsBy = {}, assistsBy = {}, cardsBy = {};
+  ctx.ev.forEach(e => {
+    if (e.type === 'goal') { goalsBy[e.scorer] = (goalsBy[e.scorer] || 0) + 1; if (e.assist) assistsBy[e.assist] = (assistsBy[e.assist] || 0) + 1; }
+    if (e.type === 'card') cardsBy[e.scorer] = e.card;
+  });
+  const monthBucket = Math.floor((G.round || 0) / 3);
+  const ratings = {};
+  let potm = null;
+  const rateSide = (xi, conceded, resultDelta) => {
+    xi.forEach(p => {
+      let r = 6.0;
+      r += (goalsBy[p.id] || 0) * 1.0;
+      r += (assistsBy[p.id] || 0) * 0.6;
+      if (conceded === 0 && (POS_GROUP[p.pos] === 'GK' || POS_GROUP[p.pos] === 'DEF')) r += 0.5;
+      if (cardsBy[p.id] === 'yellow') r -= 0.3;
+      if (cardsBy[p.id] === 'red') r -= 1.2;
+      r += resultDelta;
+      r += (p.rating - 65) * 0.012;
+      r += gauss() * 0.45;
+      r = Math.round(clamp(r, 3.5, 10) * 10) / 10;
+      ratings[p.id] = r;
+      p.ratingSum = (p.ratingSum || 0) + r; p.ratingApps = (p.ratingApps || 0) + 1;
+      p.monthRatings = p.monthRatings || {};
+      p.monthRatings[monthBucket] = p.monthRatings[monthBucket] || { sum: 0, apps: 0 };
+      p.monthRatings[monthBucket].sum += r; p.monthRatings[monthBucket].apps++;
+      if (!potm || r > potm.rating) potm = { id: p.id, rating: r, goals: goalsBy[p.id] || 0, assists: assistsBy[p.id] || 0 };
+    });
+  };
+  const resH = ctx.hg > ctx.ag ? 0.2 : ctx.hg < ctx.ag ? -0.2 : 0;
+  const resA = ctx.ag > ctx.hg ? 0.2 : ctx.ag < ctx.hg ? -0.2 : 0;
+  rateSide(ctx.xiH, ctx.ag, resH);
+  rateSide(ctx.xiA, ctx.hg, resA);
+  ctx.ratings = ratings;
+  ctx.potm = potm;
+}
 function finishMatch(G, ctx) {
   const played = new Set();
   const credit = (xi, conceded, teamId) => {
@@ -1871,6 +1907,7 @@ function finishMatch(G, ctx) {
   };
   credit(ctx.xiH, ctx.ag, ctx.h);
   credit(ctx.xiA, ctx.hg, ctx.a);
+  computeMatchRatings(G, ctx);
   ctx.ev.forEach(e => {
     if (e.type !== 'goal') return;
     const t = G.teams[e.team];
