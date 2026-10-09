@@ -5125,7 +5125,7 @@ function playerModal(pid) {
       <div style="text-align:center;flex:0 0 auto">
         <div style="font-family:var(--head);font-size:44px;line-height:1">${Math.round(p.rating)} ${growthHtml(p)}</div>
         <div class="hint">rating</div>
-        <div class="hint">potential ${potTxt(p)} ${potGrowthHtml(p)}</div>
+        <div class="hint">potential <b class="potglow">${potTxt(p)}</b> ${potGrowthHtml(p)}</div>
       </div>
     </div>
     <div class="mstats solo"><div><small>Age</small><b>${p.age}</b></div><div><small>Value</small><b>${money(p.value)}</b></div>
