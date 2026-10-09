@@ -4563,7 +4563,7 @@ function skipLive() {
   liveControls();
 }
 
-function liveDraw() {
+const LIVE_REDUCE_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); function liveDraw() {
   const ls = liveState;
   if (!ls) return;
   const pitchEl = $('#livePitch');
@@ -4573,6 +4573,7 @@ function liveDraw() {
     const coordsH = FORM_COORDS[H.formation] || FORM_COORDS['4-4-2'];
     const coordsA = FORM_COORDS[A.formation] || FORM_COORDS['4-4-2'];
     const now = performance.now();
+    if (ls.ft && !ls.ftBall) { ls.ftBall = true; ls.ball.tx = 50; ls.ball.ty = 75; }
     ls.ballX += (ls.ball.tx - ls.ballX) * 0.05;
     ls.ballY += (ls.ball.ty - ls.ballY) * 0.05;
     const wobX = Math.sin(now / 320) * 1.6, wobY = Math.cos(now / 410) * 1.6;
@@ -4595,7 +4596,17 @@ function liveDraw() {
         tx = Math.max(4, Math.min(96, tx)); ty = Math.max(5, Math.min(95, ty));
         const key = prefix + i;
         const q = ls.pos[key] || (ls.pos[key] = { x: bx, y: by });
-        q.x += (tx - q.x) * 0.1; q.y += (ty - q.y) * 0.1;
+        if (ls.ft && !LIVE_REDUCE_MOTION) {
+          ls.ftAt = ls.ftAt || now;
+          if (now - ls.ftAt > 1200 + i * 140 + (away ? 70 : 0)) {
+            /* full time: walk off towards the tunnel at the middle of the bottom touchline */
+            const wx = 50 + ((i % 4) - 1.5) * 3, wy = 135;
+            const dx = wx - q.x, dy = wy - q.y, dd = Math.hypot(dx, dy) || 1, st = Math.min(0.3, dd);
+            q.x += dx / dd * st; q.y += dy / dd * st;
+            el.style.opacity = String(Math.max(0, Math.min(1, 1 - (q.y - 90) / 10)));
+            el.style.pointerEvents = 'none';
+          } else { q.x += (tx - q.x) * 0.1; q.y += (ty - q.y) * 0.1; }
+        } else { q.x += (tx - q.x) * 0.1; q.y += (ty - q.y) * 0.1; }
         el.style.left = q.x + '%'; el.style.top = q.y + '%';
       });
     };
