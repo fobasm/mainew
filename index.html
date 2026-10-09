@@ -265,7 +265,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .tag.gk{color:#ff7ac6;border-color:#ff7ac666}
 .tag.def{color:#6bb8ff;border-color:#6bb8ff66}
 .tag.mid{color:#4fd39a;border-color:#4fd39a66}
-.tag.att{color:#ff9c5b;border-color:#ff9c5b66} .pen{color:#ff6b6b;font-style:normal;font-size:9px;font-weight:700;margin-left:2px}
+.tag.att{color:#ff9c5b;border-color:#ff9c5b66} .pen{color:#ff6b6b;font-style:normal;font-size:9px;font-weight:700;margin-left:2px} .tag.gold{color:#241a00;background:var(--gold);border-color:var(--gold-d)}
 .tag.xi{color:var(--gold);border-color:var(--gold)}
 .tag.inj{color:var(--down);border-color:var(--down)}
 .tag.out{color:#ffb020;border-color:#ffb020}
@@ -275,7 +275,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .growth.up{color:var(--up)}.growth.down{color:var(--down)}.growth.flat{color:var(--faint)}
 .ratcol{display:inline-flex;align-items:center;gap:4px}
 .rating.pot{background:none;border:1px solid var(--line);color:var(--faint)}
-.sponsorGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;margin:4px 0 6px}
+.sponsorGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;margin:4px 0 6px} .totmGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin:4px 0 6px} .totmCard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:border-color .15s,transform .15s} .totmCard:hover{border-color:var(--gold);transform:translateY(-2px)} .totmCard.mine{border-color:var(--gold-d);box-shadow:0 0 0 1px var(--gold-d)} .totmCard b{font-size:12px;line-height:1.2} .totmClub{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--faint)} .totmAvg{font-family:var(--head);font-size:15px;color:var(--gold)}
 .sponsorCard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 10px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .15s,transform .15s}
 .sponsorCard:hover{border-color:var(--teal);transform:translateY(-2px)}
 .sponsorCard b{font-size:12.5px;line-height:1.25}
@@ -1964,6 +1964,7 @@ function commitMatch(G, tier, m, ctx) {
   m.hg = ctx.hg; m.ag = ctx.ag; m.played = true;
   m.ev = ctx.ev.filter(e => e.type === 'goal');
   m.allEv = ctx.ev;
+  m.potm = ctx.potm || null;
   tableUpdate(G, tier, m);
 }
 
@@ -2336,7 +2337,7 @@ function statList(G, tier, key) {
   });
   return list;
 }
-function topScorers(G, tier, n) {
+function ratingPool(G, tier, monthBucket) {   const list = [];   G.teams.forEach(t => {     if (tier != null && t.tier !== tier) return;     t.squad.forEach(p => {       let sum, apps;       if (monthBucket != null) {         const mr = p.monthRatings && p.monthRatings[monthBucket];         if (!mr || mr.apps < 2) return;         sum = mr.sum; apps = mr.apps;       } else {         if (!p.ratingApps || p.ratingApps < 8) return;         sum = p.ratingSum; apps = p.ratingApps;       }       list.push({ p, club: t, avg: Math.round((sum / apps) * 100) / 100, apps });     });   });   return list; } function pickFormationXI(pool) {   const buckets = { GK: [], DEF: [], MID: [], ATT: [] };   pool.forEach(x => { const g = POS_GROUP[x.p.pos]; if (buckets[g]) buckets[g].push(x); });   Object.keys(buckets).forEach(k => buckets[k].sort((a, b) => b.avg - a.avg || b.apps - a.apps));   const need = { GK: 1, DEF: 4, MID: 3, ATT: 3 };   const xi = [];   Object.keys(need).forEach(g => { for (let i = 0; i < need[g] && buckets[g][i]; i++) xi.push(buckets[g][i]); });   return xi; } function xiCardsHTML(xi) {   if (!xi.length) return '<div class="empty">Not enough matches played yet.</div>';   const order = { GK: 0, DEF: 1, MID: 2, ATT: 3 };   const sorted = xi.slice().sort((a, b) => order[POS_GROUP[a.p.pos]] - order[POS_GROUP[b.p.pos]]);   return '<div class="totmGrid">' + sorted.map(x => `<button class="totmCard${x.club.id === G.myTeam ? ' mine' : ''}" data-pid="${x.p.id}">       ${faceSVG(x.p, 48, x.club.c1)}       <b>${esc(x.p.name)}</b>       ${posTag(x.p.pos)}       <span class="totmClub">${crestHTML(x.club, 15)}<span>${esc(x.club.s)}</span></span>       <span class="totmAvg">${x.avg.toFixed(1)}</span>     </button>`).join('') + '</div>'; } function topScorers(G, tier, n) {
   return statList(G, tier, 'goals').sort((a, b) => b.v - a.v || b.p.assists - a.p.assists || a.p.apps - b.p.apps).slice(0, n || 20);
 }
 function topAssists(G, tier, n) {
@@ -4024,7 +4025,30 @@ function showMatchdayModal(res) {
   body += myCupResultsHTML(res);   if (res.cup) body += cupRoundHTML(res.cup);
   openModal(`Matchday ${res.round}`, body,
     `<button class="btn ghost sm" onclick="closeModal();tab='table';render()">See the log</button>
-     <button class="btn sm" onclick="closeModal();maybeShowPendingOffer()">Continue</button>`);
+     <button class="btn sm" id="potmContinue">Continue</button>`);
+  const pc = $('#potmContinue'); if (pc) pc.onclick = () => { closeModal(); showPOTM(m); };
+}
+function showPOTM(m) {
+  if (!m || !m.potm) { maybeShowPendingOffer(); return; }
+  const f = findPlayer(G, m.potm.id);
+  if (!f) { maybeShowPendingOffer(); return; }
+  const p = f.p, t = f.t;
+  const bits = [];
+  if (m.potm.goals) bits.push(`${m.potm.goals} goal${m.potm.goals > 1 ? 's' : ''}`);
+  if (m.potm.assists) bits.push(`${m.potm.assists} assist${m.potm.assists > 1 ? 's' : ''}`);
+  const summary = bits.length ? `A standout display — ${bits.join(' and ')} on the day.` : `A commanding, composed performance from start to finish.`;
+  mail(G, { cat: 'match', from: 'Match Report', subject: `Player of the Match: ${p.name}`,
+    body: [summary, `Rated ${m.potm.rating.toFixed(1)}/10 for the match.`], p, club: t });
+  const prof = `<div class="mprof">
+      <div class="mface">${faceSVG(p, 60, t.c1)}</div>
+      <div><div class="mname">${esc(p.name)} ${flagSVG(p.nat)}</div>
+        <div class="mtags">${posTag(p.pos)}<span class="tag gold">${m.potm.rating.toFixed(1)}/10</span></div>
+        <div class="mclub">${crestHTML(t, 14)}<span>${esc(t.n)}</span></div></div>
+    </div>`;
+  openModal('Player of the Match', prof + `<div class="mbody"><p>${esc(summary)}</p></div>`,
+    `<button class="btn sm" id="potmGo">Nice one</button>`);
+  save();
+  const go = $('#potmGo'); if (go) go.onclick = () => { closeModal(); maybeShowPendingOffer(); };
 }
 function maybeShowPendingOffer() {
   if (G.pendingJobOffers && G.pendingJobOffers.length && !G.jobOffersSeen) {
