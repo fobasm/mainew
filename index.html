@@ -6349,9 +6349,10 @@ let mgrTab = 'profile'; function viewManager() {   const v = $('#v-manager'), t 
 let ocTier = 0, ocPick = null;
 function viewOtherClubs() {
   const v = $('#v-otherclubs');
+  v.classList.add('mmx');
   const list = CLUBS.map((c, i) => ({ c, i })).filter(x => x.c.t === ocTier && x.i !== G.myTeam);
   let html = `<div class="panel"><h3>Other clubs<span class="sub">browse squads, make transfer or loan offers</span></h3>
-    <div class="chipbar">${TIER_SHORT.map((n, i) => `<button class="chip" data-oct="${i}" aria-pressed="${ocTier === i}">${esc(n)}</button>`).join('')}</div>
+    <div class="chip">${TIER_SHORT.map((n, i) => `<button class="chip" data-oct="${i}" aria-pressed="${ocTier === i}">${esc(n)}</button>`).join('')}</div>
     <div class="pad" style="display:flex;flex-wrap:wrap;gap:8px">
       ${list.map(x => `<button class="chip" data-ocpick="${x.i}" aria-pressed="${ocPick === x.i}">${crestHTML(G.teams[x.i], 15)} ${esc(x.c.s)}</button>`).join('')}
     </div></div>`;
