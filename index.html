@@ -1400,6 +1400,7 @@ function newGame(clubIndex, manager, seed) {
   G.manager.careerEarnings = 0;
     G.manager.nat = (manager && manager.nat) || 'ZA';   G.manager.dob = (manager && manager.dob) || '1988-06-15';
   G.manager.clubs = [{ id: clubIndex, from: season }];
+  injectRealPlayers(G);
   initAfrica(G);
   initAfcon(G);
   buildSeason(G, true);
