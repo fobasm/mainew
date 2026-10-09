@@ -5614,7 +5614,7 @@ let youthTab = 'academy'; function yhTabsHTML(t) {   return `<div class="mb-tabs
     (t.youth.length ? t.youth.slice().sort((a, b) => b.pot - a.pot).map(p =>
       `<div class="prow" style="grid-template-columns:auto auto 1fr auto auto">
         ${faceSVG(p, 34, t.c1)}${ratingTag(p.rating)}
-        <span class="who"><b>${esc(p.name)} ${flagSVG(p.nat)}</b><small>${p.pos} · ${p.age} years old · potential <b style="color:${p.pot >= 80 ? 'var(--up)' : 'var(--ink)'}">${p.pot}</b> · ${money(p.wage)}/season</small></span>
+        <span class="who"><b>${esc(p.name)} ${flagSVG(p.nat)}</b><small>${p.pos} · ${p.age} years old · potential <b class="potglow">${p.pot}</b> · ${money(p.wage)}/season</small></span>
         <button class="btn sm" data-promote="${p.id}">Promote</button>
         <button class="btn ghost sm" data-drop="${p.id}">Release</button></div>`).join('')
       : '<div class="empty">The next intake arrives when the new season starts.</div>') + `</div>
