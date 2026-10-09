@@ -2197,7 +2197,7 @@ function personalSeasonMail(G, sum) {   const t = G.teams[G.myTeam]; if (!t) ret
     t.wageBill = wageOf(t);
     const wageGrowth = 1 + clamp(finNet(t.fin) / Math.max(1, t.wageBudget) * 0.15, -0.12, 0.18);
     t.wageBudget = Math.round(clamp(t.wageBudget * wageGrowth, t.wageBill, t.wageBill * 3) * 100) / 100;
-    t.budget = Math.max(0, Math.round(t.budget * 10) / 10);
+    t.budget = Math.max(0, Math.round(t.budget * 10) / 10);     if (t.id !== G.myTeam) {       const floor = [4, 1.5, 0.8, 0.4, 0.2][Math.min(t.tier, 4)];       if (t.budget < floor) { const g = Math.round((floor - t.budget) * 100) / 100; t.budget = Math.round((t.budget + g) * 100) / 100; t.fin.sponsor += g; noteInc(t, 'League solidarity grant', g); }     }
     t.finHistory.push({ season: G.season, ...t.fin, net: finNet(t.fin) });
     ensureLineup(t);
   });
