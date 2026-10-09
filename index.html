@@ -3525,7 +3525,7 @@ function toast(msg) { toastSpawn(msg, '', 3200); }
 function toastWarn(msg) { toastSpawn(msg, 'warn', 3800); }
 function toastBig(msg) { toastSpawn(msg, 'big', 5000); }
 function toastGood(msg) { toastSpawn(msg, 'good', 3800); }
-function openModal(title, body, footer) {   $('#modal').className = 'modal';   if (/^(Matchday \d|\d+ matchdays? played|Half time|Full time)/.test(String(title))) $('#modal').classList.add('mmx');
+function openModal(title, body, footer) {   $('#modal').className = 'modal';   if (/^(Matchday \d|\d+ matchdays? played|Half time|Full time|Terms of Service|Privacy Policy|About Mzansi Manager)/.test(String(title))) $('#modal').classList.add('mmx');
   $('#modal').innerHTML = `<header><h3>${title}</h3><button class="x" aria-label="Close">&times;</button></header>
     <div class="body">${body}</div>` + (footer ? `<footer>${footer}</footer>` : '');
   $('#scrim').hidden = false;
