@@ -5599,6 +5599,7 @@ function viewNews() {
       </div>`;
     }
   }
+  v.classList.add('mmx');
   v.innerHTML = `${featHtml}<div class="panel"><h3>News<span class="sub">all three divisions</span></h3>
     <div class="chipbar">${kinds.map(([k, l]) => `<button class="chip" data-nf="${k}" aria-pressed="${newsFilter === k}">${l}</button>`).join('')}</div>
     ${newsList(items, 60)}</div>`;
