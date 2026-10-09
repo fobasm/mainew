@@ -341,7 +341,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 .feed .nf-thumb[data-pid]{cursor:pointer}
 .feed .nf-thumb svg{display:block}
 .k-badge{flex:0 0 auto;background:linear-gradient(135deg,#1a2744,#0c1526);color:#fff;font:700 9.5px var(--head);text-transform:uppercase;letter-spacing:.4px;padding:3px 10px 3px 8px;clip-path:polygon(0 0,100% 0,88% 100%,0% 100%);white-space:nowrap}
-.k-badge.k-transfer,.k-badge.k-contract{background:linear-gradient(135deg,#c81e24,#7a0f13)}
+.k-badge.k-transfer{background:linear-gradient(135deg,#c81e24,#7a0f13)} .k-badge.k-youth{background:linear-gradient(135deg,#2a9d4e,#0f5c28)} .k-badge.k-contract,.k-badge.k-retire,.k-badge.k-career{background:linear-gradient(135deg,#7c3fd4,#44207a)} .k-badge.k-cup,.k-badge.k-caf{background:linear-gradient(135deg,#d4a017,#8a6a10)} .mmx .feed li:hover{background:rgba(255,255,255,.04)}
 .k-transfer{background:var(--cup)}.k-youth{background:var(--up)}.k-retire{background:var(--faint)}
 .newsFeat{display:flex;gap:16px;align-items:center;padding:16px;background:linear-gradient(135deg,var(--panel2),var(--panel));border-bottom:1px solid var(--line);flex-wrap:wrap}
 .newsFeat .nf-body{flex:1;min-width:200px}
@@ -4986,8 +4986,9 @@ function toggleWatch(pid) {
 }
 function viewWatchlist() {
   const v = $('#v-watchlist');
+  v.classList.add('mmx');
   const list = (G.watchlist || []).map(pid => findPlayer(G, pid)).filter(x => x && x.p);
-  v.innerHTML = `<div class="panel"><h3>Shortlist<span class="sub">${list.length} player${list.length === 1 ? '' : 's'} you're keeping an eye on</span></h3>
+  v.innerHTML = `<div class="panel"><h3>Shortlist<span class="sub">${list.length} player${list.length === 1 ? '' : 's'} you're keeping an eye on</span></
     ${list.length ? list.map(({ p, t }) => `<button class="prow" data-pid="${p.id}">
         ${faceSVG(p, 34, t ? t.c1 : null)}
         ${ratingTag(p.rating)}
@@ -5632,6 +5633,7 @@ function compPanel(comp, names, blurb) {
 }
 function viewCups() {
   const v = $('#v-cups');
+  v.classList.add('mmx');
   const nedb = { name: CUP_NAME, winner: G.cup.winner, log: G.cup.log };
   v.innerHTML =
     compPanel(nedb, CUP_ROUNDS, 'all 80 clubs, straight knockout') +
