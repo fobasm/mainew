@@ -5280,7 +5280,7 @@ function txRow(p, club, opts) {
 <td style="white-space:nowrap">${posTag(p.pos)}${(p.alt || []).map(a => `<span class="alt">${a}</span>`).join('')}</td>
     <td class="num">${p.age}</td>
     <td class="num">${ratingTag(p.rating)}</td>
-    <td class="num" style="color:var(--faint);white-space:nowrap">${potTxt(p)}</td>
+    <td class="num"><b class="potglow">${potTxt(p)}</b></td>
     <td>${club ? `${crestHTML(club, 13)} ${esc(club.s)}` : '<span class="hint">Free agent</span>'}</td>
     <td class="num">${opts.free ? '<span class="hint">free</span>' : money(ask)}</td>
     <td>${opts.free
