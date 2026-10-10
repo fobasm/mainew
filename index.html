@@ -2148,8 +2148,12 @@ function personalSeasonMail(G, sum) {   const t = G.teams[G.myTeam]; if (!t) ret
   });
   move(relegated, 1); move(promoted, -1);
   sum.relegated = relegated; sum.promoted = promoted;
-  sum.promoted.forEach(id => news(G, 'season', `${G.teams[id].n} are promoted to the ${TIER_SHORT[G.teams[id].tier]}.`));
+   sum.promoted.forEach(id => news(G, 'season', `${G.teams[id].n} are promoted to the ${TIER_SHORT[G.teams[id].tier]}.`));
   sum.relegated.forEach(id => news(G, 'season', `${G.teams[id].n} drop into the ${TIER_SHORT[G.teams[id].tier]}.`));
+  sum.playoffs.forEach(po => {
+    const w = G.teams[po.winner];
+    news(G, 'season', `${w.n} win the ${TIER_SHORT[po.tier]} promotion playoff final to claim the last promotion spot.`);
+  });
 
   endSeasonLoans(G);
   /* players: wages paid, ageing, growth, retirement, contracts */
