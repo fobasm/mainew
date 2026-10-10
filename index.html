@@ -4065,7 +4065,7 @@ mail(G, { cat: 'career', from: 'Your Agent', flag: true, subject: 'Job Offer: cl
 
 function matchOf(res) { return res.tiers[me().tier].find(m => m.h === G.myTeam || m.a === G.myTeam); }
 
-function goalList(ev) {
+function goalList(ev) {   const goals = ev.filter(e => e.type === 'goal');   const reds = ev.filter(e => e.type === 'card' && e.card === 'red');   const rows = goals.map(e => ({ min: e.min, html: `<li><span class="min">${e.min}'</span><span class="who">${esc(e.sName)} <span class="tag">${esc(G.teams[e.team].s)}</span></span>      <span class="aw">${e.aName ? 'assist ' + esc(e.aName) : ''}</span></li>` }))     .concat(reds.map(e => ({ min: e.min, html: `<li><span class="min">${e.min}'</span><span class="who">🟥 ${esc(e.sName)} <span class="tag">${esc(G.teams[e.team].s)}</span></span>      <span class="aw">${e.second ? 'second yellow' : 'sent off'}</span></li>` })))     .sort((a, b) => a.min - b.min);   if (!rows.length) return '<p style="color:var(--faint);margin:10px 0 0">No goals. One of those afternoons.</p>';   return '<ul class="goals">' + rows.map(r => r.html).join('') + '</ul>'; } function goalListOld(ev) {
   const goals = ev.filter(e => e.type === 'goal');
   if (!goals.length) return '<p style="color:var(--faint);margin:10px 0 0">No goals. One of those afternoons.</p>';
   return '<ul class="goals">' + goals.map(e =>
@@ -5067,7 +5067,7 @@ function playerRow(p, t, extra) {
     <span class="ratcol">${ratingTag(p.rating)}${growthHtml(p)}</span>
     <span class="who"><b>${esc(p.name)} ${flagSVG(p.nat)}${isCap ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">C</span>' : isVice ? ' <span class="tag">VC</span>' : ''}</b>
       <small>${[p.pos].concat(p.alt || []).join('/')} · ${p.age} · ${p.apps} apps · ${p.goals}g ${p.assists}a · ${money(p.wage)}/season · ${p.contract}y
-      ${p.loan ? ' <span class="tag out">on loan</span>' : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}${p.inj > 0 ? ` <span class="tag inj">out ${p.inj}</span>` : ''}${inXI ? ' <span class="tag xi">XI</span>' : ''}</small></span>
+      ${p.loan ? ' <span class="tag out">on loan</span>' : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}${p.inj > 0 ? ` <span class="tag inj">out ${p.inj}</span>: ''}${banLeft(p, t) > 0 ? <span class="tag inj">banned ${banLeft(p, t)}</span> : ''}${inXI ? ' <span class="tag xi">XI</span>' : ''}</small></span>
     <span class="ratcol pot">${potTag(p)}${potGrowthHtml(p)}</span>
     <span class="val">${extra != null ? extra : money(p.value)}</span></button>`;
 }
