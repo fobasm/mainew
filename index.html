@@ -4085,14 +4085,14 @@ function showMatchdayModal(res) {
       <div class="side away">${crestHTML(A, 30)}<div><b>${esc(A.s)}</b><small>${esc(A.city)}</small></div></div>
     </div>
     <p style="text-align:center;color:var(--dim);margin:0">${verdict} ${ordinal(posOfTeam(G, G.myTeam))} after ${G.round} ${G.round === 1 ? 'game' : 'games'}.</p>
-    ${goalList(m.allEv || m.ev)}`;
+    ${goalList(m.allEv || m.ev)}${potmCardHTML(m)}`;
   body += myCupResultsHTML(res);   if (res.cup) body += cupRoundHTML(res.cup);
   openModal(`Matchday ${res.round}`, body,
     `<button class="btn ghost sm" onclick="closeModal();tab='table';render()">See the log</button>
      <button class="btn sm" id="potmContinue">Continue</button>`);
   const pc = $('#potmContinue'); if (pc) pc.onclick = () => { closeModal(); showPOTM(m); };
 }
-function showPOTM(m) {
+function potmCardHTML(m) {   if (!m || !m.potm) return '';   const f = findPlayer(G, m.potm.id); if (!f) return '';   const p = f.p, t = f.t, bits = [];   if (m.potm.goals) bits.push(`${m.potm.goals} goal${m.potm.goals > 1 ? 's' : ''}`);   if (m.potm.assists) bits.push(`${m.potm.assists} assist${m.potm.assists > 1 ? 's' : ''}`);   return `<div class="potmCard"><div class="potmHead">Player of the Match</div>     <div class="mprof" style="margin:0;border-left-width:1px"><div class="mface">${faceSVG(p, 60, t.c1)}</div>       <div><div class="mname">${esc(p.name)} ${flagSVG(p.nat)}</div>         <div class="mtags">${posTag(p.pos)}<span class="tag gold">${m.potm.rating.toFixed(1)}/10</span>${bits.length ? `<span class="hint">${bits.join(' · ')}</span>` : ''}</div>         <div class="mclub">${crestHTML(t, 14)}<span>${esc(t.n)}</span></div></div></div></div>`; } function showPOTM(m, inline) {
   if (!m || !m.potm) { maybeShowPendingOffer(); return; }
   const f = findPlayer(G, m.potm.id);
   if (!f) { maybeShowPendingOffer(); return; }
