@@ -609,7 +609,7 @@ const IMG_FAVICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADYAAABICAYAA
 const TIER_NAMES = ['Mzansi Premier League', 'Mzansi Championship', 'Mzansi 3rd Division', 'Mzansi 4th Division', 'Mzansi 5th Division'];
 const TIER_SHORT = ['Premier League', 'Championship', '3rd Division', '4th Division', '5th Division'];
 const TIER_SIZE = 16;
-const PROMOTED = 2;
+const AUTO_PROMOTED = 2;   /* teams promoted automatically (top positions) */ const PLAYOFF_SPOTS = 4;  /* teams entering the promotion playoff, straight after the automatic spots */ const RELEGATED = 3;      /* teams relegated (bottom positions) */
 
 /* base = sporting strength 1-10 · fin = transfer kitty in millions · youth = academy level 1-5 */
 const CLUBS = [
@@ -1702,7 +1702,7 @@ function cupResolveTie(G, h, a, stage) {
   finishMatch(G, ctx);
   return { h, a, hg: ctx.hg, ag: ctx.ag, pens, winner, stage, ev: ctx.ev };
 }
-function cupFinishStage(G, ties) {
+function runPromotionPlayoff(G, contenders) {   /* contenders = 4 team ids in table order: 3rd, 4th, 5th, 6th place.      Semi-finals: 3rd hosts 6th, 4th hosts 5th. The better-placed semi      winner hosts the final. Winner takes the league's last promotion spot. */   const [a, b, c, d] = contenders;   const rankOf = id => contenders.indexOf(id);   const semi1 = cupResolveTie(G, a, d, 'promo-semi');   const semi2 = cupResolveTie(G, b, c, 'promo-semi');   let fh = semi1.winner, fa = semi2.winner;   if (rankOf(fa) < rankOf(fh)) { const tmp = fh; fh = fa; fa = tmp; }   const final = cupResolveTie(G, fh, fa, 'promo-final');   return { semis: [semi1, semi2], final, winner: final.winner }; } function cupFinishStage(G, ties) {
   const c = G.cup;
   const byes = c.pendingByes || [];
   c.ties = ties;
