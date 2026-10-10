@@ -4568,7 +4568,7 @@ function skipLive() {
   liveControls();
 }
 
-const LIVE_REDUCE_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); function liveDraw() {
+/* half-time: players walk off, then the changes screen opens; after Resume they walk back on before the second half starts */ function startHalfTimeBreak(ls) {   if (LIVE_REDUCE_MOTION) { liveControls(); halfTime(); return; }   ls.interlude = true; ls.htWalk = 'off'; ls.htAt = performance.now(); ls.htShown = false;   ls.ball.tx = 50; ls.ball.ty = 75;   liveControls();   setTimeout(() => openHalfTimeOnce(ls), 6500); } function openHalfTimeOnce(ls) {   if (liveState !== ls || !ls.interlude || ls.htWalk !== 'off' || ls.htShown) return;   ls.htShown = true; liveControls(); halfTime(); } function resumeAfterBreak(ls) {   if (LIVE_REDUCE_MOTION || ls.htWalk !== 'off') { ls.interlude = false; ls.htWalk = null; liveControls(); liveSchedule(); return; }   ls.htWalk = 'on'; ls.htOnAt = performance.now();   liveControls();   setTimeout(() => {     if (liveState !== ls) return;     ls.htWalk = null; ls.interlude = false; liveControls(); liveSchedule();   }, 4600); } const LIVE_REDUCE_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); function liveDraw() {
   const ls = liveState;
   if (!ls) return;
   const pitchEl = $('#livePitch');
