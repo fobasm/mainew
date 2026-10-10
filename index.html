@@ -4370,6 +4370,11 @@ function showLivePlayerCard(side, i) {
 }
 function showFullTimeCard() {   const pitch = $('#livePitch'); if (!pitch || $('#liveFT')) return;   const ls = liveState, H = G.teams[ls.ctx.h], A = G.teams[ls.ctx.a];   const sc = $('#liveScore');   const el = document.createElement('div');   el.id = 'liveFT';   el.innerHTML = `<small>FULL TIME</small><b>${esc(H.s)} ${esc(sc ? sc.textContent : '')} ${esc(A.s)}</b>`;   pitch.appendChild(el); } function liveControls() {
   const ls = liveState, c = $('#liveCtl'); if (!c) return;
+  if (ls.interlude) {
+    c.innerHTML = ls.htWalk === 'off' ? `<button class="chip" id="liveHT" aria-pressed="true">${ls.htShown ? 'Half-time — start 2nd half' : 'Skip ▸ half-time'}</button>` : '';
+    const hb = $('#liveHT'); if (hb) hb.onclick = () => { if (!ls.htShown) openHalfTimeOnce(ls); else halfTime(); };
+    return;
+  }
   let h = '';
   if (ls.ft) h = `<button class="chip" id="liveDone">Full time — see the report</button>`;
   else if (!ls.started) h = `<button class="chip" id="liveGo">Kick off</button>`;
