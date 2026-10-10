@@ -1479,7 +1479,7 @@ function ensureLineup(t) {
     t.lineup.every(id => t.squad.some(x => x.id === id));
   if (!lineOk) { t.lineup = autoLineup(t); t.subFor = {}; return t.lineup; }
   t.subFor = t.subFor || {};
-  const fit = p => p && p.inj <= 0;
+  const fit = p => p && isFit(p, t);
   /* 1. a recovered player takes his slot back from the stand-in */
   Object.keys(t.subFor).forEach(i => {
     const rec = t.subFor[i], cur = t.lineup[i];
@@ -1505,8 +1505,8 @@ function ensureLineup(t) {
 }
 function autoLineup(t) {
   const slots = FORMATIONS[t.formation] || FORMATIONS['4-4-2'];
-  const fit = t.squad.filter(p => p.inj <= 0 && !p.reserve);
-  const avail = fit.length >= 11 ? fit : t.squad.filter(p => p.inj <= 0);
+  const fit = t.squad.filter(p => isFit(p, t) && !p.reserve);
+  const avail = fit.length >= 11 ? fit : t.squad.filter(p => isFit(p, t));
   const pool = (avail.length >= 11 ? avail : t.squad).slice();
   const used = new Set(), out = [];
   slots.forEach(slot => {
@@ -1526,7 +1526,7 @@ function lineupOf(t) {
 }
 function benchOf(t) {
   const set = new Set(t.lineup || []);
-  return t.squad.filter(p => !set.has(p.id) && p.inj <= 0);
+  return t.squad.filter(p => !set.has(p.id) && isFit(p, t));
 }
 function firstTeamOf(t) { return t.squad.filter(p => !p.reserve); } const FIRST_TEAM_MAX = 32; function firstTeamFull(t) { return firstTeamOf(t).length >= FIRST_TEAM_MAX; }
 function reservesOf(t) { return t.squad.filter(p => p.reserve); }
@@ -1875,7 +1875,7 @@ function aiSubs(G, ctx) {
   const side = 'a';
   if (ctx.ag < ctx.hg) {
     const T = G.teams[ctx.a];
-    const bench = T.squad.filter(p => !ctx.xiA.includes(p) && p.inj <= 0).sort((x, y) => y.rating - x.rating);
+    const bench = T.squad.filter(p => !ctx.xiA.includes(p) && isFit(p, T)).sort((x, y) => y.rating - x.rating);
     for (let i = 0; i < Math.min(2, bench.length); i++) {
       const weakest = ctx.xiA.filter(p => ctx.slotsA[ctx.xiA.indexOf(p)] !== 'GK')
         .sort((x, y) => x.rating - y.rating)[0];
