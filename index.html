@@ -2125,11 +2125,21 @@ function personalSeasonMail(G, sum) {   const t = G.teams[G.myTeam]; if (!t) ret
   }
   /* promotion and relegation cascades through every adjacent pair of tiers */
   const promoted = [], relegated = [];
+  const playoffs = [];
   for (let tier = 0; tier < N_TIERS; tier++) {
     const st = tables[tier];
-    if (tier > 0) promoted.push(...st.slice(0, PROMOTED).map(r => r.id));
-    if (tier < N_TIERS - 1) relegated.push(...st.slice(TIER_SIZE - PROMOTED).map(r => r.id));
+    if (tier > 0) {
+      promoted.push(...st.slice(0, AUTO_PROMOTED).map(r => r.id));
+      const contenders = st.slice(AUTO_PROMOTED, AUTO_PROMOTED + PLAYOFF_SPOTS).map(r => r.id);
+      if (contenders.length === PLAYOFF_SPOTS) {
+        const po = runPromotionPlayoff(G, contenders);
+        promoted.push(po.winner);
+        playoffs.push({ tier, contenders, semis: po.semis, final: po.final, winner: po.winner });
+      }
+    }
+    if (tier < N_TIERS - 1) relegated.push(...st.slice(TIER_SIZE - RELEGATED).map(r => r.id));
   }
+  sum.playoffs = playoffs;
   const move = (ids, dir) => ids.forEach(id => {
     const t = G.teams[id];
     t.tier = clamp(t.tier + dir, 0, N_TIERS - 1);
