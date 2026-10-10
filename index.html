@@ -5394,7 +5394,7 @@ function viewTransfers() {
     const row = x => `<div class="prow" style="grid-template-columns:auto auto 1fr auto">
       ${faceSVG(x.p, 30, x.club.c1)}${ratingTag(x.p.rating)}
       <span class="who"><b>${esc(x.p.name)} ${flagSVG(x.p.nat)}</b><small>${x.p.pos} · ${x.p.age} · ${crestHTML(x.club, 13)} ${esc(x.club.s)}</small></span>
-      <span class="hint">pot ${potTxt(x.p)}</span></div>`;
+      <span class="hint">pot <b class="potglow">${potTxt(x.p)}</b></span></div>`;
     html += `<div class="cols">
       <div class="panel"><h3>Highest rated in the game</h3>${topRated.map(row).join('')}</div>
       <div class="panel"><h3>Highest potential in the game</h3>${topPot.map(row).join('')}</div>
