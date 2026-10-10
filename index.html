@@ -4310,8 +4310,7 @@ function showSponsors() {
 
 let pendingRoundResult = null;
 function afterLeaguePortion(res) {
-  if (G.cup.mine) { pendingRoundResult = res; startLiveCup(); }
-  else { afterRound(); showMatchdayModal(res); }
+  afterRound(); showMatchdayModal(res);
 }
 function beginLiveMatch(ctx, m, kind, tier) {
   if (tab !== 'match') { tab = 'match'; document.querySelectorAll('.view').forEach(v => v.classList.remove('on')); const av = $('#v-match'); if (av) av.classList.add('on'); }
@@ -4337,11 +4336,7 @@ function beginLiveMatch(ctx, m, kind, tier) {
 function startLive() {
   const t = me(), tier = t.tier;
   const idx = myMatchIndex(G, G.round);
-  if (idx < 0) {
-    const cup = myCupTieThisRound(G);
-    if (G.liveMode && cup) { const res = playRound(G, true); afterLeaguePortion(res); return; }
-    simRounds(1); return;
-  }
+  if (idx < 0) { simRounds(1); return; }
   const m = G.fixtures[tier][G.round][idx];
   const ctx = createMatch(G, m.h, m.a, false);
   beginLiveMatch(ctx, m, 'league', tier);
@@ -4351,6 +4346,44 @@ function startLiveCup() {
   if (!m) return;
   const ctx = createMatch(G, m.h, m.a, true);
   beginLiveMatch(ctx, m, 'cup', null);
+}
+/* ---- standalone cup matchday (its own day, separate from the league) ---- */
+function startCupMatchday() {
+  if (!cupDueNow(G)) return;
+  bumpCurDayForCup(G);
+  if (G.liveMode) {
+    const ties = playCupRound(G, true);
+    if (G.cup.mine) { startLiveCup(); return; }
+    afterCupMatchday({ cup: ties });
+  } else {
+    const ties = playCupRound(G, false);
+    afterCupMatchday({ cup: ties });
+  }
+}
+function afterCupMatchday(res) {
+  afterRound();
+  showCupMatchdayModal(res);
+}
+function showCupMatchdayModal(res) {
+  const myTie = (res.cup || []).find(t => t.h === G.myTeam || t.a === G.myTeam);
+  let body = `<div class="cupMdHead"><span class="cupMdIco">🏆</span><b>${esc(CUP_NAME)}</b><span class="hint">${esc(CUP_ROUNDS[(myTie || {}).stage] || CUP_ROUNDS[G.cup.stage - 1] || 'Round')}</span></div>`;
+  if (myTie) {
+    const H = G.teams[myTie.h], A = G.teams[myTie.a];
+    const pensTxt = myTie.pens ? ` <small>(${myTie.pens[0]}–${myTie.pens[1]} pens)</small>` : '';
+    const verdict = myTie.winner === G.myTeam ? 'Through to the next round!' : 'Knocked out.';
+    body += `<div class="fixture" style="padding:4px 0">
+      <div class="side">${crestHTML(H, 30)}<div><b>${esc(H.s)}</b><small>${esc(H.city)}</small></div></div>
+      <div class="score num">${myTie.hg}–${myTie.ag}${pensTxt}</div>
+      <div class="side away">${crestHTML(A, 30)}<div><b>${esc(A.s)}</b><small>${esc(A.city)}</small></div></div>
+    </div>
+    <p style="text-align:center;color:var(--dim);margin:0">${verdict}</p>
+    ${goalList(myTie.ev || [])}`;
+  } else {
+    body += cupRoundHTML(res.cup);
+  }
+  openModal(`${CUP_NAME} — Matchday`, body,
+    `<button class="btn ghost sm" onclick="closeModal();tab='cups';render()">See the cup</button>
+     <button class="btn sm" onclick="closeModal();maybeShowPendingOffer()">Continue</button>`);
 }
 
 function clubInitials(n) {   return ((n || '').split(/\s+/).filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 3)) || '??'; } function liveFplHTML(p, i, slots, teamObj, prefix, away) {
@@ -4762,9 +4795,7 @@ function endLive() {
     const result = { h: ls.m.h, a: ls.m.a, hg: ls.ctx.hg, ag: ls.ctx.ag, pens, winner, stage: G.cup.stage, ev: ls.ctx.ev };
     finishMyCupTie(G, result);
     liveState = null;
-    const res = pendingRoundResult; pendingRoundResult = null;
-    afterRound();
-    showMatchdayModal(res);
+    afterCupMatchday({ cup: G.cup.ties });
     return;
   }
   commitMatch(G, ls.tier, ls.m, ls.ctx);
@@ -4897,7 +4928,7 @@ function viewMatch() {
   const cupTies = G.finished ? [] : myCupTies(G.round);
   if (cupTies.length) {
     v.appendChild(el('div', 'panel',
-      `<h3>Cup ties this matchday<span class="sub">played alongside your league fixture</span></h3>` +
+      `<h3>Cup ties coming up<span class="sub">each played on its own matchday</span></h3>` +
       cupTies.map(c => `<div class="pad" style="border-top:1px solid var(--line)">
         <b style="color:var(--cup)">🏆 ${esc(c.name)}</b> · ${c.round}<br>
         <span style="color:var(--dim)">${c.opp ? `${c.home ? 'Home to' : 'Away to'} ${esc(c.opp)}` : esc(c.note)}</span></div>`).join('')));
