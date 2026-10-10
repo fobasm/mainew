@@ -2033,7 +2033,6 @@ function playRound(G, skipMine) {
   }
   try { trainingTick(G); } catch (e) { console.error('Training error', e); }
   africaRound(G);
-  if (CUP_AT.includes(G.round) && !G.cup.done) out.cup = playCupRound(G, skipMine);
   if (S8_AT.includes(G.round)) out.s8 = playKnockoutRound(G, G.super8, S8_ROUNDS, 6);
   if (KO_AT.includes(G.round)) out.ko = playKnockoutRound(G, G.knockout, KO_ROUNDS, 7);
   if (CAF_AT.includes(G.round)) out.caf = playCAFRound(G);
@@ -3989,14 +3988,26 @@ let autoSimTimer = null; function autoSimBody() {   const d = new Date(currentDa
     a.appendChild(el('span', 'hint', 'Promotion, relegation, contracts and the academy intake are settled next.'));
     return;
   }
-  const nx = myFixture(G.round);
-  const myCup = myCupTieThisRound(G);
-  let b1Label;
-  if (nx && myCup) b1Label = G.liveMode ? `Play matchday ${G.round + 1} + Cup` : `Sim matchday ${G.round + 1} + Cup`;
-  else if (myCup) b1Label = G.liveMode ? `Play ${CUP_NAME} tie` : `Sim ${CUP_NAME} tie`;
-  else b1Label = G.liveMode ? `Play matchday ${G.round + 1}` : `Sim matchday ${G.round + 1}`;
-const ndBtn = el('button', 'btn ghost', 'Next day'); ndBtn.disabled = isMatchdayToday(); ndBtn.title = isMatchdayToday() ? 'Play today\'s match first' : 'Advance one day'; ndBtn.onclick = () => { advanceOneDay(); render(); renderActions(); toast(isMatchdayToday() ? 'Matchday today.' : 'No match today.'); }; a.appendChild(ndBtn);
+  const ndBtn = el('button', 'btn ghost', 'Next day'); ndBtn.disabled = isMatchdayToday(); ndBtn.title = isMatchdayToday() ? 'Play today\'s match first' : 'Advance one day'; ndBtn.onclick = () => { advanceOneDay(); render(); renderActions(); toast(isMatchdayToday() ? 'Matchday today.' : 'No match today.'); }; a.appendChild(ndBtn);
   const autoBtn = el('button', 'btn ghost', 'Keep going'); autoBtn.disabled = isMatchdayToday(); autoBtn.onclick = startAutoSim; a.appendChild(autoBtn);
+  if (cupDueNow(G)) {
+    if (!G.cup.pendingTies) cupPairStage(G);
+    const mine = G.cup.pendingTies.find(p => p.h === G.myTeam || p.a === G.myTeam);
+    const roundName = CUP_ROUNDS[G.cup.stage] || 'Round';
+    const b1 = el('button', 'btn cupBtn', `🏆 ${G.liveMode ? 'Play' : 'Sim'} ${CUP_NAME} — ${roundName}`);
+    b1.onclick = () => startCupMatchday();
+    a.appendChild(b1);
+    const b2 = el('button', 'btn ghost', 'Quick sim'); b2.onclick = () => { bumpCurDayForCup(G); const ties = playCupRound(G, false); afterCupMatchday({ cup: ties }); }; a.appendChild(b2);
+    if (mine) {
+      const copp = G.teams[mine.h === G.myTeam ? mine.a : mine.h];
+      a.appendChild(el('span', 'hint cupHint', `🏆 ${mine.h === G.myTeam ? 'Home to' : 'Away to'} ${copp.s} in the ${CUP_NAME}`));
+    } else {
+      a.appendChild(el('span', 'hint cupHint', `🏆 ${CUP_NAME} — ${roundName} (no tie for you this round)`));
+    }
+    return;
+  }
+  const nx = myFixture(G.round);
+  const b1Label = G.liveMode ? `Play matchday ${G.round + 1}` : `Sim matchday ${G.round + 1}`;
   const b1 = el('button', 'btn', b1Label);
   b1.onclick = () => G.liveMode ? startLive() : simRounds(1);
   a.appendChild(b1);
@@ -4007,17 +4018,19 @@ const ndBtn = el('button', 'btn ghost', 'Next day'); ndBtn.disabled = isMatchday
     const opp = G.teams[nx.h === G.myTeam ? nx.a : nx.h];
     a.appendChild(el('span', 'hint', `${nx.h === G.myTeam ? 'Home to' : 'Away to'} ${opp.s} (${teamOverall(opp)})`));
   }
-  if (myCup) {
-    const copp = G.teams[myCup.h === G.myTeam ? myCup.a : myCup.h];
-    a.appendChild(el('span', 'hint', `${myCup.h === G.myTeam ? 'Home to' : 'Away to'} ${copp.s} in the ${CUP_NAME}`));
-  }
 }
 
 /* ---------------- quick sim ---------------- */
 function simRounds(n) {
   const played = [];
-  withPrizeSummary(() => { for (let i = 0; i < n && !G.finished; i++) { const r = playRound(G); if (r) played.push(r); } });
-  if (!played.length) return;
+  let cupPlayed = false;
+  withPrizeSummary(() => {
+    for (let i = 0; i < n && !G.finished; i++) {
+      while (cupDueNow(G)) { playCupRound(G, false); cupPlayed = true; }
+      const r = playRound(G); if (r) played.push(r);
+    }
+  });
+  if (!played.length) { if (cupPlayed) { afterRound(); toast(`${CUP_NAME} results are in — check the cup tab.`); } return; }
   afterRound();
   if (played.length === 1) showMatchdayModal(played[0]); else showRunModal(played);
 }
