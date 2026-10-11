@@ -575,7 +575,7 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
     <div class="view" id="v-news"></div>     <div class="view" id="v-inbox"></div>
     <div class="view" id="v-cups"></div>
     <div class="view" id="v-africa"></div>
-    <div class="view" id="v-nations"></div>     <div class="view" id="v-world"></div>     <div class="view" id="v-clubrank"></div>     <div class="view" id="v-commercial"></div>
+    <div class="view" id="v-nations"></div>     <div class="view" id="v-world"></div>     <div class="view" id="v-clubrank"></div>     <div class="view" id="v-commercial"></div>     <div class="view" id="v-stadium"></div>
     <div class="view" id="v-calendar"></div>
     <div class="view" id="v-info"></div>
     <div class="view" id="v-createclub"></div>
@@ -2022,7 +2022,7 @@ function tableUpdate(G, tier, m) {
   G.teams[m.h].form.push(f); G.teams[m.a].form.push(f === 'W' ? 'L' : f === 'L' ? 'W' : 'D');
   [m.h, m.a].forEach(id => { if (G.teams[id].form.length > 6) G.teams[id].form.shift(); });
   /* gate money */
-   { const ht = G.teams[m.h], k = Math.min(ht.tier, 4);     payIncome(G, ht.id, ht.tier === 0 ? 0.55 : ht.tier === 1 ? 0.12 : 0.04, 'gate', 'Gate receipts');     payIncome(G, ht.id, [0.2, 0.04, 0.012, 0.005, 0.0025][k], 'gate', 'Matchday hospitality & catering');     const star = clamp((Math.max.apply(null, ht.squad.map(p => p.rating)) - 70) / 50, 0, 0.5);     const shirts = [0.24, 0.05, 0.015, 0.006, 0.003][k] * (0.6 + ht.rep * 0.08) * (1 + star) * kitBoost(ht);     payIncome(G, ht.id, shirts, 'sponsor', 'Shirt sales');     payIncome(G, ht.id, shirts * 0.35, 'sponsor', 'Club shop & merchandise'); }
+   { const ht = G.teams[m.h], k = Math.min(ht.tier, 4);     matchdayIncome(G, ht, m);     /* hospitality is now part of matchdayIncome */     const star = clamp((Math.max.apply(null, ht.squad.map(p => p.rating)) - 70) / 50, 0, 0.5);     const shirts = [0.24, 0.05, 0.015, 0.006, 0.003][k] * (0.6 + ht.rep * 0.08) * (1 + star) * kitBoost(ht);     payIncome(G, ht.id, shirts, 'sponsor', 'Shirt sales');     payIncome(G, ht.id, shirts * 0.35, 'sponsor', 'Club shop & merchandise'); }
   /* match bonus: win = full, draw = a third each */
   const wb = [0.5, 0.14, 0.05, 0.02, 0.01][tier] || 0.01;
   if (m.hg > m.ag) payPrize(G, m.h, wb, 'win bonus');
@@ -2201,7 +2201,7 @@ function personalSeasonMail(G, sum) {   const t = G.teams[G.myTeam]; if (!t) ret
       const prize = Math.max(prizeScale * 0.14, prizeScale - i * prizeStep);
       payPrize(G, t.id, prize, 'prize money for finishing #' + (i + 1));
       const spons = [6, 4, 1.6, 0.6, 0.25][tier] || 0.2;
-      payIncome(G, t.id, spons, 'sponsor', 'League sponsorship share');       payIncome(G, t.id, TV_BASE[Math.min(tier, 4)] * 0.5 * (1 - i / (TIER_SIZE - 1)), 'sponsor', 'TV: Merit payment');       commercialSeasonEnd(G, t, tier);
+      payIncome(G, t.id, spons, 'sponsor', 'League sponsorship share');       payIncome(G, t.id, TV_BASE[Math.min(tier, 4)] * 0.5 * (1 - i / (TIER_SIZE - 1)), 'sponsor', 'TV: Merit payment');       commercialSeasonEnd(G, t, tier);       stadiumSeasonEnd(G, t);
       const mid = (TIER_SIZE - 1) / 2;
       t.rep = clamp(t.rep + (mid - i) * 0.035, 3.2, 9.9);
     });
@@ -3988,7 +3988,7 @@ const MENU_SECTIONS = [
   ['Career', [['inbox','Inbox'],['match','Matchday'],['calendar','Calendar'],['table','League tables & fixtures']]],
   ['Squad', [['squad','Squad & Tactics'], ['youth','Academy & Training'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist']]],
   ['Competitions', [['cups','Cups'],['africa','Continental football'],['nations','Nations'],['world','World players'],['clubrank','Club rankings'],['stats','Player Stats']]],
-  ['Club', [['club','Club & Finances'],['commercial','Commercial'],['trophies','Trophy room'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
+  ['Club', [['club','Club & Finances'],['commercial','Commercial'],['stadium','Stadium & tickets'],['trophies','Trophy room'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
   ['More', [['careerfile','Save & Load'],['soundsettings','Music & sound effects'],['info','How to play']]]
 ];
 function buildSideNav() {
@@ -4049,7 +4049,7 @@ function render() {   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 42);
   if (active) active.classList.add('on');
   const dispatch = { match: viewMatch, table: viewTable, fixtures: viewFixtures, squad: viewSquadHub, tactics: viewSquadHub, finances: viewFinances, trophies: viewTrophies,
      transfers: viewTransfers, youth: viewYouthHub, training: viewYouthHub, inbox: viewInbox, stats: viewStats, news: viewNews,
-      cups: viewCups, africa: viewAfrica, nations: viewNations, world: viewWorld, clubrank: viewClubRank, commercial: viewCommercial, calendar: viewCalendar, watchlist: viewWatchlist,
+      cups: viewCups, africa: viewAfrica, nations: viewNations, world: viewWorld, clubrank: viewClubRank, commercial: viewCommercial, stadium: viewStadium, calendar: viewCalendar, watchlist: viewWatchlist,
      info: viewInfo, createclub: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub };
   try {
     (dispatch[tab] || viewMatch)();
