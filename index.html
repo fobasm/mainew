@@ -2395,8 +2395,16 @@ function cleanSheets(G, tier, n) {
 }
 
 /* ---------------- transfers ---------------- */
+function teamById(G, id) { return G.teams[id] || (G.africa && G.africa.squadCache && G.africa.squadCache[id]) || null; }
 function findPlayer(G, pid) {
   for (const t of G.teams) { const p = t.squad.find(x => x.id === pid); if (p) return { p, t }; }
+  if (G.africa && G.africa.squadCache) {
+    for (const id of Object.keys(G.africa.squadCache)) {
+      const t = G.africa.squadCache[id];
+      const p = t.squad.find(x => x.id === pid);
+      if (p) return { p, t };
+    }
+  }
   return null;
 }
 function minAtPos(pos) { return { GK:2, RB:1, CB:3, LB:1, RWB:0, LWB:0, CDM:1, CM:2, CAM:1, RM:0, LM:0, RW:0, LW:0, ST:1, CF:1 }[pos] ?? 1; }
@@ -2808,23 +2816,15 @@ function cafShort(G, e) { return e.sa ? G.teams[e.id].s : afrClub(G, e.id).n; }
 function cafRating(G, e) { return e.sa ? teamOverall(G.teams[e.id]) : afrClub(G, e.id).rating; }
 
 function cafLeg(G, home, away) {
-  const rh = cafRating(G, home), ra = cafRating(G, away);
-  const [hg, ag] = simAbstract(rh, ra, 2.6);
-  [[home, hg, ag], [away, ag, hg]].forEach(([e, scored, conceded]) => {
-    if (!e.sa) return;
-    const t = G.teams[e.id];
-    const s = teamStrength(t);
-    s.xi.forEach((p, i) => {
-      p.apps++; p.cApps++;
-      if (POS_GROUP[p.pos] === 'GK' && conceded === 0) p.cs++;
-    });
-    for (let k = 0; k < scored; k++) {
-      const cand = s.xi.map((p, idx) => ({ p, slot: s.slots[idx] || p.pos }));
-      const sc = wpick(cand, x => POS_ATT[x.slot] * Math.pow(x.p.rating / 68, 1.8)).p;
-      sc.goals++; sc.cG++;
-    }
-  });
-  return [hg, ag];
+  const H = home.sa ? G.teams[home.id] : buildForeignClub(G, home.id);
+  const A = away.sa ? G.teams[away.id] : buildForeignClub(G, away.id);
+  if (!H || !A) { const [hg, ag] = simAbstract(cafRating(G, home), cafRating(G, away), 2.6); return [hg, ag]; }
+  const ctx = createMatchTeams(H, A, false);
+  runPeriod(G, ctx, 1, 90);
+  finishMatch(G, ctx);
+  if (!home.sa) { const Hc = G.africa.squadCache[home.id]; if (Hc) Hc.squad.forEach(p => { p.inj = 0; p.pendingInj = 0; }); }
+  if (!away.sa) { const Ac = G.africa.squadCache[away.id]; if (Ac) Ac.squad.forEach(p => { p.inj = 0; p.pendingInj = 0; }); }
+  return [ctx.hg, ctx.ag];
 }
 
 function playContinentalRound(G, key, trophyName, prizeAmt, historyKey, newsKind) {
