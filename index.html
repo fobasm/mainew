@@ -4146,7 +4146,7 @@ let autoSimTimer = null; function autoSimBody() {   const d = new Date(currentDa
   const b4 = el('button', 'btn ghost', 'To end of season'); b4.onclick = () => simRounds(99); a.appendChild(b4);
   if (nx) {
     const opp = G.teams[nx.h === G.myTeam ? nx.a : nx.h];
-    a.appendChild(el('span', 'hint', `${nx.h === G.myTeam ? 'Home to' : 'Away to'} ${opp.s} (${teamOverall(opp)}) · ${stadiumName(G.teams[[nx.h])}`));
+    a.appendChild(el('span', 'hint', `${nx.h === G.myTeam ? 'Home to' : 'Away to'} ${opp.s} (${teamOverall(opp)}) · ${stadiumName(G.teams[nx.h])}`));
 
   }
 }
