@@ -4131,8 +4131,6 @@ let autoSimTimer = null; function autoSimBody() {   const d = new Date(currentDa
     if (mine) {
       const copp = G.teams[mine.h === G.myTeam ? mine.a : mine.h];
       a.appendChild(el('span', 'hint cupHint', `🏆   ${mine.h === G.myTeam ? 'Home to' : 'Away to'} ${copp.s} in the ${CUP_NAME} · ${stadiumName(G.teams[nx.h])}`));
-  }
-}
     } else {
       a.appendChild(el('span', 'hint cupHint', `🏆 ${CUP_NAME} — ${roundName} (no tie for you this round)`));
     }
@@ -4148,7 +4146,8 @@ let autoSimTimer = null; function autoSimBody() {   const d = new Date(currentDa
   const b4 = el('button', 'btn ghost', 'To end of season'); b4.onclick = () => simRounds(99); a.appendChild(b4);
   if (nx) {
     const opp = G.teams[nx.h === G.myTeam ? nx.a : nx.h];
-    a.appendChild(el('span', 'hint', `${nx.h === G.myTeam ? 'Home to' : 'Away to'} ${opp.s} (${teamOverall(opp)}) · ${stadiumName(G.teams[nx.h])}`;
+    a.appendChild(el('span', 'hint', `${nx.h === G.myTeam ? 'Home to' : 'Away to'} ${opp.s} (${teamOverall(opp)}) · ${stadiumName(G.teams[[nx.h])}`));
+
   }
 }
 
