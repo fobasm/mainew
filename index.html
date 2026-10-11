@@ -2838,30 +2838,50 @@ function buildCAF(G) {
   list.push({ sa: true, id: entrantSA(G, 0) });
   const second = entrantSA(G, 1);
   list.push({ sa: true, id: second === list[0].id ? sortTable(G, 0)[1].id : second });
-  A.leagues.forEach(L => {
+  const byRank = A.leagues.slice().sort((a, b) => a.rank - b.rank);
+  const need = 16 - list.length;
+  byRank.slice(0, need).forEach(L => {
     const champ = L.lastChampion || afrTable(L)[0].id;
     list.push({ sa: false, id: champ });
   });
-  A.leagues.slice(0, 4).forEach(L => {
-    const ru = L.lastRunnerUp || afrTable(L)[1].id;
-    list.push({ sa: false, id: ru });
-  });
-  A.caf = { stage: 0, alive: shuffle(list).slice(0, 16), log: [], winner: null, done: false };
+  /* pad with next-best-ranked runners-up in case a league had no valid champion
+     (should not trigger with a full continental dataset, but keeps this robust) */
+  if (list.length < 16) {
+    byRank.forEach(L => {
+      if (list.length >= 16) return;
+      const ru = L.lastRunnerUp || (afrTable(L)[1] && afrTable(L)[1].id);
+      if (ru != null && !list.some(x => !x.sa && x.id === ru)) list.push({ sa: false, id: ru });
+    });
+  }
+  A.caf = { stage: 0, alive: shuffle(list.slice(0, 16)), log: [], winner: null, done: false };
 }
 function buildConfed(G) {
   const A = G.africa;
   const st = sortTable(G, 0);
   const list = [];
   [2, 3, 4].forEach(r => { const row = st[r]; if (row && !list.some(x => x.sa && x.id === row.id)) list.push({ sa: true, id: row.id }); });
-  A.leagues.forEach(L => {
-    const ru = L.lastRunnerUp || (afrTable(L)[1] && afrTable(L)[1].id);
-    if (ru != null) list.push({ sa: false, id: ru });
+  const byRank = A.leagues.slice().sort((a, b) => a.rank - b.rank);
+  const cafIds = new Set((A.caf && A.caf.alive ? A.caf.alive : []).filter(x => !x.sa).map(x => x.id));
+  const need = 16 - list.length;
+  const candidates = [];
+  byRank.forEach(L => {
+    const champ = L.lastChampion || afrTable(L)[0].id;
+    if (cafIds.has(champ)) {
+      const ru = L.lastRunnerUp || (afrTable(L)[1] && afrTable(L)[1].id);
+      if (ru != null) candidates.push({ sa: false, id: ru });
+    } else {
+      candidates.push({ sa: false, id: champ });
+    }
   });
-  A.leagues.slice(0, 6).forEach(L => {
-    const third = afrTable(L)[2];
-    if (third) list.push({ sa: false, id: third.id });
-  });
-  A.confed = { stage: 0, alive: shuffle(list).slice(0, 16), log: [], winner: null, done: false };
+  candidates.slice(0, need).forEach(c => list.push(c));
+  if (list.length < 16) {
+    byRank.forEach(L => {
+      if (list.length >= 16) return;
+      const third = afrTable(L)[2];
+      if (third && !list.some(x => !x.sa && x.id === third.id)) list.push({ sa: false, id: third.id });
+    });
+  }
+  A.confed = { stage: 0, alive: shuffle(list.slice(0, 16)), log: [], winner: null, done: false };
 }
 function cafName(G, e) { return e.sa ? G.teams[e.id].n : afrClub(G, e.id).n; }
 function cafShort(G, e) { return e.sa ? G.teams[e.id].s : afrClub(G, e.id).n; }
