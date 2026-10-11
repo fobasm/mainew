@@ -1943,6 +1943,7 @@ function finishMatch(G, ctx) {
   credit(ctx.xiA, ctx.hg, ctx.a);
   computeMatchRatings(G, ctx);
   const teamOf = id => G.teams[id] || (G.africa && G.africa.squadCache && G.africa.squadCache[id]);
+  const teamOf = id => G.teams[id] || (G.africa && G.africa.squadCache && G.africa.squadCache[id]);
   ctx.ev.forEach(e => {
     if (e.type !== 'goal') return;
     const t = teamOf(e.team);
@@ -1951,7 +1952,7 @@ function finishMatch(G, ctx) {
     if (sc) { sc.goals++; sc.cG++; sc.form = clamp(sc.form + 1.2, -4, 5); }
     if (e.assist) { const as = t.squad.find(p => p.id === e.assist); if (as) { as.assists++; as.cA++; as.form = clamp(as.form + 0.7, -4, 5); } }
   });
-  ctx.ev.forEach(e => {     if (e.type !== 'card') return;     const ct = teamOf(e.team); if (!ct) return;     const cp = ct.squad.find(p => p.id === e.scorer);     if (!cp) return;     if (e.card === 'red') cp.red = (cp.red || 0) + 1; else cp.yellow = (cp.yellow || 0) + 1;   });   /* hat-trick note */
+  ctx.ev.forEach(e => {     if (e.type !== 'card') return;     const ct = teamOf(e.team); if (!ct) return;     const cp = ct.squad.find(p => p.id === e.scorer);     if (!cp) return;     if (e.card === 'red') cp.red = (cp.red || 0) + 1; else cp.yellow = (cp.yellow || 0) + 1;   });   applyCardBans(G, ctx);   /* hat-trick note */
   const tally = {};
   ctx.ev.filter(e => e.type === 'goal').forEach(e => { tally[e.scorer] = (tally[e.scorer] || 0) + 1; });
   Object.entries(tally).forEach(([id, n]) => {
@@ -2701,6 +2702,8 @@ function afrClub(G, id) {
   for (const L of G.africa.leagues) { const c = L.clubs.find(x => x.id === id); if (c) return c; }
   return null;
 }
+function afrLeagueOf(G, id) { return G.africa.leagues.find(L => L.clubs.some(c => c.id === id)); }
+
 function afrLeagueOf(G, id) { return G.africa.leagues.find(L => L.clubs.some(c => c.id === id)); }
 
 /* lazily build (and cache for the season) a full squad for a foreign African club,
