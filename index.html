@@ -1612,6 +1612,7 @@ function buildSeason(G, first) {
     t.squad.forEach(p => { p.goals = 0; p.assists = 0; p.apps = 0; p.cs = 0; p.inj = 0; p.form = 0; p.yellow = 0; p.red = 0; p.red = 0; p.red = 0; p.startRating = p.rating; p.startPot = p.pot; p.ratingSum = 0; p.ratingApps = 0; p.monthRatings = {}; });
     ensureLineup(t);
   });
+  if (G.africa) G.africa.squadCache = {};
   buildCup(G);
   buildExtraCups(G);
   buildCAF(G);
@@ -5984,7 +5985,9 @@ function viewAfrica() {
   }
   v.innerHTML = tabBar + tiles + body;
   v.querySelectorAll('[data-aft]').forEach(b => b.onclick = () => { afrTab = b.dataset.aft; viewAfrica(); window.scrollTo({ top: 0 }); });
-  v.querySelectorAll('[data-al]').forEach(b => b.onclick = () => { afrPick = +b.dataset.al; viewAfrica(); });
+  v.querySelectorAll('[data-al]').forEach(b => b.onclick = () => { afrPick = +b.dataset.al; afrClubPick = null; viewAfrica(); });
+  v.querySelectorAll('[data-afc]').forEach(b => b.onclick = () => { const id = b.dataset.afc; afrClubPick = afrClubPick === id ? null : id; viewAfrica(); });
+  bindPlayerRows(v);
   const nb = $('#afNations'); if (nb) nb.onclick = () => goTo('nations');
 }
 function viewAfricaOld() {
