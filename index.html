@@ -5928,6 +5928,19 @@ function continentalPanel(key, name, historyKey, historyLabel) {
 /* ---------------- Africa ---------------- */
 let afrTab = 'rank';
 let afrPick = 0;
+let afrClubPick = null;
+function afrClubSquadPanel(G, id) {
+  const t = buildForeignClub(G, id);
+  if (!t) return '';
+  const sq = t.squad.slice().sort((a, b) => b.rating - a.rating);
+  return `<div class="panel"><h3>${esc(t.n)}<span class="sub">${esc(natName(t.nat))} · XI rated ${teamOverall(t)}</span></h3>
+    <div class="kits">
+      <div class="kitBigWrap">${bigKitSVG(t, false, 132)}<div class="kitBigBadge">${crestHTML(t, 26)}</div><small>Home</small></div>
+      <div class="kitBigWrap">${bigKitSVG(t, true, 132)}<div class="kitBigBadge">${crestHTML(t, 26)}</div><small>Away</small></div>
+      <div class="kit" style="align-self:center">${crestHTML(t, 56)}<small>Badge</small></div>
+    </div>
+    ${sq.map(p => playerRow(p, t)).join('')}</div>`;
+}
 function viewAfrica() {
   const v = $('#v-africa'), A = G.africa;
   v.classList.add('mmx', 'sqv');
@@ -5958,11 +5971,12 @@ function viewAfrica() {
       <div class="cf-wrap"><table class="gtable"><thead><tr><th class="pos">#</th><th>Club</th><th class="hide-s">Rat</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>` +
       st.map((r, i) => {
         const c = afrClub(G, r.id);
-        return `<tr class="${i === 0 ? 'zone-up' : ''}"><td class="pos">${i + 1}</td><td><span class="team">${flagSVG(L.nat, 18)}<span>${esc(c.n)}</span></span></td>
+        return `<tr class="clickrow ${i === 0 ? 'zone-up' : ''} ${afrClubPick === r.id ? 'me' : ''}" data-afc="${r.id}" style="cursor:pointer"><td class="pos">${i + 1}</td><td><span class="team">${flagSVG(L.nat, 18)}<span>${esc(c.n)}</span></span></td>
           <td class="hide-s muted">${c.rating}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
           <td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td><b>${r.pts}</b></td></tr>`;
       }).join('') + `</tbody></table></div>
-      <div class="glegend"><span><i style="background:#34c471"></i>Into the ${CAF_NAME}</span></div></div>`;
+      <div class="glegend"><span><i style="background:#34c471"></i>Into the ${CAF_NAME}</span></div></div>` +
+      (afrClubPick != null && afrClub(G, afrClubPick) ? afrClubSquadPanel(G, afrClubPick) : '');
   } else if (afrTab === 'caf') {
     body = continentalPanel('caf', CAF_NAME, 'cafHistory', 'Champions of Africa').replace('<div class="panel">', '<div class="panel tbl-google">');
   } else {
