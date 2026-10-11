@@ -5174,6 +5174,7 @@ function starterRatingAt(t, pos) {
 }
 function interestedClubs(p, ownerId, n) {
   n = n || 4;
+  if (ownerId != null && typeof ownerId !== 'number') return [];
   const ptier = ownerId != null ? G.teams[ownerId].tier : 3;
   const out = [];
   for (const t of G.teams) {
@@ -5255,11 +5256,13 @@ function playerModal(pid) {
   const p = found.p, t = found.t, isMine = t && t.id === G.myTeam;
   const inYouth = isMine && me().youth.some(y => y.id === p.id);
   const listing = G.market.find(m => m.pid === p.id);
-  const clubs = (p.clubs || []).map(c => `${esc(G.teams[c.id].s)}${c.loan ? ' (loan)' : ''} <span class="hint">(${c.from})</span>`).join(' → ') || '—';   const watched = isWatched(p.id);   const prevChips = (p.clubs || []).slice(0, -1).map(c => `<span class="chip">${esc(G.teams[c.id].s)}${c.loan ? ' (loan)' : ''} <span class="hint">${c.from}</span></span>`).join(' ');
-  const careerRows = (p.career || []).slice().reverse().slice(0, 8).map(c =>
-    `<tr><td>${seasonLabel(c.season)}</td><td>${esc(G.teams[c.club].s)}</td><td class="num">${c.apps}</td><td class="num">${c.g}</td><td class="num">${c.a}</td><td class="num">${c.rating}</td></tr>`).join('');
+  const clubs = (p.clubs || []).map(c => { const cc = teamById(G, c.id); return cc ? `${esc(cc.s)}${c.loan ? ' (loan)' : ''} <span class="hint">(${c.from})</span>` : null; }).filter(Boolean).join(' → ') || '—';   const watched = isWatched(p.id);   const prevChips = (p.clubs || []).slice(0, -1).map(c => { const cc = teamById(G, c.id); return cc ? `<span class="chip">${esc(cc.s)}${c.loan ? ' (loan)' : ''} <span class="hint">${c.from}</span></span>` : ''; }).join(' ');
+  const careerRows = (p.career || []).slice().reverse().slice(0, 8).map(c => {
+    const cc = teamById(G, c.club); if (!cc) return '';
+    return `<tr><td>${seasonLabel(c.season)}</td><td>${esc(cc.s)}</td><td class="num">${c.apps}</td><td class="num">${c.g}</td><td class="num">${c.a}</td><td class="num">${c.rating}</td></tr>`;
+  }).join('');
   const devId = developedBy(p);
-  const devClub = devId != null ? G.teams[devId] : null;
+  const devClub = devId != null ? teamById(G, devId) : null;
   const legend = t && isClubLegend(G, p, t.id);
   const devLine = devClub
     ? (t && devClub.id === t.id ? `Home-grown at ${esc(devClub.s)}.` : `Product of ${esc(devClub.n)}.`)
@@ -5335,7 +5338,7 @@ function playerModal(pid) {
     footer = `<button class="btn ghost sm" id="pmRecall">Recall from loan</button>` + footer;
   } else if (listing) {
     footer = `<button class="btn sm" id="pmBid">Make a bid</button>` + footer;
-  } else if (t && t.id !== G.myTeam && !inYouth) {
+  } else if (t && t.id !== G.myTeam && !inYouth && typeof t.id === 'number') {
     footer = `<button class="btn sm" id="pmOffer">Make an offer</button>
               <button class="btn ghost sm" id="pmOfferLoan">Ask about a loan</button>` + footer;
   }
