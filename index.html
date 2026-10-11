@@ -4130,7 +4130,7 @@ let autoSimTimer = null; function autoSimBody() {   const d = new Date(currentDa
     const b2 = el('button', 'btn ghost', 'Quick sim'); b2.onclick = () => { bumpCurDayForCup(G); const ties = playCupRound(G, false); afterCupMatchday({ cup: ties }); }; a.appendChild(b2);
     if (mine) {
       const copp = G.teams[mine.h === G.myTeam ? mine.a : mine.h];
-      a.appendChild(el('span', 'hint cupHint', `🏆 ${mine.h === G.myTeam ? 'Home to' : 'Away to'} ${copp.s} in the ${CUP_NAME}`));
+      a.appendChild(el('span', 'hint cupHint', `🏆   ${mine.h === G.myTeam ? 'Home to' : 'Away to'} ${copp.s} in the ${CUP_NAME} · ${stadiumName(G.teams[mine.h])}`));
     } else {
       a.appendChild(el('span', 'hint cupHint', `🏆 ${CUP_NAME} — ${roundName} (no tie for you this round)`));
     }
@@ -4146,7 +4146,7 @@ let autoSimTimer = null; function autoSimBody() {   const d = new Date(currentDa
   const b4 = el('button', 'btn ghost', 'To end of season'); b4.onclick = () => simRounds(99); a.appendChild(b4);
   if (nx) {
     const opp = G.teams[nx.h === G.myTeam ? nx.a : nx.h];
-    a.appendChild(el('span', 'hint', `${nx.h === G.myTeam ? 'Home to' : 'Away to'} ${opp.s} (${teamOverall(opp)})`));
+    a.appendChild(el('span', 'hint', `${nx.h === G.myTeam ? 'Home to' : 'Away to'} ${opp.s} (${teamOverall(opp)}) · ${stadiumName(G.teams[nx.h])}`;
   }
 }
 
@@ -4542,7 +4542,7 @@ function renderLive() {
         <div class="sc"><span id="liveScore">0–0</span><span class="clock" id="liveClock">Kick-off</span></div>
         <div class="nm a">${esc(A.s)} ${crestHTML(A, 24)}</div>
       </div>
-      <div class="liveMgrBar">
+      <div class="hint" style="text-align:center;padding:2px 0">${esc(stadiumName(H))}</div>       <div class="liveMgrBar">
         <div class="liveMgr liveMgr-h">${avatarSVG(homeMgr.av, 22)}<span>${esc(homeMgr.nm)}</span></div>
         <div class="liveMgr liveMgr-a">${avatarSVG(awayMgr.av, 22)}<span>${esc(awayMgr.nm)}</span></div>
       </div>
@@ -5044,7 +5044,7 @@ function viewMatch() {
   if (nx) {
     const H = G.teams[nx.h], A = G.teams[nx.a];
     v.innerHTML += `<div class="hero">
-      <div class="meta">Matchday <b>${G.round + 1}</b> of ${totalRounds(G)} · ${TIER_NAMES[t.tier]} · ${seasonLabel(G.season)}</div>
+      <div class="meta">Matchday <b>${G.round + 1}</b> of ${totalRounds(G)} · ${TIER_NAMES[t.tier]} · ${seasonLabel(G.season)} · ${esc(stadiumName(H))}</div>
       <div class="fixture">
         <div class="side">${crestHTML(H, 34)}<div><b>${esc(H.n)}</b><small>${ordinal(posOfTeam(G, H.id))} · rated ${teamOverall(H)}</small></div></div>
         <div class="vs">v</div>
@@ -5086,7 +5086,7 @@ function miniTable(rows, tier) {
 }
 
 /* ---------------- League Table ---------------- */
-function viewTable() {
+ function tablePosAt(G, tier, rounds) {   const s = {}; G.teams.filter(t => t.tier === tier).forEach(t => { s[t.id] = { id: t.id, pts: 0, gf: 0, ga: 0 }; });   for (let r = 0; r < rounds; r++) (G.fixtures[tier][r] || []).forEach(m => {     if (!m.played || !s[m.h] || !s[m.a]) return;     const H = s[m.h], A = s[m.a]; H.gf += m.hg; H.ga += m.ag; A.gf += m.ag; A.ga += m.hg;     if (m.hg > m.ag) H.pts += 3; else if (m.hg < m.ag) A.pts += 3; else { H.pts++; A.pts++; }   });   const pos = {}; Object.values(s).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf || a.id - b.id).forEach((r, i) => { pos[r.id] = i + 1; });   return pos; } function posMove(was, now) {   if (was == null || was === now) return '<span class="muted">–</span>';   return was > now ? `<span style="color:#34c471">▲${was - now}</span>` : `<span style="color:#ff5a5a">▼${now - was}</span>`; } function viewTable() {
   const v = $('#v-table');
   const seasons = G.records.seasons.map(s => s.season).sort((a, b) => b - a);
   const isCurrent = tableSeason === 'current';
