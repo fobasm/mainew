@@ -1938,20 +1938,23 @@ function finishMatch(G, ctx) {
   credit(ctx.xiH, ctx.ag, ctx.h);
   credit(ctx.xiA, ctx.hg, ctx.a);
   computeMatchRatings(G, ctx);
+  const teamOf = id => G.teams[id] || (G.africa && G.africa.squadCache && G.africa.squadCache[id]);
   ctx.ev.forEach(e => {
     if (e.type !== 'goal') return;
-    const t = G.teams[e.team];
+    const t = teamOf(e.team);
+    if (!t) return;
     const sc = t.squad.find(p => p.id === e.scorer);
     if (sc) { sc.goals++; sc.cG++; sc.form = clamp(sc.form + 1.2, -4, 5); }
     if (e.assist) { const as = t.squad.find(p => p.id === e.assist); if (as) { as.assists++; as.cA++; as.form = clamp(as.form + 0.7, -4, 5); } }
   });
-  ctx.ev.forEach(e => {     if (e.type !== 'card') return;     const cp = G.teams[e.team].squad.find(p => p.id === e.scorer);     if (!cp) return;     if (e.card === 'red') cp.red = (cp.red || 0) + 1; else cp.yellow = (cp.yellow || 0) + 1;   });   applyCardBans(G, ctx);   /* hat-trick note */
+  ctx.ev.forEach(e => {     if (e.type !== 'card') return;     const ct = teamOf(e.team); if (!ct) return;     const cp = ct.squad.find(p => p.id === e.scorer);     if (!cp) return;     if (e.card === 'red') cp.red = (cp.red || 0) + 1; else cp.yellow = (cp.yellow || 0) + 1;   });   /* hat-trick note */
   const tally = {};
   ctx.ev.filter(e => e.type === 'goal').forEach(e => { tally[e.scorer] = (tally[e.scorer] || 0) + 1; });
   Object.entries(tally).forEach(([id, n]) => {
     if (n >= 3) {
       const e = ctx.ev.find(x => x.scorer === +id);
-      news(G, 'match', `${e.sName} scores a hat-trick for ${G.teams[e.team].s}.`);
+      const et = teamOf(e.team);
+      if (et) news(G, 'match', `${e.sName} scores a hat-trick for ${et.s}.`);
     }
   });
 }
@@ -2688,6 +2691,38 @@ function afrClub(G, id) {
 }
 function afrLeagueOf(G, id) { return G.africa.leagues.find(L => L.clubs.some(c => c.id === id)); }
 
+/* lazily build (and cache for the season) a full squad for a foreign African club,
+   so CAF/Confed ties can be simulated through the real match engine */
+function buildForeignClub(G, id) {
+  G.africa.squadCache = G.africa.squadCache || {};
+  if (G.africa.squadCache[id]) return G.africa.squadCache[id];
+  const c = afrClub(G, id), L = afrLeagueOf(G, id);
+  if (!c || !L) return null;
+  const season = G.season;
+  const tier = c.str >= 8.6 ? 0 : c.str >= 7.3 ? 1 : c.str >= 6.2 ? 2 : 3;
+  const colors = colorsForClub(c.n);
+  const pseudo = { nat: L.nat, base: c.str, tier, scout: 'AFR' };
+  const t = {
+    id, n: c.n, s: c.n.length > 16 ? c.n.slice(0, 16) : c.n, nat: L.nat, city: L.name,
+    base: c.str, fin: clamp(c.str * 5, 12, 140), youth: 2,
+    c1: colors.c1, c2: colors.c2,
+    squad: makeSquad(pseudo, season),
+    budget: clamp(c.str * 5, 12, 140), wageBudget: 0, wageBill: 0,
+    formation: pick(Object.keys(FORMATIONS)), lineup: null,
+    trophies: [], history: [], form: [], rep: c.rating / 10,
+    captainId: null, viceCaptainId: null
+  };
+  t.squad.forEach(p => p.clubs.push({ id, from: season }));
+  t.wageBill = wageOf(t);
+  t.wageBudget = Math.round(t.wageBill * 1.4 * 100) / 100;
+  ensureLineup(t);
+  const ranked = t.squad.slice().sort((a, b) => b.rating - a.rating);
+  if (ranked[0]) t.captainId = ranked[0].id;
+  if (ranked[1]) t.viceCaptainId = ranked[1].id;
+  G.africa.squadCache[id] = t;
+  return t;
+}
+
 function simAbstract(ra, rb, homeAdv) {
   const dH = ra + (homeAdv || 0) - rb + gauss() * 2.4;
   const dA = rb - ra - (homeAdv || 0) + gauss() * 2.4;
@@ -3339,6 +3374,18 @@ function crestBaseHTML(t, size) {
 }
 
 /* ---------------- kits ---------------- */
+/* deterministic colour pair for a foreign club that has no explicit c1/c2 */
+const CLUB_COLOR_PAIRS = [
+  ['#d4af00', '#111111'], ['#0b7a3b', '#f9e300'], ['#8e1b2f', '#f2c200'], ['#1a1a1a', '#eeeeee'],
+  ['#0f5fa8', '#f2f2f2'], ['#e5534b', '#2a0d0b'], ['#046a38', '#f6d327'], ['#123f8c', '#e8b21a'],
+  ['#5aa9ff', '#08162b'], ['#ff8a00', '#231200'], ['#29c28b', '#07211a'], ['#b57cff', '#170b29']
+];
+function colorsForClub(name) {
+  const str = name || '';
+  let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  const pair = CLUB_COLOR_PAIRS[h % CLUB_COLOR_PAIRS.length];
+  return { c1: pair[0], c2: pair[1] };
+}
 function kitStyleOf(t) {
   const str = t.id || t.s || '';
   let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
