@@ -1988,7 +1988,6 @@ function finishMatch(G, ctx) {
   credit(ctx.xiA, ctx.hg, ctx.a);
   computeMatchRatings(G, ctx);
   const teamOf = id => G.teams[id] || (G.africa && G.africa.squadCache && G.africa.squadCache[id]);
-  const teamOf = id => G.teams[id] || (G.africa && G.africa.squadCache && G.africa.squadCache[id]);
   ctx.ev.forEach(e => {
     if (e.type !== 'goal') return;
     const t = teamOf(e.team);
@@ -4131,7 +4130,9 @@ let autoSimTimer = null; function autoSimBody() {   const d = new Date(currentDa
     const b2 = el('button', 'btn ghost', 'Quick sim'); b2.onclick = () => { bumpCurDayForCup(G); const ties = playCupRound(G, false); afterCupMatchday({ cup: ties }); }; a.appendChild(b2);
     if (mine) {
       const copp = G.teams[mine.h === G.myTeam ? mine.a : mine.h];
-      a.appendChild(el('span', 'hint cupHint', `🏆   ${mine.h === G.myTeam ? 'Home to' : 'Away to'} ${copp.s} in the ${CUP_NAME} · ${stadiumName(G.teams[mine.h])}`));
+      a.appendChild(el('span', 'hint cupHint', `🏆   ${mine.h === G.myTeam ? 'Home to' : 'Away to'} ${copp.s} in the ${CUP_NAME} · ${stadiumName(G.teams[nx.h])}`));
+  }
+}
     } else {
       a.appendChild(el('span', 'hint cupHint', `🏆 ${CUP_NAME} — ${roundName} (no tie for you this round)`));
     }
