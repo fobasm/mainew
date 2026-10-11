@@ -5076,7 +5076,8 @@ function viewMatch() {
   bindPlayerRows(cols);
 }
 function miniTable(rows, tier) {
-  return `<table class="tbl"><thead><tr><th class="pos">#</th><th>Club</th><th>P</th><th>GD</th><th>Pts</th></tr></thead><tbody>` +
+  const cp = tablePosAt(G, tier, G.round), pp = G.round >= 2 ? tablePosAt(G, tier, G.round - 1) : null;
+  return `<table class="tbl"><thead><tr><th class="pos">#</th><th></th><th>Club</th><th>P</th><th>GD</th><th>Pts</th></tr></thead><tbody>` +
     rows.map((r, i) => {
       const t = G.teams[r.id];
       return `<tr class="${r.id === G.myTeam ? 'me' : ''} ${zoneClass(i, tier)}">
@@ -5091,7 +5092,7 @@ function miniTable(rows, tier) {
   const seasons = G.records.seasons.map(s => s.season).sort((a, b) => b - a);
   const isCurrent = tableSeason === 'current';
   const st = isCurrent ? sortTable(G, tableTier) : historicalTable(G, +tableSeason, tableTier);
-  const champId = !isCurrent && st[0] ? st[0].id : null;
+  const champId = !isCurrent && st[0] ? st[0].id : null;   const curP = isCurrent ? tablePosAt(G, tableTier, G.round) : null, prevP = isCurrent && G.round >= 2 ? tablePosAt(G, tableTier, G.round - 1) : null;
   v.innerHTML = `<div class="panel tbl-google">
     <div class="chipbar" style="overflow-x:auto;flex-wrap:nowrap;background:#1f1f1f;border-color:#2c2c2e">${[0,1,2,3,4].map(i => `<button class="chip" data-tt="${i}" aria-pressed="${tableTier === i}">${TIER_SHORT[i]}</button>`).join('')}</div>
     <div class="gseasonbar">
@@ -5102,13 +5103,13 @@ function miniTable(rows, tier) {
       </select>
       ${champId != null ? `<span class="hint" style="color:#9e9ea0">Champions: <b style="color:#f5c518">${esc(G.teams[champId].n)}</b></span>` : ''}
     </div>
-    <table class="gtable"><thead><tr><th class="pos">#</th><th>Club</th>${isCurrent ? '<th>Ovr</th>' : ''}<th>P</th><th>W</th><th>D</th><th>L</th>
+     <table class="gtable"><thead><tr><th class="pos">#</th>${isCurrent ? '<th></th>' : ''}<th>Club</th>${isCurrent ? '<th>Ovr</th>' : ''}<th>P</th><th>W</th><th>D</th><th>L</th>
       <th class="hide-s">GF</th><th class="hide-s">GA</th><th>GD</th><th>Pts</th>${isCurrent ? '<th class="hide-s">Form</th>' : ''}</tr></thead><tbody>` +
     (st.length ? st.map((r, i) => {
       const t = G.teams[r.id];
       const p = isCurrent ? r.p : (r.w + r.d + r.l);
       return `<tr class="${r.id === G.myTeam ? 'me' : ''} ${zoneClass(i, tableTier)}">
-        <td class="pos">${i + 1}</td>
+        <td class="pos">${i + 1}</td>${isCurrent ? `<td>${posMove(prevP ? prevP[r.id] : null, curP[r.id])}</td>` : ''}
         <td><span class="team">${crestHTML(t, 20)}<span>${esc(t.s)}</span></span></td>
         ${isCurrent ? `<td class="muted">${teamOverall(t)}</td>` : ''}
         <td>${p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
