@@ -494,8 +494,7 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
       <label class="hint">Primary <input type="color" id="lccC1I" value="#D8B039"></label>
       <label class="hint">Secondary <input type="color" id="lccC2I" value="#111111"></label>
     </div>
-    <p class="hint" style="margin:0 0 6px">Starting division</p>
-    <div class="chipbar" style="border:none;padding:0 0 12px" id="lccTierBar"></div>
+    <p class="hint" style="margin:0 0 12px">Every new club starts in the bottom division, the Mzansi 5th Division. Earn your way up.</p>
     <button class="btn" id="lccGoBtn">Found the club and start career</button>
   </div>
 
@@ -6738,7 +6737,7 @@ v.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => {
 }
 
 /* ---------------- create a club (landing) ---------------- */
-let lccName = '', lccCity = '', lccTier = 2, lccC1 = '#D8B039', lccC2 = '#111111', lccIcon = 'ball', lccShape = 'shield';
+let lccName = '',  lccCity = '', lccTier = 4, lccC1 = '#D8B039', lccC2 = '#111111', lccIcon = 'ball', lccShape = 'shield';
 function renderLandingCreateClub() {
   const prev = $('#lccPreview'); if (!prev) return;
   const preview = { s: (lccName || 'Your Club').slice(0, 3).toUpperCase(), n: lccName || 'Your Club', c1: lccC1, c2: lccC2, icon: lccIcon, shape: lccShape };
@@ -6765,7 +6764,7 @@ if (lccCityI) lccCityI.oninput = e => { lccCity = e.target.value; };
 if (lccC1I) lccC1I.oninput = e => { lccC1 = e.target.value; renderLandingCreateClub(); };
 if (lccC2I) lccC2I.oninput = e => { lccC2 = e.target.value; renderLandingCreateClub(); };
 if (lccGoBtn) lccGoBtn.onclick = () => {
-  if (!lccName.trim()) { toast('Give your new club a name first.'); return; }
+  if (lccName.trim().length < 2) {     openModal('Club name needed', '<p style="margin:0">Give your new club a name (at least 2 characters) before you start your career.</p>', '<button class="btn sm" id="lccNameOk">OK</button>');     $('#lccNameOk').onclick = () => { closeModal(); if (lccNameI) lccNameI.focus(); };     return;   }
   const nm = ($('#mgrName').value || '').trim() || 'Coach';
   const nat = ($('#mgrNat') && $('#mgrNat').value) || 'ZA';
   const dob = ($('#mgrDob') && $('#mgrDob').value) || '1988-06-15';
