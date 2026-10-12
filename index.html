@@ -1425,6 +1425,57 @@ function makeSquad(club, season) {
   });
 }
 
+/* Give any player aged 20+ a plausible career before this save begins:
+   backdated join date (so the six-month no-resale rule only catches
+   genuinely fresh preseason signings, not every player in the game),
+   career-history rows with apps/goals/assists, and sometimes one
+   earlier club. Called once per squad member when a new career starts. */
+function backdateCareer(p, clubId, season) {
+  if (p.age < 20) return;
+  const minAge = 18;
+  const maxTrack = Math.min(p.age - minAge, 9);
+  if (maxTrack <= 0) return;
+  const cap = Math.min(maxTrack, 6);
+  const yearsAtClub = Math.max(rint(0, cap), rint(0, cap)); // skew toward longer tenure
+  p.joinedSeason = season - yearsAtClub;
+  const remaining = maxTrack - yearsAtClub;
+
+  const grp = POS_GROUP[p.pos] || 'MID';
+  const goalRate = { ATT: 0.34, MID: 0.11, DEF: 0.035, GK: 0.002 }[grp];
+  const assistRate = { ATT: 0.14, MID: 0.17, DEF: 0.05, GK: 0.01 }[grp];
+  let cApps = 0, cG = 0, cA = 0;
+  p.clubs = [];
+
+  function addSeasons(cId, cTier, years, startAgo) {
+    for (let y = years; y >= 1; y--) {
+      const yearsAgo = startAgo - years + y;
+      const ageThen = p.age - yearsAgo;
+      if (ageThen < minAge) continue;
+      const histRating = Math.round(clamp(p.rating - yearsAgo * rint(1, 2) + gauss() * 1.5, 32, p.rating));
+      const apps = Math.round(clamp(10 + ageThen * 0.8 + gauss() * 6, 4, 36));
+      const goals = Math.max(0, Math.round(apps * goalRate * (0.5 + rnd())));
+      const assists = Math.max(0, Math.round(apps * assistRate * (0.5 + rnd())));
+      p.career.push({ season: season - yearsAgo, club: cId, tier: cTier, apps, g: goals, a: assists, rating: histRating });
+      cApps += apps; cG += goals; cA += assists;
+    }
+  }
+
+  if (remaining > 0 && rnd() < 0.45) {
+    const priorYears = rint(1, Math.min(remaining, 6));
+    let priorIdx = rint(0, CLUBS.length - 1);
+    if (priorIdx === clubId) priorIdx = (priorIdx + 1) % CLUBS.length;
+    const startAgo = yearsAtClub + priorYears;
+    p.clubs.push({ id: priorIdx, from: season - startAgo });
+    addSeasons(priorIdx, CLUBS[priorIdx].t, priorYears, startAgo);
+  }
+
+  if (yearsAtClub > 0) addSeasons(clubId, CLUBS[clubId].t, yearsAtClub, yearsAtClub);
+
+  p.clubs.push({ id: clubId, from: p.joinedSeason });
+  p.career.sort((a, b) => a.season - b.season);
+  p.cApps = cApps; p.cG = cG; p.cA = cA;
+}
+
 /* ---------------- world ---------------- */
 function newGame(clubIndex, manager, seed) {
   SEED = seed || Math.floor(Math.random() * 1e9);
