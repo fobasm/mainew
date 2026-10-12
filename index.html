@@ -2762,21 +2762,49 @@ const AI_NEED_N = { GK: 1, DEF: 4, MID: 4, ATT: 3 }; function aiTopAvg(t, grp, n
 function generateBids(G) {
   const me = G.teams[G.myTeam], bids = [];
   me.squad.forEach(p => {
-    // Clubs that are genuinely interested are the ones who actually come
-    // knocking — real suitors push the odds of a bid up, and a player
-    // nobody's watching is now a lot less likely to get an offer at all
-    // (though a bolt-from-the-blue bid can still happen, just rarely).
-    const interest = interestedClubs(p, me.id, 6).length;
+    const interested = interestedClubs(p, me.id, 6);
+    const interest = interested.length;
     const base = p.wantsOut ? 0.22 : 0.05;
     const interestBoost = Math.min(0.18, interest * 0.045);
     const longShot = interest ? 1 : 0.35;
     const chance = (base + interestBoost + (p.rating > 78 ? 0.05 : 0)) * longShot;
     if (rnd() < chance) {
-      const buyer = G.teams[pickBuyer(G, p)];
+      const buyerId = pickBuyer(G, p), buyer = G.teams[buyerId];
       bids.push({ pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: buyer.id, fee: Math.round(p.value * (0.8 + rnd() * 0.85) * 100) / 100 });
+      // A genuinely hot prospect can draw a second, rival bid in the same
+      // window — a real bidding war rather than always a single lone offer.
+      if (interest >= 3 && rnd() < 0.3) {
+        const rivals = interested.filter(t => t.id !== buyerId);
+        if (rivals.length) {
+          const rival = pick(rivals);
+          bids.push({ pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: rival.id, fee: Math.round(p.value * (0.95 + rnd() * 0.5) * 100) / 100 });
+        }
+      }
     }
   });
   return bids.slice(0, 3);
+}
+
+/* Keep a running record of which clubs have been watching each of your
+   players, and since when — not just a fresh re-roll every time someone
+   opens a profile. Also drops a quiet transfer-news line the first time a
+   player of some note picks up a scout. Call once per matchday. */
+function updateScouting(G) {
+  const me = G.teams[G.myTeam];
+  const notable = [];
+  me.squad.forEach(p => {
+    p.scouts = p.scouts || {};
+    const hadAny = Object.keys(p.scouts).length > 0;
+    const nowWatching = interestedClubs(p, me.id, 6).map(t => t.id);
+    const nowSet = new Set(nowWatching);
+    Object.keys(p.scouts).forEach(cid => { if (!nowSet.has(+cid)) delete p.scouts[cid]; });
+    nowWatching.forEach(cid => { if (!p.scouts[cid]) p.scouts[cid] = { since: G.round }; });
+    if (!hadAny && nowWatching.length && p.rating >= 65) notable.push(p);
+  });
+  notable.forEach(p => {
+    const names = Object.keys(p.scouts).map(cid => G.teams[+cid].s).slice(0, 2).join(' and ');
+    news(G, 'transfer', `Scouts from ${names} have been watching ${p.name}.`, { pid: p.id });
+  });
 }
 
 /* ---------------- news ---------------- */
@@ -4238,6 +4266,7 @@ function afterRound() {
     toastGood(`Training: ${tl.n} improvement${tl.n === 1 ? '' : 's'}${wk}` + (tl.up ? ` · ${tl.up} player${tl.up === 1 ? '' : 's'} gained +1 overall` : ''));
   }
   G.trainTally = null;
+  updateScouting(G);
   const bids = generateBids(G);   bids.forEach(b => {     const pl = me().squad.find(x => x.id === b.pid), buyer = G.teams[b.from]; if (!pl || !buyer) return;     mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Offer received', flag: true, subject: `Transfer Offer: ${b.name}`,       body: [`${buyer.n} have bid ${money(b.fee)} for ${b.name}.`, `His estimated value is ${money(pl.value)}. Respond to the offer when it appears, or turn it down.`],       rows: [['Bidder', buyer.n], ['Offer', money(b.fee)], ['Estimated value', money(pl.value)], ['Contract', `${pl.contract} year${pl.contract === 1 ? '' : 's'} left`]] });   });   try {     const un = unreadCount(G), fresh = un - (G.lastUnread || 0);     if (fresh > 0) toast(`✉ ${fresh} new message${fresh === 1 ? '' : 's'} in your inbox`);     G.lastUnread = un;   } catch (e) { }
   G.pendingBids = (G.pendingBids || []).concat(bids).slice(-6);
   fxRound = Math.max(0, G.round - 1);
@@ -5325,21 +5354,33 @@ function interestedClubs(p, ownerId, n) {
     if (d < 1) continue;
     if (p.nat !== 'ZA' && t.squad.filter(pl => pl.nat !== 'ZA').length >= MAX_FOREIGN) continue;
     if (p.rating - clubLevel(t) >= 15) continue;
-    // Desirability score: real position need and tier ambition, plus a
-    // tiebreak that rotates week to week (seeded off the round number, not
-    // the shared RNG, so reading this list never burns a random draw) so
-    // the list isn't frozen solid for the rest of the save.
     let s = d + (t.tier < ptier ? 2 : 0) - (t.tier > ptier ? 3 : 0);
     s += (hashS(p.id + '_' + t.id + '_' + G.round) - 0.5) * 6;
     if (p.wantsOut) s += 2.5;
     if (p.contract <= 1) s += 1.5;
-    if (!windowOpen) s -= 4; // clubs go quiet once nobody can actually sign
+    if (!windowOpen) s -= 4;
+    if (p.contractSignedRound != null && G.round - p.contractSignedRound < 8) s -= (8 - (G.round - p.contractSignedRound)) * 0.8;
     out.push({ t, s });
   }
-  // A real bar to clear, not a quota — mediocre fits are left out rather
-  // than padded in just to fill the list, so plenty of players legitimately
-  // show no interest at all right now.
   return out.filter(x => x.s >= 3).sort((a, b) => b.s - a.s).slice(0, n).map(x => x.t);
+}
+
+/* A short, human reason a given club is watching a player — built from the
+   same signals interestedClubs() scores on, so the UI can explain itself
+   instead of just naming names. */
+function scoutReason(p, t, ownerId) {
+  const ptier = ownerId != null ? G.teams[ownerId].tier : 3;
+  const d = p.rating - starterRatingAt(t, p.pos);
+  const reasons = [];
+  if (d >= 8) reasons.push(`need a new ${p.pos} badly`);
+  else if (d >= 4) reasons.push(`rate him above their current ${p.pos}`);
+  else reasons.push(`like him as cover at ${p.pos}`);
+  if (t.tier < ptier) reasons.push('a step up for him');
+  else if (t.tier > ptier) reasons.push('a reliable move if things turn');
+  if (p.wantsOut) reasons.push("know he's unsettled");
+  if (p.contract <= 1) reasons.push('circling as his contract runs down');
+  return reasons.slice(0, 2).join(' — ');
+}
 function sparkChart(p) {
   const hist = (p.career || []).map(c => [seasonLabel(c.season), c.rating]);
   hist.push([seasonLabel(G.season), Math.round(p.rating)]);
