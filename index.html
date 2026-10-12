@@ -1379,7 +1379,7 @@ function valueOf(p) {
   return Math.max(0.05, Math.round(v * af * 100) / 100);
 }
 
-/* ---------------- real players ----------------    Fixed, non-random players with a real identity: same name, club, age, rating,    potential and portrait in every new career. To add another one: push a matching    object below, and drop a dedicated photo named <portrait>.jpg into players/.    Its id is never listed in PLAYER_PORTRAITS, so it can never be handed to a    randomly generated player instead. */ const REAL_PLAYERS = [   { key: 'real-mlindoh', name: 'Mlindoh', club: 'Bright PMB', age: 16, rating: 69, potLo: 88, potHi: 92,     pos: 'ST', alt: ['RW', 'LW'], nat: 'ZA', portrait: 'real-mlindoh' } ]; function injectRealPlayers(G) {   REAL_PLAYERS.forEach(rp => {     const club = G.teams.find(t => t.s === rp.club || t.n === rp.club);     if (!club) return;     if (club.squad.some(p => p.real && p.realKey === rp.key)) return;     const group = POS_GROUP[rp.pos];     const pool = club.squad.filter(p => POS_GROUP[p.pos] === group && !p.real);     const weakest = (pool.length ? pool : club.squad.filter(p => !p.real)).slice().sort((a, b) => a.rating - b.rating)[0];     if (weakest) club.squad = club.squad.filter(p => p.id !== weakest.id);     const nameParts = rp.name.split(' ');     const first = nameParts[0], last = nameParts.slice(1).join(' ');     const p = {       id: PID++, first, last, name: rp.name,       nat: rp.nat || 'ZA', pos: rp.pos, alt: rp.alt || [], age: rp.age, rating: rp.rating,       pot: rp.potHi, potLo: rp.potLo, potHi: rp.potHi,       face: makeFace(rp.nat || 'ZA', 'black'), portrait: rp.portrait,       wage: wageFor(rp.rating, rp.age, club.tier), contract: rp.contract != null ? rp.contract : 3,       goals: 0, assists: 0, apps: 0, cs: 0, inj: 0, form: 0, yellow: 0, red: 0,       cG: 0, cA: 0, cApps: 0, earned: 0,       career: [], clubs: [{ id: club.id, from: G.season }], startRating: rp.rating, startPot: rp.potHi, lastGrowth: 0,       dob: birthDate(rp.age, G.season),       wantsOut: false, joinedSeason: G.season, fee: 0, reserve: false, releaseClause: null,       real: true, realKey: rp.key     };     p.value = valueOf(p);     club.squad.push(p);     club.wageBill = wageOf(club);     club.wageBudget = Math.round(club.wageBill * 1.4 * 100) / 100;     ensureLineup(club);   }); } function makePlayer(opts) {
+/* ---------------- real players ----------------    Fixed, non-random players with a real identity: same name, club, age, rating,    potential and portrait in every new career. To add another one: push a matching    object below, and drop a dedicated photo named <portrait>.jpg into players/.    Its id is never listed in PLAYER_PORTRAITS, so it can never be handed to a    randomly generated player instead. */ const REAL_PLAYERS = [   { key: 'real-mlindoh', name: 'Mlindoh', club: 'Bright PMB', age: 16, rating: 69, potLo: 88, potHi: 92,     pos: 'ST', alt: ['RW', 'LW'], nat: 'ZA', portrait: 'real-mlindoh' } ]; function injectRealPlayers(G) {   REAL_PLAYERS.forEach(rp => {     const club = G.teams.find(t => t.s === rp.club || t.n === rp.club);     if (!club) return;     if (club.squad.some(p => p.real && p.realKey === rp.key)) return;     const group = POS_GROUP[rp.pos];     const pool = club.squad.filter(p => POS_GROUP[p.pos] === group && !p.real);     const weakest = (pool.length ? pool : club.squad.filter(p => !p.real)).slice().sort((a, b) => a.rating - b.rating)[0];     if (weakest) club.squad = club.squad.filter(p => p.id !== weakest.id);     const nameParts = rp.name.split(' ');     const first = nameParts[0], last = nameParts.slice(1).join(' ');     const p = {       id: PID++, first, last, name: rp.name,       nat: rp.nat || 'ZA', pos: rp.pos, alt: rp.alt || [], age: rp.age, rating: rp.rating,       pot: rp.potHi, potLo: rp.potLo, potHi: rp.potHi,       face: makeFace(rp.nat || 'ZA', 'black'), portrait: rp.portrait,       wage: wageFor(rp.rating, rp.age, club.tier), contract: rp.contract != null ? rp.contract : 3,       goals: 0, assists: 0, apps: 0, cs: 0, inj: 0, form: 0, yellow: 0, red: 0,       cG: 0, cA: 0, cApps: 0, earned: 0,       career: [], clubs: [{ id: club.id, from: G.season }], startRating: rp.rating, startPot: rp.potHi, lastGrowth: 0,       dob: birthDate(rp.age, G.season),       wantsOut: false, joinedSeason: G.season, fee: 0, reserve: false, releaseClause: null,       scouts: {}, contractSignedRound: null,       real: true, realKey: rp.key     };     p.value = valueOf(p);     club.squad.push(p);     club.wageBill = wageOf(club);     club.wageBudget = Math.round(club.wageBill * 1.4 * 100) / 100;     ensureLineup(club);   }); } function makePlayer(opts) {
   const o = opts || {};
   const nat = o.nat || 'ZA';
   const group = ethnicGroupFor(nat); const nm = personName(nat, group);
@@ -1397,7 +1397,8 @@ function valueOf(p) {
     goals: 0, assists: 0, apps: 0, cs: 0, inj: 0, form: 0, yellow: 0, red: 0,
     cG: 0, cA: 0, cApps: 0, earned: 0,
     career: [], clubs: [], startRating: rating, startPot: pot, lastGrowth: 0, dob: birthDate(age, o.season || 2026),
-    wantsOut: false, joinedSeason: o.season || 2026, fee: 0, reserve: false, releaseClause: null
+    wantsOut: false, joinedSeason: o.season || 2026, fee: 0, reserve: false, releaseClause: null,
+    scouts: {}, contractSignedRound: null
   };
   p.value = valueOf(p);
   return p;
@@ -2677,6 +2678,11 @@ function negotiateContract(G, pid, wage, years) {
   me.fin.buys += bonus;
   p.wage = Math.round(wage * 100000) / 100000; p.contract = Math.min(6, Math.max(1, years)); p.wantsOut = false;
   me.wageBill = wageOf(me);
+  // Recommitting quiets the transfer talk for a while — scouts who were
+  // circling back off, and interest rebuilds gradually from here rather
+  // than picking straight back up next matchday.
+  p.contractSignedRound = G.round;
+  p.scouts = {};
   const verb = p.wantsOut === false ? 'agrees to stay' : 'signs a new deal';
    news(G, 'contract', `${p.name} ${verb} at ${me.s} — ${p.contract}y at ${money(p.wage)} a season.`);   mail(G, { cat: 'contract', from: 'Chief Executive', p, club: me, status: 'New contract', subject: `[Info] Contract Agreed: ${p.name}`,     body: [`${p.name} has put pen to paper on a new deal at ${me.n}.`],     rows: [['Wage', money(p.wage) + ' a season'], ['Contract length', `${p.contract} year${p.contract === 1 ? '' : 's'}`], ['Expires', `June ${G.season + p.contract}`], ['Signing-on fee', money(bonus)], ['Wage bill', `${money(me.wageBill)} of ${money(me.wageBudget)}`]] });
   return { ok: true, msg: `${p.name} signs on for ${p.contract} year${p.contract === 1 ? '' : 's'} at ${money(p.wage)} a season.` };
@@ -2756,8 +2762,16 @@ const AI_NEED_N = { GK: 1, DEF: 4, MID: 4, ATT: 3 }; function aiTopAvg(t, grp, n
 function generateBids(G) {
   const me = G.teams[G.myTeam], bids = [];
   me.squad.forEach(p => {
-    const want = p.wantsOut ? 0.22 : 0.05;
-    if (rnd() < want + (p.rating > 78 ? 0.05 : 0)) {
+    // Clubs that are genuinely interested are the ones who actually come
+    // knocking — real suitors push the odds of a bid up, and a player
+    // nobody's watching is now a lot less likely to get an offer at all
+    // (though a bolt-from-the-blue bid can still happen, just rarely).
+    const interest = interestedClubs(p, me.id, 6).length;
+    const base = p.wantsOut ? 0.22 : 0.05;
+    const interestBoost = Math.min(0.18, interest * 0.045);
+    const longShot = interest ? 1 : 0.35;
+    const chance = (base + interestBoost + (p.rating > 78 ? 0.05 : 0)) * longShot;
+    if (rnd() < chance) {
       const buyer = G.teams[pickBuyer(G, p)];
       bids.push({ pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: buyer.id, fee: Math.round(p.value * (0.8 + rnd() * 0.85) * 100) / 100 });
     }
