@@ -5281,10 +5281,11 @@ function viewFixtures() {
 function playerRow(p, t, extra) {
   const inXI = (t.lineup || []).includes(p.id);
   const isCap = t.captainId === p.id, isVice = t.viceCaptainId === p.id;
+  const watchers = (t.id === G.myTeam && p.scouts) ? Object.keys(p.scouts).length : 0;
   return `<button class="prow" data-pid="${p.id}">
     ${faceSVG(p, 34, t.c1)}
     <span class="ratcol">${ratingTag(p.rating)}${growthHtml(p)}</span>
-    <span class="who"><b>${esc(p.name)} ${flagSVG(p.nat)}${isCap ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">C</span>' : isVice ? ' <span class="tag">VC</span>' : ''}</b>
+    <span class="who"><b>${esc(p.name)} ${flagSVG(p.nat)}${isCap ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">C</span>' : isVice ? ' <span class="tag">VC</span>' : ''}${watchers ? ` <span class="tag" title="${watchers} club${watchers === 1 ? '' : 's'} scouting him">👁 ${watchers}</span>` : ''}</b>
       <small>${[p.pos].concat(p.alt || []).join('/')} · ${p.age} · ${p.apps} apps · ${p.goals}g ${p.assists}a · ${money(p.wage)}/season · ${p.contract}y
       ${p.loan ? ' <span class="tag out">on loan</span>' : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}${p.inj > 0 ? ` <span class="tag inj">out ${p.inj}</span>` : ''}${banLeft(p, t) > 0 ? ` <span class="tag inj">banned ${banLeft(p, t)}</span>` : ''}${inXI ? ' <span class="tag xi">XI</span>' : ''}</small></span>
     <span class="ratcol pot">${potTag(p)}${potGrowthHtml(p)}</span>
@@ -5506,7 +5507,7 @@ function playerModal(pid) {
         <dt>Career apps</dt><dd>${p.cApps}</dd>
         <dt>Career goals / assists</dt><dd>${p.cG}/${p.cA}</dd>
       </dl></div>
-      <div class="panel"><h3>Interested clubs</h3><div class="pad">${interestedClubs(p, t ? t.id : null, 4).map(x => `<div style="margin-bottom:5px">${crestHTML(x, 16)} ${esc(x.s)} <span class="hint">${TIER_SHORT[x.tier]}</span></div>`).join('') || '<span class="hint">No clubs are showing interest right now.</span>'}</div></div>
+      <div class="panel"><h3>Interested clubs</h3><div class="pad">${interestedClubs(p, t ? t.id : null, 4).map(x => {         const rec = (isMine && p.scouts) ? p.scouts[x.id] : null;         const weeks = rec ? Math.max(0, G.round - rec.since) : null;         const sinceTxt = weeks == null ? '' : weeks === 0 ? 'spotted this week' : `watching ${weeks} week${weeks === 1 ? '' : 's'}`;         return `<div style="margin-bottom:8px"><div>${crestHTML(x, 16)} ${esc(x.s)} <span class="hint">${TIER_SHORT[x.tier]}</span></div><div class="hint" style="margin-left:22px">${esc(scoutReason(p, x, t ? t.id : null))}${sinceTxt ? ' · ' + sinceTxt : ''}</div></div>`;       }).join('') || '<span class="hint">No clubs are showing interest right now.</span>'}</div></div>
     </div>
     ${!isMine ? `<div class="panel"><h3>Keep an eye</h3><div class="pad">
       <p class="hint" style="margin:0 0 10px">Add ${esc(p.name)} to your shortlist so you can find him again when you're ready to make a move.</p>
