@@ -543,7 +543,7 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
       </div>
 <button class="tmgr" onclick="goTo('manager')" style="cursor:pointer;background:none;border:none;border-left:1px solid var(--line)">
         <span id="mgrFace"></span>
-        <b id="mgrName" class="mgrNameUnder">—</b>
+        <b id="mgrNameTop" class="mgrNameUnder">—</b>
       </button>
       <div class="topstats">
         <div class="hide-s"><b id="statDate">—</b><small>date</small></div>
@@ -3982,7 +3982,7 @@ const MENU_SECTIONS = [
   ['Career', [['inbox','Inbox'],['match','Matchday'],['calendar','Calendar'],['table','League tables & fixtures']]],
   ['Squad', [['squad','Squad & Tactics'], ['youth','Academy & Training'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist']]],
   ['Competitions', [['cups','Cups'],['africa','Continental football'],['nations','Nations'],['world','World players'],['clubrank','Club rankings'],['stats','Player Stats']]],
-  ['Club', [['club','Club & Finances'],['commercial','Commercial'],['stadium','Stadium & tickets'],['stadium','Stadium & tickets'],['trophies','Trophy room'],['manager','Manager'],['news','News'],['createclub','Create a club']]],
+  ['Club', [['club','Club & Finances'],['commercial','Commercial'],['stadium','Stadium & tickets'],['stadium','Stadium & tickets'],['trophies','Trophy room'],['manager','Manager'],['news','News']]],
   ['More', [['careerfile','Save & Load'],['soundsettings','Music & sound effects'],['info','How to play']]]
 ];
 function navLabel() { for (const sec of MENU_SECTIONS) for (const it of sec[1]) if (it[0] === tab) return it[1]; return 'Menu'; } function updateNavToggle() { const t = document.querySelector('#sideNav .navToggle'); if (t) t.innerHTML = '<span>☰ Menu</span><b>' + esc(navLabel()) + '</b>'; } function closeNavMenu() { const c = document.querySelector('#sideNav'); if (c) c.classList.remove('open'); } function buildSideNav() {
@@ -4029,7 +4029,7 @@ function renderHistoryBtns() {
 document.addEventListener('click', e => {}, false);
 
 /* ---------------- render ---------------- */
-function render() { try { updateNavToggle(); closeNavMenu(); } catch (e) { }   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 42);   $('#mgrName').textContent = G.manager.name;   renderTicker();   const curD = new Date(currentDateISO() + 'T12:00:00Z');   $('#statDate').textContent = `${MONTH_NAMES[curD.getUTCMonth()]} ${curD.getUTCFullYear()}`;   const cb = $('#contBtn'); if (cb) cb.textContent = isMatchdayToday() ? 'Matchday' : 'Continue';   const winOpen = inTransferWindow(G), winPill = $('#winPill');   if (winPill) {     winPill.className = 'winpill ' + (winOpen ? 'open' : 'shut');     winPill.textContent = winOpen       ? `${currentWindowName(G)} open, ${windowCloses(G)} ${windowCloses(G) === 1 ? 'day' : 'days'} left`       : `${currentWindowName(G)} opens in ${roundsToNextWindow(G)} ${roundsToNextWindow(G) === 1 ? 'day' : 'days'}`;   }   const contBtn = $('#contBtn');   if (contBtn) {     contBtn.textContent = G.finished ? `Start ${seasonLabel(G.season + 1)}` : 'Continue';     contBtn.disabled = !!liveState;   }
+function render() { try { updateNavToggle(); closeNavMenu(); } catch (e) { }   $('#mgrFace').innerHTML = avatarSVG(G.manager.avatar, 42);   $('#mgrNameTop').textContent = G.manager.name;   renderTicker();   const curD = new Date(currentDateISO() + 'T12:00:00Z');   $('#statDate').textContent = `${MONTH_NAMES[curD.getUTCMonth()]} ${curD.getUTCFullYear()}`;   const cb = $('#contBtn'); if (cb) cb.textContent = isMatchdayToday() ? 'Matchday' : 'Continue';   const winOpen = inTransferWindow(G), winPill = $('#winPill');   if (winPill) {     winPill.className = 'winpill ' + (winOpen ? 'open' : 'shut');     winPill.textContent = winOpen       ? `${currentWindowName(G)} open, ${windowCloses(G)} ${windowCloses(G) === 1 ? 'day' : 'days'} left`       : `${currentWindowName(G)} opens in ${roundsToNextWindow(G)} ${roundsToNextWindow(G) === 1 ? 'day' : 'days'}`;   }   const contBtn = $('#contBtn');   if (contBtn) {     contBtn.textContent = G.finished ? `Start ${seasonLabel(G.season + 1)}` : 'Continue';     contBtn.disabled = !!liveState;   }
   const t = me();
   $('#myCrest').innerHTML = crestHTML(t, 30);
   $('#myName').textContent = t.n;
@@ -6770,7 +6770,7 @@ if (lccGoBtn) lccGoBtn.onclick = () => {
   const nat = ($('#mgrNat') && $('#mgrNat').value) || 'ZA';
   const dob = ($('#mgrDob') && $('#mgrDob').value) || '1988-06-15';
   if (slotInfo(slot)) slot = firstFreeSlot();
-  G = newGame(pickClub, { name: nm, avatar: pickAvatar, nat, dob });
+  G = newGame(pickClub != null ? pickClub : Math.max(0, CLUBS.findIndex(c => c.t === lccTier)), { name: nm, avatar: pickAvatar, nat, dob });
   const idx = foundClub(G, { name: lccName.trim(), city: lccCity.trim() || 'Mzansi', tier: lccTier, c1: lccC1, c2: lccC2, icon: lccIcon, shape: lccShape });
   G.myTeam = idx;
   enterApp(); save();
