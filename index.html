@@ -487,8 +487,8 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
       <input type="text" id="lccNameI" placeholder="Club name" maxlength="26" value="">
       <input type="text" id="lccCityI" placeholder="Home city" maxlength="20" value="">
     </div>
-      <p class="hint" style="margin:0 0 6px">Badge icon</p>
-      <div class="chipbar" style="border:none;padding:0 0 10px">${CC_ICONS.map(i => `<button class="chip" data-icon="${i}" aria-pressed="${ccIcon === i}" style="display:flex;align-items:center;gap:5px">${crestCustomHTML({ ...preview, icon: i }, 18)}${i}</button>`).join('')}</div>
+    <p class="hint" style="margin:8px 0 6px">Badge icon</p>
+    <div class="chipbar" style="border:none;padding:0 0 10px" id="lccIconBar"></div> style="display:flex;align-items:center;gap:5px">${crestCustomHTML({ ...preview, icon: i }, 18)}${i}</button>`).join('')}</div>
     <p class="hint" style="margin:0 0 6px">Badge shape</p>
     <div class="chipbar" style="border:none;padding:0 0 10px" id="lccShapeBar"></div>
     <p class="hint" style="margin:0 0 6px">Colours</p>
@@ -6747,7 +6747,7 @@ function renderLandingCreateClub() {
   prev.innerHTML = crestCustomHTML(preview, 64);
   const iconBar = $('#lccIconBar');
   if (iconBar) {
-    iconBar.innerHTML = CC_ICONS.map(i => `<button class="chip" data-licon="${i}" aria-pressed="${lccIcon === i}">${i}</button>`).join('');
+    iconBar.innerHTML = CC_ICONS.map(i => `<button class="chip" data-licon="${i}" aria-pressed="${lccIcon === i}" style="display:flex;align-items:center;gap:5px">${crestCustomHTML({ ...preview, icon: i }, 18)}${i}</button>`).join('');
     iconBar.querySelectorAll('[data-licon]').forEach(b => b.onclick = () => { lccIcon = b.dataset.licon; renderLandingCreateClub(); });
   }
   const shapeBar = $('#lccShapeBar');
