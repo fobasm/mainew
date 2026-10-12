@@ -6503,8 +6503,8 @@ function viewCreateClub() {
           <input type="text" id="ccCityI" placeholder="Home city" maxlength="20" value="${esc(ccCity)}" style="display:block;width:220px">
         </div>
       </div>
-      <p class="hint" style="margin:0 0 6px">Badge icon</p>
-      <div class="chipbar" style="border:none;padding:0 0 10px">${CC_ICONS.map(i => `<button class="chip" data-icon="${i}" aria-pressed="${ccIcon === i}">${i}</button>`).join('')}</div>
+    <p class="hint" style="margin:8px 0 6px">Badge icon</p>
+    <div class="chipbar" style="border:none;padding:0 0 10px" id="lccIconBar"></div>
       <p class="hint" style="margin:0 0 6px">Badge shape</p>
 <div class="chipbar" style="border:none;padding:0 0 10px">${['shield','circle','diamond','hexagon','pentagon','roundsquare'].map(s => `<button class="chip" data-shape="${s}" aria-pressed="${ccShape === s}">${s}</button>`).join('')}</div>
       <p class="hint" style="margin:0 0 6px">Colours</p>
