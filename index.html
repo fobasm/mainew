@@ -2373,6 +2373,7 @@ function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('ra
   buildSeason(G);
   if (!sum.fired) { try { setBoardObjectives(G); } catch (e) { console.error('objectives', e); } }
   return sum;
+}
 
 function fillSquad(G, t) {
   const need = { GK:3, RB:2, CB:4, LB:2, RWB:1, LWB:1, CDM:2, CM:3, CAM:2, RM:1, LM:1, RW:1, LW:1, ST:2, CF:1 };;
