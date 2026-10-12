@@ -4136,8 +4136,7 @@ const ndBtn = el('button', 'btn ghost', 'Next day'); ndBtn.disabled = isMatchday
   b1.onclick = () => G.liveMode ? startLive() : simRounds(1);
   a.appendChild(b1);
   const b2 = el('button', 'btn ghost', 'Quick sim'); b2.onclick = () => simRounds(1); a.appendChild(b2);
-  const b3 = el('button', 'btn ghost', 'Sim 5'); b3.onclick = () => simRounds(5); a.appendChild(b3);
-  const b4 = el('button', 'btn ghost', 'To end of season'); b4.onclick = () => simRounds(99); a.appendChild(b4);
+  const b3 = el('button', 'btn ghost', 'Sim 4'); b3.onclick = () => simRounds(4); a.appendChild(b3);
   if (nx) {
     const opp = G.teams[nx.h === G.myTeam ? nx.a : nx.h];
     a.appendChild(el('span', 'hint', `${nx.h === G.myTeam ? 'Home to' : 'Away to'} ${opp.s} (${teamOverall(opp)}) · ${stadiumName(G.teams[nx.h])}`));
@@ -6456,7 +6455,7 @@ function viewCalendar() {
       Promotion and relegation across all five divisions are settled, contracts run down, the academy intake
       arrives, sponsors renew their offers, and ${AFCON_NAME} ${G.africa.afcon.phase === 'qualifiers' ? 'qualifiers are drawn' : G.africa.afcon.phase === 'qualified' ? 'finals are played' : 'group qualifying begins again'}.
     </div></div>`;
-contBtn.textContent = G.finished ? `Start ${seasonLabel(G.season + 1)}` : 'Continue'; () => { calM--; if (calM < 0) { calM = 11; calY--; } viewCalendar(); };
+const pv = $('#calPrev'); if (pv) pv.onclick = () => { calM--; if (calM < 0) { calM = 11; calY--; } viewCalendar(); };
   const nx = $('#calNext'); if (nx) nx.onclick = () => { calM++; if (calM > 11) { calM = 0; calY++; } viewCalendar(); };
   const td = $('#calToday'); if (td) td.onclick = () => { calY = todayD.getUTCFullYear(); calM = todayD.getUTCMonth(); viewCalendar(); };
   v.querySelectorAll('[data-round]').forEach(c => c.onclick = () => { const r = +c.dataset.round; calSelRound = calSelRound === r ? null : r; viewCalendar(); });
