@@ -2232,8 +2232,10 @@ function scoutTick(G) {
 }
 
 /* ---------------- season rollover ---------------- */
-/* ---------------- ageing curve ----------------    Climb: steady, spread over the years left until he peaks (27, give or take a year of    "bloom"), so nobody hits their potential at 19-20. Prime ~24-27, a plateau to 30,    then a gentle, steady decline from 31. */ function stoch(x) { const f = Math.floor(x); return f + (rnd() < x - f ? 1 : 0); } function seasonDelta(p) {   const a = p.age, gap = Math.max(0, p.pot - p.rating);   if (p.bloom == null) p.bloom = rint(-1, 1);   const peak = 27 + p.bloom;   const form = p.apps > 20 ? 0.5 : p.apps < 6 ? -0.5 : 0;   if (a <= peak) return stoch(clamp(gap / (peak - a + 1) + (rnd() - 0.5) * 1.2 + form, 0, gap));   if (a <= 30) return rint(-1, 1);   const lo = a <= 31 ? 0 : a <= 35 ? 1 : 2, hi = a <= 33 ? 2 : a <= 36 ? 3 : 4;   return Math.min(0, -rint(lo, hi) + (p.apps > 20 && rnd() < 0.5 ? 1 : 0)); } /* chance of retiring this summer, by (effective) age; keepers last two years longer */ const RETIRE_CURVE = [0.04, 0.07, 0.12, 0.20, 0.30, 0.40, 0.50, 0.65, 0.80, 0.92]; /* ages 35..44 */ function retireChance(p) {   const ea = p.pos === 'GK' ? p.age - 2 : p.age;   if (ea >= 45) return 1;   let c = ea < 35 ? 0 : RETIRE_CURVE[ea - 35];   if (p.age >= 33 && p.rating < 50) c += 0.3;   return Math.min(1, c); } function personalSeasonMail(G, sum) {   const t = G.teams[G.myTeam]; if (!t) return;   const sender = () => pick(['Mom', 'Dad', 'Your Brother', 'Your Sister', 'An Old Friend', 'Your Cousin']);   if (sum.champions.includes(G.myTeam)) {     mail(G, { key: 'fam_champ_' + sum.season, cat: 'personal', from: sender(), subject: 'You did it!!', flag: true,       body: [`CHAMPIONS! We saw the news about ${t.n} winning the league and we are so, so proud of you.`, `Call us when you get a chance, we want to hear all about it.`] });   }   if (sum.cup === G.myTeam) {     mail(G, { key: 'fam_cup_' + sum.season, cat: 'personal', from: sender(), subject: 'Cup winners!', flag: true,       body: [`A cup win! We watched the final and couldn't stop cheering.`, `So happy for you — you deserve this.`] });   }   if (sum.promoted.includes(G.myTeam)) {     mail(G, { key: 'fam_promo_' + sum.season, cat: 'personal', from: sender(), subject: 'Promotion!', flag: true,       body: [`Heard the news about ${t.n} going up — congratulations!`, `Knew you could do it.`] });   }   if (sum.relegated.includes(G.myTeam)) {     mail(G, { key: 'fam_releg_' + sum.season, cat: 'personal', from: sender(), subject: 'Thinking of you',       body: [`Sorry to hear about the relegation. It's a tough business.`, `Don't be too hard on yourself — we know how much work you put in. Chin up.`] });   }   if (sum.fired) {     mail(G, { key: 'fam_fired_' + sum.season, cat: 'personal', from: sender(), subject: 'We\u2019re here for you',       body: [`Heard ${t.n} let you go. That's rough, and it's not fair after everything you put in.`, `Take some time, then get back out there. We believe in you.`] });   } } function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('rank snapshot', e); }
+/* ---------------- ageing curve ----------------    Climb: steady, spread over the years left until he peaks (27, give or take a year of    "bloom"), so nobody hits their potential at 19-20. Prime ~24-27, a plateau to 30,    then a gentle, steady decline from 31. */ function stoch(x) { const f = Math.floor(x); return f + (rnd() < x - f ? 1 : 0); } function seasonDelta(p) {   const a = p.age, gap = Math.max(0, p.pot - p.rating);   if (p.bloom == null) p.bloom = rint(-1, 1);   const peak = 27 + p.bloom;   const form = p.apps > 20 ? 0.5 : p.apps < 6 ? -0.5 : 0;   if (a <= peak) return stoch(clamp(gap / (peak - a + 1) + (rnd() - 0.5) * 1.2 + form, 0, gap));   if (a <= 30) return rint(-1, 1);   const lo = a <= 31 ? 0 : a <= 35 ? 1 : 2, hi = a <= 33 ? 2 : a <= 36 ? 3 : 4;   return Math.min(0, -rint(lo, hi) + (p.apps > 20 && rnd() < 0.5 ? 1 : 0)); } /* chance of retiring this summer, by (effective) age; keepers last two years longer */ const RETIRE_CURVE = [0.04, 0.07, 0.12, 0.20, 0.30, 0.40, 0.50, 0.65, 0.80, 0.92]; /* ages 35..44 */ function retireChance(p) {   const ea = p.pos === 'GK' ? p.age - 2 : p.age;   if (ea >= 45) return 1;   let c = ea < 35 ? 0 : RETIRE_CURVE[ea - 35];   if (p.age >= 33 && p.rating < 50) c += 0.3;   return Math.min(1, c); } function personalSeasonMail(G, sum) {   const t = G.teams[G.myTeam]; if (!t) return;   const sender = () => pick(['Mom', 'Dad', 'Your Brother', 'Your Sister', 'An Old Friend', 'Your Cousin']);   if (sum.champions.includes(G.myTeam)) {     mail(G, { key: 'fam_champ_' + sum.season, cat: 'personal', from: sender(), subject: 'You did it!!', flag: true,       body: [`CHAMPIONS! We saw the news about ${t.n} winning the league and we are so, so proud of you.`, `Call us when you get a chance, we want to hear all about it.`] });   }   if (sum.cup === G.myTeam) {     mail(G, { key: 'fam_cup_' + sum.season, cat: 'personal', from: sender(), subject: 'Cup winners!', flag: true,       body: [`A cup win! We watched the final and couldn't stop cheering.`, `So happy for you — you deserve this.`] });   }   if (sum.promoted.includes(G.myTeam)) {     mail(G, { key: 'fam_promo_' + sum.season, cat: 'personal', from: sender(), subject: 'Promotion!', flag: true,       body: [`Heard the news about ${t.n} going up — congratulations!`, `Knew you could do it.`] });   }   if (sum.relegated.includes(G.myTeam)) {     mail(G, { key: 'fam_releg_' + sum.season, cat: 'personal', from: sender(), subject: 'Thinking of you',       body: [`Sorry to hear about the relegation. It's a tough business.`, `Don't be too hard on yourself — we know how much work you put in. Chin up.`] });   }   if (sum.fired) {     mail(G, { key: 'fam_fired_' + sum.season, cat: 'personal', from: sender(), subject: 'We\u2019re here for you',       body: [`Heard ${t.n} let you go. That's rough, and it's not fair after everything you put in.`, `Take some time, then get back out there. We believe in you.`] });   } } 
+function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('rank snapshot', e); }
   const N_TIERS = TIER_NAMES.length;
+  const repSnap = {}; G.teams.forEach(t => { repSnap[t.id] = t.rep; });
   const sum = { season: G.season, champions: [], promoted: [], relegated: [], cup: G.cup.winner, retired: [], breakout: [] };
   const tables = [];
   for (let tier = 0; tier < N_TIERS; tier++) {
@@ -2484,6 +2486,60 @@ function topAssists(G, tier, n) {
 }
 function cleanSheets(G, tier, n) {
   return statList(G, tier, 'cs').filter(x => POS_GROUP[x.p.pos] === 'GK').sort((a, b) => b.v - a.v).slice(0, n || 12);
+}
+
+/* ---------------- end-of-season awards ---------------- */
+function computeSeasonAwards(G, tier, repSnap) {
+  const scorers = topScorers(G, tier, 1);
+  const goldenBoot = scorers[0] ? {
+    pid: scorers[0].p.id, name: scorers[0].p.name, clubId: scorers[0].club.id, clubName: scorers[0].club.n, goals: scorers[0].v
+  } : null;
+
+  const pool = ratingPool(G, tier, null).sort((a, b) => b.avg - a.avg || b.apps - a.apps);
+  const pos = pool[0];
+  const playerOfSeason = pos ? {
+    pid: pos.p.id, name: pos.p.name, clubId: pos.club.id, clubName: pos.club.n, avg: pos.avg, goals: pos.p.goals, assists: pos.p.assists
+  } : null;
+
+  const yp = pool.find(x => x.p.age <= 23);
+  const youngPlayerOfSeason = yp ? {
+    pid: yp.p.id, name: yp.p.name, clubId: yp.club.id, clubName: yp.club.n, avg: yp.avg, age: yp.p.age
+  } : null;
+
+  /* Manager of the Season: biggest gap between pre-season reputation rank and final league position */
+  const teams = G.teams.filter(t => t.tier === tier);
+  const repRanked = teams.slice().sort((a, b) => (repSnap[b.id] ?? b.rep) - (repSnap[a.id] ?? a.rep));
+  const repRankOf = {}; repRanked.forEach((t, i) => { repRankOf[t.id] = i; });
+  const table = sortTable(G, tier);
+  let manager = null, bestDelta = -Infinity;
+  table.forEach((r, i) => {
+    const rr = repRankOf[r.id] ?? i;
+    const delta = rr - i;
+    if (delta > bestDelta) { bestDelta = delta; manager = { clubId: r.id, clubName: G.teams[r.id].n, pos: i + 1, expectedPos: rr + 1, delta }; }
+  });
+
+  return { tier, goldenBoot, playerOfSeason, youngPlayerOfSeason, manager };
+}
+function announceSeasonAwards(G, awards) {
+  if (!awards) return;
+  const { tier, goldenBoot, playerOfSeason, youngPlayerOfSeason, manager } = awards;
+  const tierName = TIER_SHORT[tier];
+  if (goldenBoot) {
+    news(G, 'season', `${goldenBoot.name} wins the ${tierName} Golden Boot with ${goldenBoot.goals} goals for ${goldenBoot.clubName}.`);
+    if (goldenBoot.clubId === G.myTeam) { const f = findPlayer(G, goldenBoot.pid); if (f) mail(G, { cat: 'award', from: 'Chief Executive', p: f.p, club: f.t, status: 'Golden Boot', flag: true, subject: `Golden Boot: ${goldenBoot.name}`, body: [`${goldenBoot.name} finished the season as the ${tierName}'s top scorer with ${goldenBoot.goals} goals.`, `A brilliant season in front of goal.`] }); }
+  }
+  if (playerOfSeason) {
+    news(G, 'season', `${playerOfSeason.name} (${playerOfSeason.clubName}) is named ${tierName} Player of the Season, averaging ${playerOfSeason.avg.toFixed(2)} per match.`);
+    if (playerOfSeason.clubId === G.myTeam) { const f = findPlayer(G, playerOfSeason.pid); if (f) mail(G, { cat: 'award', from: 'Chief Executive', p: f.p, club: f.t, status: 'Player of the Season', flag: true, subject: `Player of the Season: ${playerOfSeason.name}`, body: [`${playerOfSeason.name} has been named ${tierName} Player of the Season, averaging ${playerOfSeason.avg.toFixed(2)} a match.`, `A season to remember.`] }); }
+  }
+  if (youngPlayerOfSeason) {
+    news(G, 'season', `${youngPlayerOfSeason.name} (${youngPlayerOfSeason.clubName}, ${youngPlayerOfSeason.age}) is named ${tierName} Young Player of the Season.`);
+    if (youngPlayerOfSeason.clubId === G.myTeam) { const f = findPlayer(G, youngPlayerOfSeason.pid); if (f) mail(G, { cat: 'award', from: 'Chief Executive', p: f.p, club: f.t, status: 'Young Player of the Season', flag: true, subject: `Young Player of the Season: ${youngPlayerOfSeason.name}`, body: [`${youngPlayerOfSeason.name} (${youngPlayerOfSeason.age}) has been named ${tierName} Young Player of the Season.`, `The future looks bright.`] }); }
+  }
+  if (manager && manager.delta > 0) {
+    news(G, 'season', `${manager.clubName} are named ${tierName} Manager of the Season, finishing ${ordinal(manager.pos)} after being tipped for ${ordinal(manager.expectedPos)}.`);
+    if (manager.clubId === G.myTeam) mail(G, { cat: 'award', from: 'Chief Executive', status: 'Manager of the Season', flag: true, subject: `Manager of the Season`, body: [`You have been named ${tierName} Manager of the Season after guiding ${manager.clubName} to ${ordinal(manager.pos)}, well ahead of pre-season expectations.`, `The board is delighted.`] });
+  }
 }
 
 /* ---------------- transfers ---------------- */
