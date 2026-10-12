@@ -1489,6 +1489,7 @@ function newGame(clubIndex, manager, seed) {
       youth: [], fin: newFin(), finHistory: [], captainId: null, viceCaptainId: null
     };
     t.squad.forEach(p => p.clubs.push({ id: i, from: season }));
+    t.squad.forEach(p => backdateCareer(p, i, season));
     t.wageBill = wageOf(t);
     t.wageBudget = Math.round(t.wageBill * 1.4 * 100) / 100;
     ensureLineup(t);
@@ -2640,6 +2641,13 @@ function sellPlayer(G, pid, fee, buyerId) {
 }
 
 function pickBuyer(G, p) {
+  // Prefer a club that's genuinely a plausible suitor — the same ones that
+  // would show up under "Interested clubs" — weighted toward the better
+  // fits rather than a flat coin toss between them.
+  const interested = interestedClubs(p, G.myTeam, 6);
+  if (interested.length) {
+    return wpick(interested, t => 1 + Math.max(0, clubLevel(t) - clubLevel(G.teams[G.myTeam]) + 10)).id;
+  }
   const c = G.teams.filter(t => t.id !== G.myTeam && t.budget > p.value * 0.8);
   return (c.length ? pick(c) : pick(G.teams.filter(t => t.id !== G.myTeam))).id;
 }
@@ -5292,8 +5300,8 @@ function starterRatingAt(t, pos) {
 }
 function interestedClubs(p, ownerId, n) {
   n = n || 4;
-  if (ownerId != null && typeof ownerId !== 'number') return [];
   const ptier = ownerId != null ? G.teams[ownerId].tier : 3;
+  const windowOpen = inTransferWindow(G);
   const out = [];
   for (const t of G.teams) {
     if (t.id === ownerId || t.squad.length >= 31) continue;
@@ -5303,10 +5311,21 @@ function interestedClubs(p, ownerId, n) {
     if (d < 1) continue;
     if (p.nat !== 'ZA' && t.squad.filter(pl => pl.nat !== 'ZA').length >= MAX_FOREIGN) continue;
     if (p.rating - clubLevel(t) >= 15) continue;
-    out.push({ t, s: d + (t.tier < ptier ? 2 : 0) - (t.tier > ptier ? 3 : 0) + hashS(p.id + '_' + t.id) });
+    // Desirability score: real position need and tier ambition, plus a
+    // tiebreak that rotates week to week (seeded off the round number, not
+    // the shared RNG, so reading this list never burns a random draw) so
+    // the list isn't frozen solid for the rest of the save.
+    let s = d + (t.tier < ptier ? 2 : 0) - (t.tier > ptier ? 3 : 0);
+    s += (hashS(p.id + '_' + t.id + '_' + G.round) - 0.5) * 6;
+    if (p.wantsOut) s += 2.5;
+    if (p.contract <= 1) s += 1.5;
+    if (!windowOpen) s -= 4; // clubs go quiet once nobody can actually sign
+    out.push({ t, s });
   }
-  return out.sort((a, b) => b.s - a.s).slice(0, n).map(x => x.t);
-}
+  // A real bar to clear, not a quota — mediocre fits are left out rather
+  // than padded in just to fill the list, so plenty of players legitimately
+  // show no interest at all right now.
+  return out.filter(x => x.s >= 3).sort((a, b) => b.s - a.s).slice(0, n).map(x => x.t);
 function sparkChart(p) {
   const hist = (p.career || []).map(c => [seasonLabel(c.season), c.rating]);
   hist.push([seasonLabel(G.season), Math.round(p.rating)]);
