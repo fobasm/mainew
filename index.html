@@ -4106,6 +4106,7 @@ function openSoundModal() {
 let autoSimTimer = null; function autoSimBody() {   const d = new Date(currentDateISO() + 'T12:00:00Z');   return `<div style="text-align:center;padding:20px 0">     <div style="font-family:var(--head);font-size:12px;letter-spacing:.5px;color:var(--faint);text-transform:uppercase">Simulating</div>     <div style="font-family:var(--head);font-size:30px;margin:6px 0">${DOW_NAMES[d.getUTCDay()]} ${d.getUTCDate()} ${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCFullYear()}</div>     <div class="hint">${isMatchdayToday() ? 'Matchday reached' : 'No match today'}</div>   </div>`; } function startAutoSim() {   if (autoSimTimer || isMatchdayToday()) return;   goTo('calendar');   autoSimTimer = setInterval(() => {     if (isMatchdayToday() || G.finished) { const md = isMatchdayToday(); stopAutoSim(); if (md) toast('Matchday today.'); return; }     advanceOneDay();     const d = new Date(currentDateISO() + 'T12:00:00Z');     calY = d.getUTCFullYear(); calM = d.getUTCMonth();     render();   }, 250); } function stopAutoSim() { if (autoSimTimer) { clearInterval(autoSimTimer); autoSimTimer = null; } render(); } function renderActions() {
   const a = $('#actions'); a.innerHTML = '';
   if (liveState) return;
+  if (autoSimTimer) { const sb = el('button', 'btn', 'Stop'); sb.onclick = stopAutoSim; a.appendChild(sb); a.appendChild(el('span', 'hint', 'Simulating days…')); return; }
   if (G.finished) {
     const b = el('button', 'btn', `Start ${seasonLabel(G.season + 1)}`);
     b.onclick = doEndSeason; a.appendChild(b);
@@ -6440,7 +6441,7 @@ function viewCalendar() {
       <button class="navbtn" id="calNext" ${atMax ? 'disabled' : ''} aria-label="Next month">›</button>
       <span class="cal-chip">MD ${G.round + 1}/${totalRounds(G)}</span>
       ${(calY !== todayD.getUTCFullYear() || calM !== todayD.getUTCMonth()) ? `<button class="chip" id="calToday">Today</button>` : ''}
-      ${calSelRound != null ? `<button class="btn sm" id="calSimTo" style="margin-left:auto">Sim to MD${calSelRound + 1}</button>` : ''}
+      ${calSelRound != null ? `<button class="btn sm" id="calSimTo" style="margin-left:auto">Sim to MD${calSelRound + 1}</button>` : ''}       ${autoSimTimer ? `<span class="cal-chip">Simulating…</span><button class="btn sm" id="calStop" style="margin-left:auto">Stop</button>` : ''}
     </div>
     <div class="pad"><span class="hint">Days with the red and blue arrows fall inside a transfer window. Tap an upcoming matchday to sim straight to it.</span></div>
     <div class="pad"><div class="cal">${DOW_NAMES.map(d => `<div class="h">${d}</div>`).join('')}${cells}</div></div>
@@ -6456,7 +6457,7 @@ function viewCalendar() {
       Promotion and relegation across all five divisions are settled, contracts run down, the academy intake
       arrives, sponsors renew their offers, and ${AFCON_NAME} ${G.africa.afcon.phase === 'qualifiers' ? 'qualifiers are drawn' : G.africa.afcon.phase === 'qualified' ? 'finals are played' : 'group qualifying begins again'}.
     </div></div>`;
-  const pv = $('#calPrev'); if (pv) pv.onclick = () => { calM--; if (calM < 0) { calM = 11; calY--; } viewCalendar(); };
+contBtn.textContent = G.finished ? `Start ${seasonLabel(G.season + 1)}` : 'Continue'; () => { calM--; if (calM < 0) { calM = 11; calY--; } viewCalendar(); };
   const nx = $('#calNext'); if (nx) nx.onclick = () => { calM++; if (calM > 11) { calM = 0; calY++; } viewCalendar(); };
   const td = $('#calToday'); if (td) td.onclick = () => { calY = todayD.getUTCFullYear(); calM = todayD.getUTCMonth(); viewCalendar(); };
   v.querySelectorAll('[data-round]').forEach(c => c.onclick = () => { const r = +c.dataset.round; calSelRound = calSelRound === r ? null : r; viewCalendar(); });
