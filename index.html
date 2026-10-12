@@ -4127,7 +4127,7 @@ let autoSimTimer = null; function autoSimBody() {   const d = new Date(currentDa
     const b2 = el('button', 'btn ghost', 'Quick sim'); b2.onclick = () => { bumpCurDayForCup(G); const ties = playCupRound(G, false); afterCupMatchday({ cup: ties }); }; a.appendChild(b2);
     if (mine) {
       const copp = G.teams[mine.h === G.myTeam ? mine.a : mine.h];
-      a.appendChild(el('span', 'hint cupHint', `🏆   ${mine.h === G.myTeam ? 'Home to' : 'Away to'} ${copp.s} in the ${CUP_NAME} · ${stadiumName(G.teams[nx.h])}`));
+      a.appendChild(el('span', 'hint cupHint', `🏆   ${mine.h === G.myTeam ? 'Home to' : 'Away to'} ${copp.s} in the ${CUP_NAME} · ${stadiumName(G.teams[mine.h])}`));
     } else {
       a.appendChild(el('span', 'hint cupHint', `🏆 ${CUP_NAME} — ${roundName} (no tie for you this round)`));
     }
