@@ -2257,6 +2257,8 @@ function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('ra
       t.rep = clamp(t.rep + (mid - i) * 0.035, 3.2, 9.9);
     });
   }
+  sum.awards = computeSeasonAwards(G, G.teams[G.myTeam] ? G.teams[G.myTeam].tier : 0, repSnap);
+  announceSeasonAwards(G, sum.awards);
   /* promotion and relegation cascades through every adjacent pair of tiers */
   const promoted = [], relegated = [];
   const playoffs = [];
@@ -2353,7 +2355,8 @@ function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('ra
     cup: G.cup.winner, s8: G.super8.winner, ko: G.knockout.winner,
     caf: G.africa.caf && G.africa.caf.winner ? cafName(G, G.africa.caf.winner) : null,
     confed: G.africa.confed && G.africa.confed.winner ? cafName(G, G.africa.confed.winner) : null,
-    afcon: G.africa.afcon && G.africa.afcon.winner ? G.africa.afcon.winner : null
+    afcon: G.africa.afcon && G.africa.afcon.winner ? G.africa.afcon.winner : null,
+    awards: sum.awards
   });
   sum.caf = G.africa.caf && G.africa.caf.winner ? cafName(G, G.africa.caf.winner) : null;
   sum.confed = G.africa.confed && G.africa.confed.winner ? cafName(G, G.africa.confed.winner) : null;
@@ -4426,6 +4429,10 @@ function doEndSeason() {
     <dt>${KNOCKOUT}</dt><dd>${s.ko != null ? esc(G.teams[s.ko].n) : '—'}</dd>
     <dt>${CAF_NAME}</dt><dd>${s.caf ? esc(s.caf) : '—'}</dd>
     ${s.afcon ? `<dt>${AFCON_NAME}</dt><dd>${flagSVG(s.afcon)} ${esc(natName(s.afcon))}</dd>` : ''}
+    ${s.awards && s.awards.goldenBoot ? `<dt>Golden Boot</dt><dd>${esc(s.awards.goldenBoot.name)} · ${s.awards.goldenBoot.goals} goals</dd>` : ''}
+    ${s.awards && s.awards.playerOfSeason ? `<dt>Player of the Season</dt><dd>${esc(s.awards.playerOfSeason.name)} · ${s.awards.playerOfSeason.avg.toFixed(2)} avg rating</dd>` : ''}
+    ${s.awards && s.awards.youngPlayerOfSeason ? `<dt>Young Player of the Season</dt><dd>${esc(s.awards.youngPlayerOfSeason.name)} · ${s.awards.youngPlayerOfSeason.age} years old</dd>` : ''}
+    ${s.awards && s.awards.manager && s.awards.manager.delta > 0 ? `<dt>Manager of the Season</dt><dd>${esc(s.awards.manager.clubName)} · ${ordinal(s.awards.manager.pos)} place</dd>` : ''}
     <dt>Promoted</dt><dd>${s.promoted.map(i => esc(G.teams[i].s)).join(', ')}</dd>
     <dt>Relegated</dt><dd>${s.relegated.map(i => esc(G.teams[i].s)).join(', ')}</dd>
     ${myPO ? `<dt>${TIER_SHORT[myPO.tier]} playoff final</dt><dd>${esc(G.teams[myPO.winner].s)} ${myPO.winner === myPO.final.h ? myPO.final.hg : myPO.final.ag}-${myPO.winner === myPO.final.h ? myPO.final.ag : myPO.final.hg} ${esc(G.teams[myPO.final.h === myPO.winner ? myPO.final.a : myPO.final.h].s)}</dd>` : ''}
