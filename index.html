@@ -4035,7 +4035,7 @@ function render() { try { updateNavToggle(); closeNavMenu(); } catch (e) { }   $
   const t = me();
   $('#myCrest').innerHTML = crestHTML(t, 30);
   $('#myName').textContent = t.n;
-  $('#mySub').textContent = `${TIER_SHORT[t.tier]} · $ · ${G.manager.name}`;
+  $('#mySub').textContent = `${TIER_SHORT[t.tier]} ${G.manager.name}`;
   $('#statOvr').textContent = teamOverall(t);
   $('#statPos').textContent = ordinal(posOfTeam(G, G.myTeam));
   $('#statSquad').textContent = `${t.squad.length}/32`;
