@@ -1749,7 +1749,7 @@ function dateForRound(round, season) {
 }
 const DOW_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function currentDateISO() { return new Date(seasonStartUTC(G.season) + (G.curDay || 0) * 86400000).toISOString().slice(0, 10); }
-function isMatchdayToday() { return !G.finished && currentDateISO() >= dateForRound(G.round, G.season); }
+function isMatchdayToday() { return !G.finished && currentDateISO() === dateForRound(G.round, G.season); }
 function cupDayIdx(G) { const c = G.cup; if (!c || c.done || c.stage >= CUP_AT.length) return null; const d = new Date(dateForRound(CUP_AT[c.stage] - 1, G.season) + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 3); return Math.round((d.getTime() - seasonStartUTC(G.season)) / 86400000); } function isCupDayToday() { if (G.finished || !cupDueNow(G)) return false; const i = cupDayIdx(G); return i != null && (G.curDay || 0) >= i; } function advanceOneDay() { if (G.finished) return;  G.curDay = (G.curDay || 0) + 1; saveSoon(); }
 function windowRangeFor(iso) {
   const d = new Date(iso + 'T00:00:00Z'), y = d.getUTCFullYear(), m = d.getUTCMonth();
