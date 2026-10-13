@@ -3535,7 +3535,7 @@ function eyeGroup(cx, cy, browTilt, hc) {
     <path d="M ${cx - w} ${cy} Q ${cx} ${cy - hTop} ${cx + w} ${cy}" fill="none" stroke="#00000030" stroke-width=".45"/>
     <path d="M ${cx - w * 0.85} ${browY} Q ${cx} ${browY - 0.9 - browTilt} ${cx + w * 0.9} ${browY + 0.35}" fill="none" stroke="${hc}" stroke-width="1.15" stroke-linecap="round" opacity=".92"/>`;
 }
-function silhouetteSVG(s, kit) {
+function silhouetteSVGOld(s, kit) {
   return `<svg class="face" width="${s}" height="${s}" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#2b3340"/><circle cx="20" cy="15" r="7" fill="#586172"/><path d="M6 40c0-9 6-14 14-14s14 5 14 14z" fill="${kit || '#586172'}" opacity=".85"/></svg>`;
 }
 function faceSVG(p, size, kit) {
