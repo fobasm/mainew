@@ -1812,7 +1812,7 @@ function cupResolveTie(G, h, a, stage) {
     winner = ph > pa ? h : a;
   } else winner = ctx.hg > ctx.ag ? h : a;
   finishMatch(G, ctx);
-  return { h, a, hg: ctx.hg, ag: ctx.ag, pens, winner, stage, ev: ctx.ev };
+  return { h, a, hg: ctx.hg, ag: ctx.ag, pens, winner, stage, ev: ctx.ev, forfeit: ctx.forfeit || null, fine: ctx.fine || 0 };
 }
 function runPromotionPlayoff(G, contenders) {   /* contenders = 4 team ids in table order: 3rd, 4th, 5th, 6th place.      Semi-finals: 3rd hosts 6th, 4th hosts 5th. The better-placed semi      winner hosts the final. Winner takes the league's last promotion spot. */   const [a, b, c, d] = contenders;   const rankOf = id => contenders.indexOf(id);   const semi1 = cupResolveTie(G, a, d, 'promo-semi');   const semi2 = cupResolveTie(G, b, c, 'promo-semi');   let fh = semi1.winner, fa = semi2.winner;   if (rankOf(fa) < rankOf(fh)) { const tmp = fh; fh = fa; fa = tmp; }   const final = cupResolveTie(G, fh, fa, 'promo-final');   return { semis: [semi1, semi2], final, winner: final.winner }; } function cupFinishStage(G, ties) {
   const c = G.cup;
@@ -2094,7 +2094,7 @@ function myMatchIndex(G, round) {
 }
 
 function commitMatch(G, tier, m, ctx) {
-  m.hg = ctx.hg; m.ag = ctx.ag; m.played = true;
+  m.hg = ctx.hg; m.ag = ctx.ag; m.played = true;   if (ctx.forfeit) { m.forfeit = ctx.forfeit; m.fine = ctx.fine || 0; }
   m.ev = ctx.ev.filter(e => e.type === 'goal');
   m.allEv = ctx.ev;
   m.potm = ctx.potm || null;   if (ctx.h === G.myTeam || ctx.a === G.myTeam) {     if (ctx.xgP) m.xg = tacSumXG(ctx);     m.tc = { h: tacCode(ctx.tacH || TAC_DEFAULT), a: tacCode(ctx.tacA || TAC_DEFAULT) };   }
@@ -4445,7 +4445,7 @@ function showMatchdayModal(res) {
       <div class="side away">${crestHTML(A, 30)}<div><b>${esc(A.s)}</b><small>${esc(A.city)}</small></div></div>
     </div>
     <p style="text-align:center;color:var(--dim);margin:0">${verdict} ${ordinal(posOfTeam(G, G.myTeam))} after ${G.round} ${G.round === 1 ? 'game' : 'games'}.</p>
-    ${goalList(m.allEv || m.ev)}${potmCardHTML(m)}${tacStatsHTML(m)}`;
+   ${m.forfeit ? forfeitNoteHTML(m) : goalList(m.allEv || m.ev) + potmCardHTML(m) + tacStatsHTML(m)}`;
   body += myCupResultsHTML(res);   if (res.cup) body += cupRoundHTML(res.cup);
   openModal(`Matchday ${res.round}`, body,
     `<button class="btn ghost sm" onclick="closeModal();tab='table';render()">See the log</button>
@@ -4711,6 +4711,13 @@ function startLive() {
   if (idx < 0) { simRounds(1); return; }
   const m = G.fixtures[tier][G.round][idx];
   const ctx = createMatch(G, m.h, m.a, false);
+  if (ctx.forfeit) {   /* a forfeited game is never played live: settle it and go straight to the result */
+    finishMatch(G, ctx); commitMatch(G, tier, m, ctx);
+    const res = playRound(G, true);
+    afterLeaguePortion(res);
+    return;
+  }
+  beginLiveMatch(ctx, m, 'league', tier);
   const mySide = m.h === G.myTeam ? 'h' : 'a';
   const oppTeam = G.teams[mySide === 'h' ? m.a : m.h];
   preMatchFlow(ctx, m, 'league', tier, mySide, oppTeam);
@@ -4719,6 +4726,8 @@ function startLiveCup() {
   const m = G.cup.mine;
   if (!m) return;
   const ctx = createMatch(G, m.h, m.a, true);
+  if (ctx.forfeit) { const ties = playCupRound(G, false); afterCupMatchday({ cup: ties }); return; }
+  beginLiveMatch(ctx, m, 'cup', null);
   const mySide = m.h === G.myTeam ? 'h' : 'a';
   const oppTeam = G.teams[mySide === 'h' ? m.a : m.h];
   preMatchFlow(ctx, m, 'cup', null, mySide, oppTeam);
