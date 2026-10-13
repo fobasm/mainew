@@ -4755,14 +4755,14 @@ function showCupMatchdayModal(res) {
   if (myTie) {
     const H = G.teams[myTie.h], A = G.teams[myTie.a];
     const pensTxt = myTie.pens ? ` <small>(${myTie.pens[0]}–${myTie.pens[1]} pens)</small>` : '';
-    const verdict = myTie.winner === G.myTeam ? 'Through to the next round!' : 'Knocked out.';
+    const verdict = myTie.forfeit ? (myTie.winner === G.myTeam ? `${esc(G.teams[myTie.forfeit === 'h' ? myTie.h : myTie.a].s)} forfeited: you go through (3-0 awarded).` : `Forfeited: fewer than ${MIN_TO_PLAY} fit players. You are knocked out and fined ${money(myTie.fine)}.`) : (myTie.winner === G.myTeam ? 'Through to the next round!' : 'Knocked out.');
     body += `<div class="fixture" style="padding:4px 0">
       <div class="side">${crestHTML(H, 30)}<div><b>${esc(H.s)}</b><small>${esc(H.city)}</small></div></div>
       <div class="score num">${myTie.hg}–${myTie.ag}${pensTxt}</div>
       <div class="side away">${crestHTML(A, 30)}<div><b>${esc(A.s)}</b><small>${esc(A.city)}</small></div></div>
     </div>
     <p style="text-align:center;color:var(--dim);margin:0">${verdict}</p>
-    ${goalList(myTie.ev || [])}`;
+    ${myTie.forfeit ? '' : goalList(myTie.ev || [])}`;
   } else {
     body += cupRoundHTML(res.cup);
   }
@@ -5311,7 +5311,7 @@ function viewMatch() {
       <h3 style="font-size:25px">${seasonLabel(G.season)} is done</h3>
       <p style="color:var(--dim);margin:8px 0 0">You finished ${ordinal(posOfTeam(G, G.myTeam))} in the ${TIER_SHORT[t.tier]}. Roll the season over when you're ready.</p></div></div>`;
   }
-  const cupTies = G.finished ? [] : myCupTies(G.round);
+  if (!G.finished) {     const fitN = fitCount(t), sqN = t.squad.length, warn = [];     if (fitN < MIN_TO_PLAY) warn.push(`You only have <b>${fitN}</b> fit, available players. Play with fewer than ${MIN_TO_PLAY} and the match is <b>forfeited</b> (3–0 to the opposition) and you are fined ${money(forfeitFine(t))}.`);     if (sqN < MIN_SENIOR) warn.push(`Your senior squad is down to <b>${sqN}</b> players. You must keep at least ${MIN_SENIOR}, so sign players before you sell or release anyone.`);     if (warn.length) v.appendChild(el('div', 'panel', `<div class="pad" style="border-left:3px solid var(--down)"><b style="color:var(--down)">Squad warning</b>${warn.map(w => `<p class="hint" style="margin:4px 0 0">${w}</p>`).join('')}</div>`));   }   const cupTies = G.finished ? [] : myCupTies(G.round);
   if (cupTies.length) {
     v.appendChild(el('div', 'panel',
       `<h3>Cup ties coming up<span class="sub">each played on its own matchday</span></h3>` +
