@@ -3811,13 +3811,60 @@ function tone(ctx, freq, t0, dur, type, gain) {
   o.connect(g); g.connect(ctx.destination);
   o.start(ctx.currentTime + t0); o.stop(ctx.currentTime + t0 + dur + 0.02);
 }
+    function pTone(ctx, f, t0, dur, vol, type) {
+  const t = ctx.currentTime + t0;
+  const o = ctx.createOscillator(), g = ctx.createGain(), lp = ctx.createBiquadFilter();
+  o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
+  lp.type = 'lowpass'; lp.frequency.value = 5200; lp.Q.value = 0.5;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(lp); lp.connect(g); g.connect(ctx.destination);
+  o.start(t); o.stop(t + dur + 0.03);
+}
+function pBell(ctx, f, t0, dur, vol) {
+  pTone(ctx, f, t0, dur, vol, 'sine');
+  pTone(ctx, f * 2, t0, dur * 0.6, vol * 0.28, 'sine');
+  pTone(ctx, f * 3.01, t0, dur * 0.35, vol * 0.1, 'sine');
+}
+const _snd = { ui: 0, money: 0 };
+function uiSound(name) {
+  const ctx = ac(); if (!ctx) return;
+  try {
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = performance.now();
+    if (name === 'tap' || name === 'open') {
+      if (now - _snd.ui < 140) return;
+      if (name === 'open' && now - _snd.money < 700) return;
+      _snd.ui = now;
+    } else {
+      if (_snd[name] && now - _snd[name] < 250) return;
+      _snd[name] = now;
+    }
+    if (name === 'moneyIn' || name === 'moneyOut') _snd.money = now;
+    if (name === 'success' && now - _snd.money < 2600) return;
+    if (name === 'tap') { pBell(ctx, 1320, 0, .09, .055); }
+    else if (name === 'open') { pBell(ctx, 660, 0, .22, .05); pBell(ctx, 990, .07, .26, .045); }
+    else if (name === 'moneyIn') { pBell(ctx, 1046.5, 0, .35, .09); pBell(ctx, 1318.5, .08, .35, .09); pBell(ctx, 1568, .16, .5, .09); pBell(ctx, 2093, .24, .6, .06); }
+    else if (name === 'moneyOut') { pBell(ctx, 784, 0, .3, .08); pBell(ctx, 587.3, .1, .4, .08); pBell(ctx, 392, .2, .5, .06); }
+    else if (name === 'success') { pBell(ctx, 880, 0, .3, .08); pBell(ctx, 1318.5, .09, .45, .07); }
+    else if (name === 'warn') { pTone(ctx, 330, 0, .16, .09, 'triangle'); pTone(ctx, 262, .12, .22, .09, 'triangle'); }
+    else if (name === 'big') { pBell(ctx, 523.25, 0, .35, .08); pBell(ctx, 659.25, .1, .35, .08); pBell(ctx, 783.99, .2, .4, .08); pBell(ctx, 1046.5, .3, .8, .08); }
+    else if (name === 'whistle2') { tone(ctx, 2000, 0, .14, 'square', .045); tone(ctx, 2000, .2, .14, 'square', .045); tone(ctx, 2000, .4, .5, 'square', .045); }
+  } catch (e) { }
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('button, .navlink, .chip, .btn, .prow, tr[data-pid], .club, .avbtn, [role="button"]');
+  if (!b || b.disabled) return;
+  uiSound('tap');
+});
 function playSound(name) {
   const ctx = ac(); if (!ctx) return;
   try {
     if (name === 'goal') { tone(ctx, 523, 0, .12, 'triangle'); tone(ctx, 659, .1, .12, 'triangle'); tone(ctx, 784, .2, .22, 'triangle'); }
     else if (name === 'whistle') { tone(ctx, 1800, 0, .18, 'square', .07); tone(ctx, 1800, .22, .18, 'square', .07); }
-    else if (name === 'click') { tone(ctx, 700, 0, .05, 'square', .05); }
-    else if (name === 'coin') { tone(ctx, 880, 0, .08, 'triangle'); tone(ctx, 1180, .06, .12, 'triangle'); }
+    else if (name === 'click') { uiSound('tap'); }
+    else if (name === 'coin') { uiSound('moneyIn'); }
     else if (name === 'card') { tone(ctx, 220, 0, .18, 'sawtooth', .06); }
   } catch (e) { }
 }
@@ -3906,7 +3953,7 @@ function toastSpawn(msg, cls, life) {
   const d = document.createElement('div');
   d.className = 'toast' + (cls ? ' ' + cls : '') + (/^\s*[-−–]/.test(msg) ? ' out' : /^\s*\+/.test(msg) ? ' in' : '');
   d.textContent = msg;
-  r.appendChild(d);
+  r.appendChild(d);   if (cls === 'good') uiSound('success'); else if (cls === 'warn') uiSound('warn'); else if (cls === 'big') uiSound('big');
   setTimeout(() => d.remove(), life);
 }
 function toast(msg) { toastSpawn(msg, '', 3200); }
@@ -3916,7 +3963,7 @@ function toastGood(msg) { toastSpawn(msg, 'good', 3800); }
 function openModal(title, body, footer) {   $('#modal').className = 'modal';   $('#modal').classList.add('mmx');
   $('#modal').innerHTML = `<header><h3>${title}</h3><button class="x" aria-label="Close">&times;</button></header>
     <div class="body">${body}</div>` + (footer ? `<footer>${footer}</footer>` : '');
-  $('#scrim').hidden = false;
+  $('#scrim').hidden = false;   uiSound('open');
   $('#modal .x').onclick = closeModal;
 }
 function closeModal() { $('#scrim').hidden = true; }
@@ -4944,6 +4991,7 @@ function liveTick() {
     const endAt = ls.half === 1 ? 45 : 92;
     if (ls.minute >= endAt) {
       ls.timer = null;
+      uiSound('whistle2');
       if (ls.half === 1) { liveBanner('Half-time'); startHalfTimeBreak(ls); }
       else { ls.ft = true; liveBanner('Full time'); liveControls(); }
       return;
@@ -5964,7 +6012,7 @@ function loanOfferModal(pid, owner) {
   };
 }
 
-function showMoneyEffect(label, from, to, tint, onDone) {
+function showMoneyEffect(label, from, to, tint, onDone) {   uiSound(to >= from ? 'moneyIn' : 'moneyOut');
   openModal(label, `<div style="text-align:center;padding:10px 0">
       <div style="font-family:var(--head);font-size:15px;color:var(--faint)">Transfer budget</div>
       <div style="font-family:var(--head);font-size:36px" id="moneyNum">${money(from)}</div>
