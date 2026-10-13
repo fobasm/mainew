@@ -849,8 +849,9 @@ function skinGroupFor(nat) {
 const _pr = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => 'plr-' + String(a + i).padStart(3, '0'));
 const PLAYER_PORTRAITS = {
   coloured: _pr(1, 13), asian: _pr(14, 33), mena: _pr(34, 39), indian: _pr(40, 45),
-  latin: _pr(46, 59), white: _pr(60, 157), black: _pr(158, 240)
+  latin: _pr(46, 59), white: [..._pr(60, 99), ..._pr(140, 157)], black: _pr(158, 240)
 };
+  function portraitFail(el) { const d = document.createElement('span'); d.innerHTML = silhouetteSVG(el.width || 40); el.replaceWith(d.firstChild); }
 const PORTRAIT_USE = {};
 function portraitFromGroup(group) {
   const arr = PLAYER_PORTRAITS[group];
@@ -3541,7 +3542,7 @@ function silhouetteSVGOld(s, kit) {
 function faceSVG(p, size, kit) {
   const s = size || 38;
   if (p && p.noFace) return silhouetteSVG(s, kit);
-  if (p && p.portrait) return `<img class="face" src="players/${p.portrait}.jpg" width="${s}" height="${s}" style="object-fit:cover" loading="lazy" alt="">`;
+  if (p && p.portrait) return `<img class="face" src="players/${p.portrait}.jpg" width="${s}" height="${s}" style="object-fit:cover" loading="lazy" alt="" onerror="portraitFail(this)">`;
   const f = (p && p.face) || { sk: '#5c3620', hr: 'fade', hc: '#1d1713', bd: 0, ey: 1, nose: 1 };
   const id = ++FACE_UID;
   const sk = f.sk, hc = f.hc;
