@@ -2336,7 +2336,13 @@ function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('ra
     const leaving = t.squad.filter(p => p.contract <= 0);
     leaving.forEach(p => {       p.contract = 0; G.freeAgents.push(p); news(G, 'transfer', `${p.name} leaves ${t.s} as a free agent.`);       if (t.id === G.myTeam) mail(G, { cat: 'leaving', from: 'Chief Executive', p, club: null, status: 'Left on a free transfer', flag: true, subject: `Contract Expired: ${p.name} has left`,         body: [`${p.name}'s contract ran out and he has left ${t.n} as a free agent.`, 'Renew key players before their final six months to avoid losing them for nothing.'],         rows: [['Rating / potential', `${p.rating} / ${potTxt(p)}`], ['Last wage', money(p.wage) + ' a season'], ['This season', `${p.apps} apps, ${p.goals} goals`]] });     });
     t.squad = t.squad.filter(p => !leaving.includes(p));
-    fillSquad(G, t);
+    if (t.id !== G.myTeam) fillSquad(G, t);   /* AI clubs top up to a full squad; yours is left exactly as it finished, minus expired contracts and retirements */
+    else if (t.squad.length < MIN_SENIOR) {
+      const msg = `${t.s} begin the new season with only ${t.squad.length} senior players. You need at least ${MIN_SENIOR} (and ${MIN_TO_PLAY} fit players to play a match), so sign players before you sell or release anyone.`;
+      news(G, 'contract', msg);
+      mail(G, { cat: 'career', from: 'Chief Executive', flag: true, subject: 'Squad below the minimum', body: [msg, 'Until you are back to 15 you cannot sell, release or loan out anyone, and if you cannot field 11 fit players for a match it is forfeited and you are fined.'],
+        rows: [['Senior players', String(t.squad.length)], ['Minimum', String(MIN_SENIOR)], ['Fit players needed to play', String(MIN_TO_PLAY)]] });
+    }
     t.wageBill = wageOf(t);
     const wageGrowth = 1 + clamp(finNet(t.fin) / Math.max(1, t.wageBudget) * 0.15, -0.12, 0.18);
     t.wageBudget = Math.round(clamp(t.wageBudget * wageGrowth, t.wageBill, t.wageBill * 3) * 100) / 100;
@@ -2407,7 +2413,7 @@ function generateYouth(G) {
     });
     leaving.forEach(p => {
       t.youth = t.youth.filter(x => x.id !== p.id);
-      const dest = pick(G.teams.filter(x => x.id !== t.id));
+      const dest = pick(G.teams.filter(x => x.id !== t.id && x.id !== G.myTeam));   /* graduates never land in your squad unasked */
       p.clubs.push({ id: dest.id, from: G.season });
       p.contract = rint(2, 3);
       dest.squad.push(p);
@@ -2680,6 +2686,7 @@ function sellPlayer(G, pid, fee, buyerId) {
   const me = G.teams[G.myTeam];
   const p = me.squad.find(x => x.id === pid);
   if (!p) return { ok: false, msg: 'Not in your squad.' };
+  if (me.squad.length <= MIN_SENIOR) return { ok: false, msg: `You can't sell ${p.name}: you must keep at least ${MIN_SENIOR} senior players.` };
   if (me.captainId === pid) me.captainId = null;
   if (me.viceCaptainId === pid) me.viceCaptainId = null;
   // no cover check: if you leave a position empty, you pay for it on the pitch
@@ -2761,6 +2768,7 @@ function releasePlayer(G, pid) {
   const me = G.teams[G.myTeam];
   const p = me.squad.find(x => x.id === pid);
   if (!p) return { ok: false, msg: 'Not in your squad.' };
+  if (me.squad.length <= MIN_SENIOR) return { ok: false, msg: `You can't release ${p.name}: you must keep at least ${MIN_SENIOR} senior players.` };
   if (me.captainId === pid) me.captainId = null;
   if (me.viceCaptainId === pid) me.viceCaptainId = null;
   const payoff = Math.round(p.wage * Math.max(0, p.contract) * 0.5 * 100) / 100;
