@@ -192,7 +192,7 @@ main{max-width:1200px;margin:0 auto;padding:16px 14px 118px}
 /* ---------- tables ---------- */
 .tbl{width:100%;border-collapse:collapse;font-size:14px}
 .tbl th{font-family:var(--head);font-weight:600;font-size:13px;color:var(--faint);text-align:right;padding:6px 5px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--panel2)}
-.tbl th:nth-child(-n+2),.tbl td:nth-child(-n+2){text-align:left}
+.tbl th:nth-child(-n+2),.tbl td:nth-child(-n+2){text-align:left} .tbl th:empty + th,.gtable th:empty + th{text-align:left}
 .tbl td{padding:5px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
 .tbl tbody tr:hover{background:var(--panel2)}
 .tbl tbody tr.clickrow:hover{background:color-mix(in srgb,var(--teal) 14%,transparent)}
@@ -5344,7 +5344,7 @@ function miniTable(rows, tier) {
 }
 
 /* ---------------- League Table ---------------- */
- function tablePosAt(G, tier, rounds) {   const s = {}; G.teams.filter(t => t.tier === tier).forEach(t => { s[t.id] = { id: t.id, pts: 0, gf: 0, ga: 0 }; });   for (let r = 0; r < rounds; r++) (G.fixtures[tier][r] || []).forEach(m => {     if (!m.played || !s[m.h] || !s[m.a]) return;     const H = s[m.h], A = s[m.a]; H.gf += m.hg; H.ga += m.ag; A.gf += m.ag; A.ga += m.hg;     if (m.hg > m.ag) H.pts += 3; else if (m.hg < m.ag) A.pts += 3; else { H.pts++; A.pts++; }   });   const pos = {}; Object.values(s).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf || a.id - b.id).forEach((r, i) => { pos[r.id] = i + 1; });   return pos; } function posMove(was, now) {   if (was == null || was === now) return '<span class="muted">–</span>';   return was > now ? `<span style="color:#34c471">▲${was - now}</span>` : `<span style="color:#ff5a5a">▼${now - was}</span>`; } function viewTable() {
+ function tablePosAt(G, tier, rounds) {   const s = {}; G.teams.filter(t => t.tier === tier).forEach(t => { s[t.id] = { id: t.id, pts: 0, gf: 0, ga: 0 }; });   for (let r = 0; r < rounds; r++) (G.fixtures[tier][r] || []).forEach(m => {     if (!m.played || !s[m.h] || !s[m.a]) return;     const H = s[m.h], A = s[m.a]; H.gf += m.hg; H.ga += m.ag; A.gf += m.ag; A.ga += m.hg;     if (m.hg > m.ag) H.pts += 3; else if (m.hg < m.ag) A.pts += 3; else { H.pts++; A.pts++; }   });   const pos = {}; Object.values(s).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf || G.teams[a.id].n.localeCompare(G.teams[b.id].n)).forEach((r, i) => { pos[r.id] = i + 1; });   return pos; } function posMove(was, now) {   if (was == null || was === now) return '<span class="muted">–</span>';   return was > now ? `<span style="color:#34c471">▲${was - now}</span>` : `<span style="color:#ff5a5a">▼${now - was}</span>`; } function viewTable() {
   const v = $('#v-table');
   const seasons = G.records.seasons.map(s => s.season).sort((a, b) => b - a);
   const isCurrent = tableSeason === 'current';
