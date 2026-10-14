@@ -1516,6 +1516,8 @@ function newGame(clubIndex, manager, seed) {
   initAfrica(G);
   initAfcon(G);
   buildSeason(G, true);
+  seedAiClauses(G);
+  updateOutgoingScouting(G);
   return G;
 }
 
@@ -4456,7 +4458,7 @@ function load(n) {
     }
     if (!d) return false;
     G = d.G; SEED = d.seed; PID = d.pid; slot = want;
-    G.teams.forEach(t => { t.fin = t.fin || newFin(); t.youth = t.youth || []; t.squad.forEach(p => { p.value = valueOf(p); if (p.portrait) PORTRAIT_USE[p.portrait] = (PORTRAIT_USE[p.portrait] || 0) + 1; }); ensureLineup(t); });     G.watchlist = G.watchlist || []; G.pendingBids = G.pendingBids || [];
+    G.teams.forEach(t => { t.fin = t.fin || newFin(); t.youth = t.youth || []; t.squad.forEach(p => { p.value = valueOf(p); if (p.portrait) PORTRAIT_USE[p.portrait] = (PORTRAIT_USE[p.portrait] || 0) + 1; }); ensureLineup(t); });     G.watchlist = G.watchlist || []; G.pendingBids = G.pendingBids || []; seedAiClauses(G); try { updateOutgoingScouting(G); } catch (e) { }
     if (!G.africa) { initAfrica(G); initAfcon(G); buildCAF(G); }
     if (!G.super8) buildExtraCups(G);     if (!G.watchlist) G.watchlist = [];
     G.manager.rep = G.manager.rep || 40;     G.curDay = Math.max(G.curDay != null ? G.curDay : 0, Math.max(0, G.round - 1) * DAYS_PER_ROUND + (G.round > 0 ? 1 : 0));
@@ -4704,8 +4706,11 @@ function afterRound() {
     toastGood(`Training: ${tl.n} improvement${tl.n === 1 ? '' : 's'}${wk}` + (tl.up ? ` · ${tl.up} player${tl.up === 1 ? '' : 's'} gained +1 overall` : ''));
   }
   G.trainTally = null;
+  seedAiClauses(G);
+  aiClauseTriggers(G);
   updateScouting(G);
-  const bids = generateBids(G);   bids.forEach(b => {     const pl = me().squad.find(x => x.id === b.pid), buyer = G.teams[b.from]; if (!pl || !buyer) return;     mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Offer received', flag: true, subject: `Transfer Offer: ${b.name}`,       body: [`${buyer.n} have bid ${money(b.fee)} for ${b.name}.`, `His estimated value is ${money(pl.value)}. Respond to the offer when it appears, or turn it down.`],       rows: [['Bidder', buyer.n], ['Offer', money(b.fee)], ['Estimated value', money(pl.value)], ['Contract', `${pl.contract} year${pl.contract === 1 ? '' : 's'} left`]] });   });   try {     const un = unreadCount(G), fresh = un - (G.lastUnread || 0);     if (fresh > 0) toast(`✉ ${fresh} new message${fresh === 1 ? '' : 's'} in your inbox`);     G.lastUnread = un;   } catch (e) { }
+  updateOutgoingScouting(G);
+  const bids = generateBids(G);  bids.forEach(b => {     const pl = me().squad.find(x => x.id === b.pid), buyer = G.teams[b.from]; if (!pl || !buyer) return;     mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Offer received', flag: true, subject: `Transfer Offer: ${b.name}`,       body: [`${buyer.n} have bid ${money(b.fee)} for ${b.name}.`, `His estimated value is ${money(pl.value)}. Respond to the offer when it appears, or turn it down.`],       rows: [['Bidder', buyer.n], ['Offer', money(b.fee)], ['Estimated value', money(pl.value)], ['Contract', `${pl.contract} year${pl.contract === 1 ? '' : 's'} left`]] });   });   try {     const un = unreadCount(G), fresh = un - (G.lastUnread || 0);     if (fresh > 0) toast(`✉ ${fresh} new message${fresh === 1 ? '' : 's'} in your inbox`);     G.lastUnread = un;   } catch (e) { }
   G.pendingBids = (G.pendingBids || []).concat(bids).slice(-6);
   fxRound = Math.max(0, G.round - 1);
   if (!G.finished && G.round >= 12 && rnd() < 0.05) {
