@@ -2315,7 +2315,7 @@ function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('ra
     });
     const retiring = t.squad.filter(p => rnd() < retireChance(p));
     retiring.forEach(p => {
-      sum.retired.push({ club: t.id, name: p.name, age: p.age, apps: p.cApps, goals: p.cG });
+      try { legendRetire(G, p, t); } catch (e) { console.error('legend', e); } sum.retired.push({ club: t.id, name: p.name, age: p.age, apps: p.cApps, goals: p.cG });
       news(G, 'retire', `${p.name} retires at ${p.age} after ${p.cApps} career appearances and ${p.cG} goals.`);       if (t.id === G.myTeam) mail(G, { cat: 'leaving', from: 'Chief Executive', p, club: null, status: 'Retired', subject: `[Info] ${p.name} retires`,         body: [`${p.name} has called time on his career at ${p.age}.`, `He made ${p.cApps} career appearances and scored ${p.cG} goals. Thank you for everything, ${p.name}.`] });
     });
     t.squad = t.squad.filter(p => !retiring.includes(p));
@@ -2375,7 +2375,7 @@ function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('ra
   updateReputation(G, sum);
   sum.fired = updateBoard(G, sum);
   personalSeasonMail(G, sum);
-  sum.board = G.board;
+  try { updateLegends(G); } catch (e) { console.error('legends', e); }   sum.board = G.board;
   sum.offers = sum.fired ? rescueOffers(G) : jobOffers(G);
   G.season++;
   buildSeason(G);
@@ -4225,7 +4225,7 @@ const MENU_SECTIONS = [
   ['Career', [['inbox','Inbox'],['match','Matchday'],['calendar','Calendar'],['table','League tables & fixtures']]],
   ['Squad', [['squad','Squad & Tactics'], ['youth','Academy & Training'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist']]],
   ['Competitions', [['cups','Cups'],['africa','Continental football'],['nations','Nations'],['world','World players'],['clubrank','Club rankings'],['stats','Player Stats']]],
-  ['Club', [['club','Club & Finances'],['commercial','Commercial'],['stadium','Stadium & tickets'],['board','Board & objectives'],['trophies','Trophy room'],['manager','Manager'],['news','News']]],
+  ['Club', [['club','Club & Finances'],['commercial','Commercial'],['stadium','Stadium & tickets'],['board','Board & objectives'], ['trophies','Trophy room'],['legends','MM Legends'],['manager','Manager'],['news','News']]],
   ['More', [['careerfile','Save & Load'],['soundsettings','Music & sound effects'],['info','How to play']]]
 ];
 function navLabel() { for (const sec of MENU_SECTIONS) for (const it of sec[1]) if (it[0] === tab) return it[1]; return 'Menu'; } function updateNavToggle() { const t = document.querySelector('#sideNav .navToggle'); if (t) t.innerHTML = '<span>☰ Menu</span><b>' + esc(navLabel()) + '</b>'; } function closeNavMenu() { const c = document.querySelector('#sideNav'); if (c) c.classList.remove('open'); } function navLabel() { for (const sec of MENU_SECTIONS) for (const it of sec[1]) if (it[0] === tab) return it[1]; return 'Menu'; } function updateNavToggle() { const t = document.querySelector('#sideNav .navToggle'); if (t) t.innerHTML = '<span>☰ Menu</span><b>' + esc(navLabel()) + '</b>'; } function closeNavMenu() { const c = document.querySelector('#sideNav'); if (c) c.classList.remove('open'); } function buildSideNav() {
