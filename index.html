@@ -5578,8 +5578,9 @@ function starterRatingAt(t, pos) {
   const pool = same.length ? same : t.squad.filter(pl => POS_GROUP[pl.pos] === POS_GROUP[pos]);
   return pool.length ? Math.max(...pool.map(pl => pl.rating)) : 0;
 }
-function interestedClubs(p, ownerId, n) {
-  n = n || 4;
+/* Who would want this player, and how badly: [{ t, s }] best first.
+   interestedClubs() below is just the top of this list. */
+function interestRanking(p, ownerId) {
   const ptier = ownerId != null ? G.teams[ownerId].tier : 3;
   const windowOpen = inTransferWindow(G);
   const out = [];
@@ -5599,7 +5600,11 @@ function interestedClubs(p, ownerId, n) {
     if (p.contractSignedRound != null && G.round - p.contractSignedRound < 8) s -= (8 - (G.round - p.contractSignedRound)) * 0.8;
     out.push({ t, s });
   }
-  return out.filter(x => x.s >= 3).sort((a, b) => b.s - a.s).slice(0, n).map(x => x.t);
+  return out.filter(x => x.s >= 3).sort((a, b) => b.s - a.s);
+}
+function interestedClubs(p, ownerId, n) {
+  n = n || 4;
+  return interestRanking(p, ownerId).slice(0, n).map(x => x.t);
 }
 
 /* A short, human reason a given club is watching a player — built from the
@@ -5651,7 +5656,7 @@ function shopAround(pid) {
   let n = 0;
   cands.forEach(buyer => {
     if (G.pendingBids.some(b => b.pid === pid && b.from === buyer.id)) return;
-    G.pendingBids.push({ pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: buyer.id, fee: Math.round(p.value * (0.95 + rnd() * 0.35) * 100) / 100 });
+    G.pendingBids.push({ pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: buyer.id, fee: capToClause(p, Math.round(p.value * (0.8 + rnd() * 0.85) * 100) / 100) });
     n++;
   });
   G.pendingBids = G.pendingBids.slice(-6);
