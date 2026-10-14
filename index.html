@@ -3080,7 +3080,7 @@ function pickSwapOffer(buyer, targetPlayer, totalValue) {
 function makeBid(buyer, p) {
   const totalValue = Math.round(p.value * (0.8 + rnd() * 0.85) * 100) / 100;
   const swap = pickSwapOffer(buyer, p, totalValue);
-  const bid = { pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: buyer.id, fee: totalValue };
+  const bid = { pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: buyer.id, fee: capToClause(p, Math.round(p.value * (0.8 + rnd() * 0.85) * 100) / 100) };
   if (swap) {
     const swapCredit = Math.round(swap.value * 0.9 * 100) / 100;
     bid.fee = Math.max(0, Math.round((totalValue - swapCredit) * 100) / 100);
