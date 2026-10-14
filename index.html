@@ -2652,6 +2652,226 @@ function triggerReleaseClause(G, pid) {
   return buyPlayer(G, pid, f.p.releaseClause, true);
 }
 
+/* ================= release clauses: the AI side ================= */
+const AI_CLAUSE_SHARE = 0.25; // share of other clubs' players who carry a release clause (set 0 to switch it off)
+
+/* Gives a stable slice of other clubs' players a clause priced well above
+   their value, and re-prices them once a season as values move. Uses hashS
+   rather than rnd() so it never disturbs the game's random stream. */
+function seedAiClauses(G) {
+  if (G.aiClauseSeason === G.season) return;
+  G.aiClauseSeason = G.season;
+  if (!AI_CLAUSE_SHARE) return;
+  G.teams.forEach(t => {
+    if (t.id === G.myTeam) return;
+    t.squad.forEach(p => {
+      if (p.loan) return;
+      const has = hashS(p.id + '_hc') < AI_CLAUSE_SHARE;
+      if (!has && !p.releaseClause) return;
+      const floor = (p.value || valueOf(p)) * (2 + hashS(p.id + '_cm') * 1.2);
+      p.releaseClause = Math.max(p.releaseClause || 0, Math.round(floor * 100) / 100);
+    });
+  });
+}
+
+/* A club bidding for a player whose clause is cheaper would just pay the clause. */
+function capToClause(p, fee) { return p.releaseClause ? Math.min(fee, p.releaseClause) : fee; }
+
+/* Clubs that both want him and could actually pay his clause, keenest first. */
+function clauseSuitors(G, p) {
+  if (!p.releaseClause) return [];
+  return interestRanking(p, G.myTeam).filter(x => x.t.budget >= p.releaseClause && x.t.squad.length < 31);
+}
+function clauseThreatText(p) {
+  const n = clauseSuitors(G, p).length;
+  return n ? `${n} interested club${n === 1 ? '' : 's'} can afford it` : 'no interested club can meet it right now';
+}
+
+/* Strongly-wanted players with a clause that's cheap next to their value get
+   it paid outright — no bid, no negotiation. At most one per matchday, and
+   only while a window is open. */
+function aiClauseTriggers(G) {
+  if (!inTransferWindow(G)) return;
+  const me = G.teams[G.myTeam];
+  for (const p of me.squad.slice()) {
+    if (!p.releaseClause || p.loan) continue;
+    if (p.pos === 'GK' && me.squad.filter(x => x.pos === 'GK').length <= 1) continue; // never strip you of your only keeper
+    const suitors = clauseSuitors(G, p);
+    if (!suitors.length) continue;
+    const clause = p.releaseClause;
+    // Only ~6-7 matchdays a season fall inside a window, so these are small
+    // per-matchday odds: a cheap clause on a wanted player is a real risk over
+    // a season, a clause at 2x+ his value mostly isn't.
+    const price = clause <= p.value ? 1.6 : clause <= p.value * 1.5 ? 1 : clause <= p.value * 2.2 ? 0.3 : 0.1;
+    let chance = (0.02 + Math.min(12, Math.max(0, suitors[0].s - 3)) * 0.008 + Math.min(5, suitors.length - 1) * 0.008) * price;
+    if (p.wantsOut) chance *= 1.5;
+    if (rnd() < Math.min(0.2, chance)) {
+      const buyer = wpick(suitors, x => 1 + x.s).t;
+      const r = sellPlayer(G, p.id, clause, buyer.id, true);
+      if (r.ok) { try { toast(`${buyer.s} triggered ${p.name}'s release clause (${money(clause)}).`); } catch (e) { } return; }
+    }
+  }
+}
+
+/* ================= outgoing scouting: who YOUR club is watching ================= */
+
+/* The weakest current starter in each slot position of your formation —
+   the bar a target has to clear to actually get into your XI. */
+function weakestStarters(me) {
+  const slots = FORMATIONS[me.formation] || FORMATIONS['4-4-2'];
+  const out = {};
+  slots.forEach((pos, i) => {
+    const pl = me.squad.find(x => x.id === (me.lineup || [])[i]);
+    const r = pl ? pl.rating : 0;
+    out[pos] = out[pos] == null ? r : Math.min(out[pos], r);
+  });
+  return out;
+}
+/* The slot in your formation this player would fill, or null if your shape has no room for him. */
+function scoutSlot(p, need) {
+  if (need[p.pos] != null) return p.pos;
+  return (p.alt || []).find(a => need[a] != null) || null;
+}
+
+/* How good a target is this opposition player for you? null = not realistic. */
+function scoutFit(G, p, t, need) {
+  const me = G.teams[G.myTeam];
+  const clauseOk = !!p.releaseClause && p.releaseClause <= me.budget;
+  const locked = p.joinedSeason === G.season;
+  if (locked && !clauseOk) return null;                      // too recently signed to be sold on
+  const slot = scoutSlot(p, need);
+  if (!slot) return null;                                    // your formation has no room for him
+  const d = p.rating - need[slot];
+  if (d < 2) return null;                                    // wouldn't really improve your XI there
+  const stepDown = p.rating > clubLevel(me) + 10 && !p.wantsOut;
+  if (stepDown && !clauseOk) return null;                    // would turn you down flat
+  const cost = (locked || stepDown) ? p.releaseClause : Math.min(p.value, p.releaseClause || Infinity);
+  const ratio = cost / Math.max(me.budget, 0.05);
+  if (ratio > 1.5) return null;                              // far beyond your means
+  let s = Math.min(d, 12);
+  if (p.age <= 23) s += Math.min(4, Math.max(0, p.pot - p.rating) * 0.25);
+  if (p.wantsOut) s += 2.5;
+  if (p.contract <= 1) s += 2;
+  if (p.age >= 33) s -= 2;
+  s += ratio < 0.5 ? 1 : ratio > 1 ? -(ratio - 1) * 6 : 0;
+  if (me.wageBill + wageFor(p.rating, p.age, me.tier) > me.wageBudget) s -= 3;
+  const thin = t.squad.filter(x => x.pos === p.pos).length <= minAtPos(p.pos);
+  if (thin) s -= 4;
+  s += (hashS(p.id + '_ob_' + G.round) - 0.5) * 4;           // a little week-to-week churn
+  return { s, d, slot, thin, clauseOk };
+}
+
+/* Short plain-English reasons a player is on your board. */
+function scoutWhy(G, p, t) {
+  const me = G.teams[G.myTeam], need = weakestStarters(me);
+  const slot = scoutSlot(p, need) || p.pos;
+  const d = p.rating - (need[slot] != null ? need[slot] : starterRatingAt(me, p.pos));
+  const out = [`would start at ${slot} (+${d} on who's there now)`];
+  if (p.wantsOut) out.push(`unsettled at ${t.s}`);
+  else if (p.contract <= 1) out.push('contract runs down this season');
+  if (p.age <= 23 && p.pot - p.rating >= 6) out.push(`young, could reach ${potTxt(p)}`);
+  if (p.releaseClause && p.releaseClause <= me.budget) out.push(`clause ${money(p.releaseClause)} is within reach`);
+  else if (p.value <= me.budget * 0.6) out.push('easy on the budget');
+  else if (p.value > me.budget) out.push('a stretch for your budget');
+  return out.slice(0, 3);
+}
+
+/* Keeps G.scoutBoard — your scouts' standing shortlist of realistic targets,
+   with how long each has been tracked. Players stay on it until they stop
+   being realistic (a looser bar than getting on), but scouts also move on
+   from long-tracked names and a clearly better find can bump the weakest
+   entry, so it doesn't sit frozen all season. */
+function updateOutgoingScouting(G) {
+  const me = G.teams[G.myTeam];
+  const board = G.scoutBoard = G.scoutBoard || {};
+  ensureLineup(me);
+  const need = weakestStarters(me), live = {};
+  G.teams.forEach(t => {
+    if (t.id === me.id) return;
+    t.squad.forEach(p => { if (p.loan) return; const fit = scoutFit(G, p, t, need); if (fit) live[p.id] = { p, t, fit }; });
+  });
+  Object.keys(board).forEach(pid => {
+    const e = live[pid];
+    if (!e || e.fit.s < 3.5) delete board[pid]; else { board[pid].s = e.fit.s; board[pid].club = e.t.id; }
+  });
+  // scouts move on: names outside the top three that have been tracked a while sometimes drop off
+  Object.keys(board).sort((a, c) => board[c].s - board[a].s).slice(3).forEach(pid => {
+    const b = board[pid], old = b.season !== G.season || G.round - b.since >= 8;
+    if (old && hashS(pid + '_rot_' + G.round) < (b.season !== G.season ? 0.25 : 0.15)) delete board[pid];
+  });
+  const CAP = 8;
+  const tally = () => {
+    const g = {}, sl = {};
+    Object.keys(board).forEach(pid => { const e = live[pid]; g[POS_GROUP[e.p.pos]] = (g[POS_GROUP[e.p.pos]] || 0) + 1; sl[e.fit.slot] = (sl[e.fit.slot] || 0) + 1; });
+    return { g, sl };
+  };
+  let { g: perGroup, sl: perSlot } = tally();
+  const fresh = Object.values(live).filter(e => !board[e.p.id] && e.fit.s >= 6).sort((a, c) => c.fit.s - a.fit.s);
+  let mailed = 0;
+  for (const e of fresh) {
+    const grp = POS_GROUP[e.p.pos], slot = e.fit.slot;
+    let drop = null;
+    if (Object.keys(board).length >= CAP) {
+      drop = Object.keys(board).sort((a, c) => board[a].s - board[c].s)[0];
+      if (!(e.fit.s > board[drop].s + 3)) break;             // list is sorted, so nobody later beats the weakest either
+    }
+    const dg = drop ? POS_GROUP[live[drop].p.pos] : null, ds = drop ? live[drop].fit.slot : null;
+    if ((perGroup[grp] || 0) - (dg === grp ? 1 : 0) >= 4 || (perSlot[slot] || 0) - (ds === slot ? 1 : 0) >= 2) continue;   // keep the board varied
+    if (drop) delete board[drop];
+    board[e.p.id] = { since: G.round, season: G.season, s: e.fit.s, club: e.t.id };
+    ({ g: perGroup, sl: perSlot } = tally());
+    if (!mailed && e.fit.s >= 9) {
+      const p = e.p, t = e.t; mailed++;
+      mail(G, { key: 'ob_' + p.id + '_' + G.season, cat: 'scout', from: 'Chief Scout', p, club: t, status: 'Scouting target', act: 'shortlist',
+        subject: `Scouting Report: ${p.name}`,
+        body: [`Boss, ${p.name} (${p.age}) at ${t.n} would walk into your side at ${slot}.`, scoutWhy(G, p, t).join('; ') + '.'],
+        rows: [['Club', t.n], ['Rating / potential', `${p.rating} / ${potTxt(p)}`], ['Estimated value', money(p.value)], ['Release clause', p.releaseClause ? money(p.releaseClause) : 'None'], ['Contract', `${p.contract} year${p.contract === 1 ? '' : 's'} left`]] });
+    }
+  }
+}
+
+function scoutBoardList(G) {
+  const b = G.scoutBoard || {};
+  return Object.keys(b).map(pid => { const f = findPlayer(G, +pid); return f ? { p: f.p, t: f.t, e: b[pid] } : null; })
+    .filter(Boolean).sort((a, c) => c.e.s - a.e.s);
+}
+
+function scoutBoardHTML() {
+  const me = G.teams[G.myTeam], list = scoutBoardList(G);
+  const tracked = e => { if (e.season !== G.season) return 'tracked since last season'; const w = Math.max(0, G.round - e.since); return w === 0 ? 'new this week' : `tracked ${w} wk`; };
+  const rows = list.map(({ p, t, e }) => {
+    const watched = (G.watchlist || []).includes(p.id);
+    const clauseOk = p.releaseClause && p.releaseClause <= me.budget;
+    const thin = t.squad.filter(x => x.pos === p.pos).length <= minAtPos(p.pos);
+    const outlook = thin ? ['Club reluctant', 'out'] : (p.wantsOut || p.contract <= 1) ? ['Likely to sell', 'xi'] : ['Negotiable', ''];
+    return `<tr>
+      <td><button class="star ${watched ? 'on' : ''}" data-star="${p.id}" title="Keep an eye on him" aria-label="Keep an eye on him">${watched ? '★' : '☆'}</button></td>
+      <td class="txp">${faceSVG(p, 26, t.c1)}<div><b>${esc(p.name)} ${flagSVG(p.nat)}</b> <span class="tag ${outlook[1]}">${outlook[0]}</span><div class="hint" style="max-width:340px;white-space:normal">${tracked(e)} · ${scoutWhy(G, p, t).map(x => esc(x)).join(' · ')}</div></div></td>
+      <td style="white-space:nowrap">${posTag(p.pos)}</td>
+      <td class="num">${p.age}</td>
+      <td class="num">${ratingTag(p.rating)}</td>
+      <td class="num"><b class="potglow">${potTxt(p)}</b></td>
+      <td>${crestHTML(t, 13)} ${esc(t.s)}</td>
+      <td class="num">${money(p.value)}${p.releaseClause ? `<div class="hint">clause ${money(p.releaseClause)}</div>` : ''}</td>
+      <td style="white-space:nowrap"><button class="btn ghost sm" data-pid="${p.id}">View</button> <button class="btn sm" data-buy="${p.id}" data-ask="${p.value}" ${me.budget < p.value * 0.6 ? 'disabled' : ''}>Bid</button>${clauseOk ? ` <button class="btn ghost sm" data-clause="${p.id}">Clause</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="panel"><h3>Scouting board<span class="sub">${list.length} realistic target${list.length === 1 ? '' : 's'} — would improve your XI, and you could actually get them</span></h3>` +
+    (list.length
+      ? `<div class="tw"><table class="tbl txtbl"><thead><tr><th></th><th>Player</th><th>Pos</th><th>Age</th><th>Rat</th><th>Pot</th><th>Club</th><th>Price</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : '<div class="empty">Your scouts have not flagged anyone worth chasing right now. The board refreshes every matchday as budgets, form and squads change.</div>') + `</div>`;
+}
+
+function scoutStripHTML() {
+  const list = scoutBoardList(G).slice(0, 3);
+  if (!list.length) return '';
+  return `<div class="panel"><h3>Your scouts suggest<span class="sub">best fits for your XI right now</span></h3>` +
+    list.map(({ p, t }) => `<div class="prow" style="grid-template-columns:auto 1fr auto auto"><span>${ratingTag(p.rating)}</span>
+      <span class="who"><b>${esc(p.name)} ${flagSVG(p.nat)}</b><small>${p.pos} · ${p.age} · ${esc(t.s)} · ${esc(scoutWhy(G, p, t)[0])}</small></span>
+      <span class="val">${money(p.value)}</span><button class="btn ghost sm" data-pid="${p.id}">View</button></div>`).join('') +
+    `<div class="pad"><button class="btn ghost sm" data-txsec="scout">See the full scouting board</button></div></div>`;
+}
+
 function buyPlayer(G, pid, fee, viaClause, terms) {
   const me = G.teams[G.myTeam], f = findPlayer(G, pid);
   if (!f) return { ok: false, msg: 'He has already moved on.' };
@@ -2672,7 +2892,7 @@ function buyPlayer(G, pid, fee, viaClause, terms) {
   }
   f.t.squad = f.t.squad.filter(p => p.id !== pid);
   f.t.budget += fee; f.t.fin.sales += fee;
-f.p.contract = terms ? terms.years : rint(2, 4); if (terms) f.p.wage = terms.wage; f.p.fee = fee; f.p.joinedSeason = G.season; f.p.wantsOut = false;
+f.p.contract = terms ? terms.years : rint(2, 4); if (terms) f.p.wage = terms.wage; f.p.fee = fee; f.p.joinedSeason = G.season; f.p.wantsOut = false; f.p.releaseClause = null;
   f.p.clubs.push({ id: me.id, from: G.season });
    f.p.reserve = firstTeamFull(me); me.squad.push(f.p);
   me.budget = Math.round((me.budget - fee) * 100) / 100;
@@ -2705,8 +2925,8 @@ p.contract = rint(2, 4); p.wantsOut = false; p.releaseClause = null;
   ensureLineup(me); ensureLineup(buyer);
   logTransfer(G, p, me.id, buyer.id, fee);
   news(G, 'transfer', viaClause ? `${buyer.s} trigger ${p.name}'s release clause and sign him from ${me.s} for ${money(fee)}.` : `${p.name} leaves ${me.s} for ${buyer.s}. Fee: ${money(fee)}.`, { pid: p.id, fromId: me.id, toId: buyer.id });
-  mail(G, { cat: 'leaving', from: 'Chief Executive', p, club: buyer, status: `Sold to ${buyer.s}`, subject: `[Info] Transfer Completed: ${p.name} leaves`,
-    body: [`${p.name} has left ${me.n} and joined ${buyer.n}.`, 'The fee has been added to your transfer budget.'],
+mail(G, { cat: 'leaving', from: 'Chief Executive', p, club: buyer, flag: !!viaClause, status: viaClause ? `Release clause triggered by ${buyer.s}` : `Sold to ${buyer.s}`, subject: viaClause ? `[Alert] Release Clause Triggered: ${p.name} leaves` : `[Info] Transfer Completed: ${p.name} leaves`,
+    body: viaClause ? [`${buyer.n} have paid the release clause in ${p.name}'s contract and the move has gone through — there was no negotiation and no chance to turn it down.`, 'The fee has been added to your transfer budget. If you would rather not leave players exposed like this, remove or raise the clause on his profile next time.'] : [`${p.name} has left ${me.n} and joined ${buyer.n}.`, 'The fee has been added to your transfer budget.'],
     rows: [['Buyer', buyer.n], ['Fee received', money(fee)], ['Transfer budget now', money(me.budget)], ['Wages freed', money(p.wage) + ' a season'], ['This season', `${p.apps} apps, ${p.goals} goals`]] });
   G.pendingBids = (G.pendingBids || []).filter(b => b.pid !== pid); /* other clubs' offers for him are withdrawn */   return { ok: true, msg: `${p.name} sold to ${buyer.s} for ${money(fee)}.` };
 }
