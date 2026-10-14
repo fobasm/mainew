@@ -6142,12 +6142,15 @@ function viewTransfers() {
   </div>
   ${!winOpen ? `<div class="panel"><div class="pad" style="display:flex;justify-content:flex-end"><button class="btn ghost sm" id="skipWindow">Skip to next window</button></div></div>` : ''}`;
 
-  const sections = [['search', 'Player search'], ['fa', 'Free agents'], ['bids', 'Offers' + (bids.length ? ' (' + bids.length + ')' : '')],
+  const sections = [['search', 'Player search'], ['fa', 'Free agents'], ['scout', 'Scouting board' + (Object.keys(G.scoutBoard || {}).length ? ' (' + Object.keys(G.scoutBoard).length + ')' : '')], ['bids', 'Offers' + (bids.length ? ' (' + bids.length + ')' : '')],
     ['sell', 'Sell players'], ['watch', 'Shortlist' + ((G.watchlist || []).length ? ' (' + G.watchlist.length + ')' : '')],
     ['loans', 'Loans'], ['hist', 'Transfer history'], ['top', 'Leaderboards']];
   html += `<div class="txtabs">${sections.map(([k, l]) => `<button class="txtab ${txSection === k ? 'on' : ''}" data-txsec="${k}">${l.replace(/ \((\d+)\)$/, ' <i class="txn">$1</i>')}</button>`).join('')}</div>`;
 
-  if (txSection === 'search' || txSection === 'fa') {
+  if (txSection === 'scout') {
+    html += scoutBoardHTML();
+  } else if (txSection === 'search' || txSection === 'fa') {
+    if (txSection === 'search') html += scoutStripHTML();
     html += `<div class="panel"><div class="chipbar">${['ALL', 'GK', 'DEF', 'MID', 'ATT'].map(p => `<button class="chip" data-tf="${p}" aria-pressed="${txFilter === p}">${p === 'ALL' ? 'Any position' : p}</button>`).join('')}
       ${['ALL', 'U21', '22-28', '29+'].map(a => `<button class="chip" data-txage="${a}" aria-pressed="${txAge === a}">${a === 'ALL' ? 'Any age' : a}</button>`).join('')}
       <select id="txSortSel">${[['rating', 'Highest rated'], ['potential', 'Highest potential'], ['value', 'Most valuable'], ['age', 'Youngest'], ['fit', 'Most likely to join you']]
@@ -6246,7 +6249,7 @@ function viewTransfers() {
     save(); viewTransfers();
   });
   v.querySelectorAll('[data-buy]').forEach(b => b.onclick = e => { e.stopPropagation(); bidModal(+b.dataset.buy, +b.dataset.ask); });
-  v.querySelectorAll('[data-fa]').forEach(b => b.onclick = () => faTermsModal(+b.dataset.fa));
+  v.querySelectorAll('[data-fa]').forEach(b => b.onclick = () => faTermsModal(+b.dataset.fa));   v.querySelectorAll('[data-clause]').forEach(b => b.onclick = () => { const f = findPlayer(G, +b.dataset.clause); if (f && f.p.releaseClause) playerTermsModal(f.p.id, f.p.releaseClause, 3, true); });
   v.querySelectorAll('[data-shop]').forEach(b => b.onclick = () => { const r = shopAround(+b.dataset.shop); toast(r.msg); if (r.ok) { save(); render(); } });
   v.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => sellModal(+b.dataset.sell));
   v.querySelectorAll('[data-rel]').forEach(b => b.onclick = () => txReleaseAsk(+b.dataset.rel));
