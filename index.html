@@ -2685,7 +2685,7 @@ f.p.contract = terms ? terms.years : rint(2, 4); if (terms) f.p.wage = terms.wag
    return { ok: true, msg: `${f.p.name} signs for ${me.s}.${f.p.reserve ? ' Your first team is full, so he starts in the reserves.' : ''}` };
 }
 
-function sellPlayer(G, pid, fee, buyerId) {
+function sellPlayer(G, pid, fee, buyerId, viaClause) {
   const me = G.teams[G.myTeam];
   const p = me.squad.find(x => x.id === pid);
   if (!p) return { ok: false, msg: 'Not in your squad.' };
@@ -2699,12 +2699,12 @@ function sellPlayer(G, pid, fee, buyerId) {
   me.fin.sales += fee;
   buyer.squad.push(p);
   p.clubs.push({ id: buyer.id, from: G.season });
-  p.contract = rint(2, 4); p.wantsOut = false;
+p.contract = rint(2, 4); p.wantsOut = false; p.releaseClause = null;
   buyer.budget = Math.max(0, buyer.budget - fee); buyer.fin.buys += fee;
   me.wageBill = wageOf(me); buyer.wageBill = wageOf(buyer);
   ensureLineup(me); ensureLineup(buyer);
   logTransfer(G, p, me.id, buyer.id, fee);
-  news(G, 'transfer', `${p.name} leaves ${me.s} for ${buyer.s}. Fee: ${money(fee)}.`, { pid: p.id, fromId: me.id, toId: buyer.id });
+  news(G, 'transfer', viaClause ? `${buyer.s} trigger ${p.name}'s release clause and sign him from ${me.s} for ${money(fee)}.` : `${p.name} leaves ${me.s} for ${buyer.s}. Fee: ${money(fee)}.`, { pid: p.id, fromId: me.id, toId: buyer.id });
   mail(G, { cat: 'leaving', from: 'Chief Executive', p, club: buyer, status: `Sold to ${buyer.s}`, subject: `[Info] Transfer Completed: ${p.name} leaves`,
     body: [`${p.name} has left ${me.n} and joined ${buyer.n}.`, 'The fee has been added to your transfer budget.'],
     rows: [['Buyer', buyer.n], ['Fee received', money(fee)], ['Transfer budget now', money(me.budget)], ['Wages freed', money(p.wage) + ' a season'], ['This season', `${p.apps} apps, ${p.goals} goals`]] });
