@@ -3204,7 +3204,8 @@ function buyPlayerWithSwap(G, pid, fee, swapOutPid, terms) {
    that genuinely rates him well above their current option and has reason
    to move now, not just mild admiration — so most weeks most players draw
    nothing at all. */
-const OFFER_EXPIRE_ROUNDS = 5; // a club waiting this many matchdays with no answer walks away function genuineBuyers(p, ownerId) {
+const OFFER_EXPIRE_ROUNDS = 5; // a club waiting this many matchdays with no answer walks away
+function genuineBuyers(p, ownerId) {
   return interestRanking(p, ownerId).filter(x => x.s >= 6.5 && (p.rating - starterRatingAt(x.t, p.pos)) >= 3);
 }
 function generateBids(G) {
