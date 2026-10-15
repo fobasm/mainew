@@ -4102,37 +4102,170 @@ function kitStyleOf(t) {
   return h % 5;
 }
 function bigKitSVG(t, away, size) {
-  const w = size || 200, id = ++KIT_UID;
-  const body = away ? t.c2 : t.c1, trim = away ? t.c1 : t.c2;
-  const clipId = 'bc' + id, styleIdx = kitStyleOf(t);
-  const bodyPath = "M73 33 L44 48 L22 88 L51 103 L51 202 Q110 213 169 202 L169 103 L198 88 L176 48 L147 33 Q110 55 73 33 Z";
+  const w = size || 200;
+  const id = ++KIT_UID;
+  const body = away ? t.c2 : t.c1;
+  const trim = away ? t.c1 : t.c2;
+  const clipId = 'kitClip' + id;
+  const styleIdx = kitStyleOf(t);
+
+  // More realistic football-shirt proportions: broad shoulders,
+  // shaped sleeves, fitted torso and a gently curved hem.
+  const shirt = `
+    M73 32
+    L48 40
+    L29 49
+    L8 88
+    L35 103
+    L49 79
+    L49 199
+    Q110 210 171 199
+    L171 79
+    L185 103
+    L212 88
+    L191 49
+    L172 40
+    L147 32
+    Q110 52 73 32 Z`;
+
   let pattern = '';
-  if (styleIdx === 1) { let s = ''; for (let x = 62; x < 160; x += 14) s += `<rect x="${x}" y="29" width="7" height="184" fill="${trim}" opacity=".85"/>`; pattern = `<g clip-path="url(#${clipId})">${s}</g>`; }
-  else if (styleIdx === 2) { let s = ''; for (let y = 48; y < 200; y += 20) s += `<rect x="0" y="${y}" width="220" height="10" fill="${trim}" opacity=".85"/>`; pattern = `<g clip-path="url(#${clipId})">${s}</g>`; }
-  else if (styleIdx === 3) { pattern = `<g clip-path="url(#${clipId})"><path d="M40 60 L88 60 L150 195 L102 195Z" fill="${trim}" opacity=".9"/></g>`; }
-  else if (styleIdx === 4) { pattern = `<g clip-path="url(#${clipId})"><rect x="110" y="0" width="110" height="220" fill="${trim}" opacity=".85"/></g>`; }
-  return `<svg width="${w}" height="${w}" viewBox="0 0 220 220" aria-hidden="true">
+
+  if (styleIdx === 1) {
+    let lines = '';
+    for (let x = 60; x < 170; x += 18) {
+      lines += `<rect x="${x}" y="25" width="9" height="185"
+        fill="${trim}" opacity=".92"/>`;
+    }
+    pattern = lines;
+  } else if (styleIdx === 2) {
+    let lines = '';
+    for (let y = 64; y < 200; y += 28) {
+      lines += `<rect x="0" y="${y}" width="220" height="12"
+        fill="${trim}" opacity=".82"/>`;
+    }
+    pattern = lines;
+  } else if (styleIdx === 3) {
+    pattern = `
+      <path d="M42 56 L81 56 L150 198 L111 205 Z"
+        fill="${trim}" opacity=".9"/>
+      <path d="M32 83 L43 64 L101 201 L83 204 Z"
+        fill="#fff" opacity=".08"/>`;
+  } else if (styleIdx === 4) {
+    pattern = `
+      <path d="M110 20 H230 V215 H110 Z"
+        fill="${trim}" opacity=".88"/>`;
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg"
+      width="${w}" height="${w}" viewBox="0 0 220 220"
+      role="img" aria-label="${away ? 'Away' : 'Home'} football shirt">
     <defs>
-      <linearGradient id="kbb${id}" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="${shade(body, 26)}"/><stop offset="45%" stop-color="${body}"/><stop offset="1" stop-color="${shade(body, -30)}"/>
+      <linearGradient id="kitBody${id}" x1="0" y1="0" x2="1" y2=".4">
+        <stop offset="0" stop-color="${shade(body, 24)}"/>
+        <stop offset=".22" stop-color="${body}"/>
+        <stop offset=".52" stop-color="${shade(body, 8)}"/>
+        <stop offset=".78" stop-color="${body}"/>
+        <stop offset="1" stop-color="${shade(body, -34)}"/>
       </linearGradient>
-      <linearGradient id="ktt${id}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="${shade(trim, 18)}"/><stop offset="1" stop-color="${shade(trim, -20)}"/>
+
+      <linearGradient id="kitTrim${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${shade(trim, 20)}"/>
+        <stop offset=".5" stop-color="${trim}"/>
+        <stop offset="1" stop-color="${shade(trim, -24)}"/>
       </linearGradient>
-      <clipPath id="${clipId}"><path d="${bodyPath}"/></clipPath>
+
+      <linearGradient id="kitLight${id}" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#fff" stop-opacity=".22"/>
+        <stop offset=".35" stop-color="#fff" stop-opacity=".035"/>
+        <stop offset=".72" stop-color="#000" stop-opacity=".015"/>
+        <stop offset="1" stop-color="#000" stop-opacity=".2"/>
+      </linearGradient>
+
+      <linearGradient id="kitFold${id}" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#000" stop-opacity=".14"/>
+        <stop offset=".15" stop-color="#fff" stop-opacity=".06"/>
+        <stop offset=".5" stop-color="#000" stop-opacity=".035"/>
+        <stop offset=".82" stop-color="#fff" stop-opacity=".055"/>
+        <stop offset="1" stop-color="#000" stop-opacity=".13"/>
+      </linearGradient>
+
+      <clipPath id="${clipId}">
+        <path d="${shirt}"/>
+      </clipPath>
     </defs>
-    <path d="${bodyPath}" fill="url(#kbb${id})" stroke="rgba(0,0,0,.4)" stroke-width="1.4"/>
-    ${pattern}
-    <path d="M51 103 L51 202 Q80 209 110 211 L110 103Z" fill="#fff" opacity=".07"/>
-    <path d="M110 103 L110 211 Q140 209 169 202 L169 103Z" fill="#000" opacity=".09"/>
-    <path d="M73 33 Q110 64 147 33 L137 29 Q110 50 83 29 Z" fill="url(#ktt${id})"/>
-    <path d="M81 39 Q110 70 139 39 L139 48 Q110 77 81 48 Z" fill="url(#ktt${id})"/>
-    <path d="M22 88 L44 48 L59 40 L39 84 Z" fill="url(#ktt${id})"/>
-    <path d="M198 88 L176 48 L161 40 L181 84 Z" fill="url(#ktt${id})"/>
-    <rect x="51" y="187" width="118" height="15" fill="url(#ktt${id})" opacity=".9"/>
-    <path d="M73 33 L44 48 L22 88 L33 94 L54 51 Z" fill="#fff" opacity=".12"/>
+
+    <!-- Main shirt body -->
+    <path d="${shirt}" fill="url(#kitBody${id})"
+      stroke="rgba(0,0,0,.58)" stroke-width="1.5"
+      stroke-linejoin="round"/>
+
+    <g clip-path="url(#${clipId})">
+      ${pattern}
+
+      <!-- Natural fabric highlights and side shadows -->
+      <rect x="0" y="25" width="220" height="190"
+        fill="url(#kitLight${id})"/>
+      <rect x="0" y="25" width="220" height="190"
+        fill="url(#kitFold${id})"/>
+
+      <!-- Subtle fabric folds -->
+      <path d="M53 82 Q62 116 55 157 L60 196"
+        fill="none" stroke="#fff" stroke-opacity=".09"
+        stroke-width="2.5"/>
+      <path d="M166 82 Q158 120 165 155 L160 196"
+        fill="none" stroke="#000" stroke-opacity=".12"
+        stroke-width="3"/>
+      <path d="M78 53 Q110 61 142 53"
+        fill="none" stroke="#fff" stroke-opacity=".1"
+        stroke-width="1.5"/>
+
+      <!-- Side seams -->
+      <path d="M49 88 L49 198 M171 88 L171 198"
+        fill="none" stroke="#000" stroke-opacity=".22"
+        stroke-width="1.2"/>
+
+      <!-- Sleeve trim -->
+      <path d="M9 86 L35 99 L40 90 L16 76 Z"
+        fill="url(#kitTrim${id})"/>
+      <path d="M211 86 L185 99 L180 90 L204 76 Z"
+        fill="url(#kitTrim${id})"/>
+
+      <!-- Bottom hem -->
+      <path d="M50 194 Q110 205 170 194 L171 201
+        Q110 212 49 201 Z"
+        fill="url(#kitTrim${id})"/>
+
+      <path d="M53 199 Q110 208 167 199"
+        fill="none" stroke="#fff" stroke-opacity=".24"
+        stroke-width="1"/>
+    </g>
+
+    <!-- Ribbed collar -->
+    <path d="M73 32 Q110 52 147 32
+      L140 39 Q110 57 80 39 Z"
+      fill="url(#kitTrim${id})"
+      stroke="rgba(0,0,0,.28)" stroke-width=".8"/>
+
+    <path d="M82 37 Q110 54 138 37"
+      fill="none" stroke="#fff" stroke-opacity=".3"
+      stroke-width="1"/>
+
+    <!-- Shoulder seams -->
+    <path d="M73 34 L48 43 M147 34 L172 43"
+      fill="none" stroke="#fff" stroke-opacity=".22"
+      stroke-width="1.2"/>
+
+    <!-- Sleeve and torso seam details -->
+    <path d="M35 99 L49 79 M185 99 L171 79"
+      fill="none" stroke="#000" stroke-opacity=".3"
+      stroke-width="1"/>
+
+    <!-- Small inner-collar label -->
+    <path d="M97 42 Q110 47 123 42 L120 48 Q110 51 100 48 Z"
+      fill="#000" opacity=".2"/>
   </svg>`;
 }
+
 function kitSVG(t, away, size) {
   const s = size || 76, id = ++KIT_UID;
   const body = away ? t.c2 : t.c1;
