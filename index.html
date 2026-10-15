@@ -641,7 +641,7 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
     <div class="view" id="v-africa"></div>
     <div class="view" id="v-nations"></div>     <div class="view" id="v-world"></div>     <div class="view" id="v-clubrank"></div>     <div class="view" id="v-commercial"></div>     <div class="view" id="v-stadium"></div>     <div class="view" id="v-board"></div>     <div class="view" id="v-legends"></div>     <div class="view" id="v-stadium"></div>
     <div class="view" id="v-calendar"></div>
-    <div class="view" id="v-info"></div>
+    <div class="view" id="v-info"></div>     <div class="view" id="v-getadded"></div>
     <div class="view" id="v-createclub"></div>
     <div class="view" id="v-manager"></div>
     <div class="view" id="v-otherclubs"></div>     <div class="view" id="v-watchlist"></div>
@@ -4814,7 +4814,7 @@ const MENU_SECTIONS = [
   ['Squad', [['squad','Squad & Tactics'], ['youth','Academy & Training'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist']]],
   ['Competitions', [['cups','Cups'],['africa','Continental football'],['nations','Nations'],['world','World players'],['clubrank','Club rankings'],['stats','Player Stats']]],
   ['Club', [['club','Club & Finances'],['commercial','Commercial'],['stadium','Stadium & tickets'],['board','Board & objectives'], ['trophies','Trophy room'],['legends','MM Legends'],['manager','Manager'],['news','News']]],
-  ['More', [['careerfile','Save & Load'],['soundsettings','Music & sound effects'],['info','How to play']]]
+  ['More', [['careerfile','Save & Load'],['soundsettings','Music & sound effects'],['info','How to play'],['getadded','Get added to the game']]]
 ];
 function navLabel() { for (const sec of MENU_SECTIONS) for (const it of sec[1]) if (it[0] === tab) return it[1]; return 'Menu'; } function updateNavToggle() { const t = document.querySelector('#sideNav .navToggle'); if (t) t.innerHTML = '<span>☰ Menu</span><b>' + esc(navLabel()) + '</b>'; } function closeNavMenu() { const c = document.querySelector('#sideNav'); if (c) c.classList.remove('open'); } function navLabel() { for (const sec of MENU_SECTIONS) for (const it of sec[1]) if (it[0] === tab) return it[1]; return 'Menu'; } function updateNavToggle() { const t = document.querySelector('#sideNav .navToggle'); if (t) t.innerHTML = '<span>☰ Menu</span><b>' + esc(navLabel()) + '</b>'; } function closeNavMenu() { const c = document.querySelector('#sideNav'); if (c) c.classList.remove('open'); } function buildSideNav() {
   const c = $('#sideNav'); if (!c) return;
@@ -4876,7 +4876,7 @@ function render() { try { updateNavToggle(); closeNavMenu(); } catch (e) { } try
   const dispatch = { match: viewMatch, table: viewTable, fixtures: viewFixtures, squad: viewSquadHub, tactics: viewSquadHub, finances: viewFinances, trophies: viewTrophies,
      transfers: viewTransfers, youth: viewYouthHub, training: viewYouthHub, inbox: viewInbox, stats: viewStats, news: viewNews,
       cups: viewCups, africa: viewAfrica, nations: viewNations, world: viewWorld, clubrank: viewClubRank, commercial: viewCommercial, stadium: viewStadium, board: viewBoard, legends: viewLegends, stadium: viewStadium, calendar: viewCalendar, watchlist: viewWatchlist,
-     info: viewInfo, createclub: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub };
+     <div class="view" id="v-info"></div>     <div class="view" id="v-getadded"></div>: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub };
   try {
     (dispatch[tab] || viewMatch)();
   } catch (err) {
@@ -7360,6 +7360,50 @@ const pv = $('#calPrev'); if (pv) pv.onclick = () => { calM--; if (calM < 0) { c
 }
 
 /* ---------------- how to play ---------------- */
+const MM_CONTACT = 'mzansimanager@gmail.com';
+function viewGetAdded() {
+  const v = $('#v-getadded');
+  const subj = encodeURIComponent('Add me to Mzansi Manager');
+  const body = encodeURIComponent('Hi Mzansi Manager team,\n\nI would like to be added to the game as a player.\n\nFull name:\nAge:\nCountry / city:\nPosition(s):\nCurrent club (if any):\nStrengths (pace, passing, shooting, defending...):\nWeak foot:\nHeight:\nLinks (video, Instagram, etc.):\n\nI attach a photo of myself.\n');
+  const href = `mailto:${MM_CONTACT}?subject=${subj}&body=${body}`;
+  const step = (n, t, d) => `<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0">
+      <span style="flex:none;width:30px;height:30px;border-radius:50%;background:var(--gold);color:#111;font:700 16px var(--head);display:flex;align-items:center;justify-content:center">${n}</span>
+      <div><b>${t}</b><div class="hint" style="margin-top:2px">${d}</div></div></div>`;
+  v.innerHTML = `<div class="panel">
+      <h3>Want to play in Mzansi Manager?<span class="sub">open to everyone</span></h3>
+      <div class="pad" style="font-size:14px;line-height:1.7">
+        <p style="margin:0 0 10px;font-size:16px"><b style="color:var(--gold)">Become a player in the game.</b></p>
+        <p style="margin:0 0 10px">Love football and want to see yourself in Mzansi Manager? Reach out and we will build you a player profile with your own <b>rating, position, potential and attributes</b>. You can be from anywhere, any town, any country, any level.</p>
+        <p style="margin:0 0 14px">If you are interested, email us at <a href="${href}" style="color:var(--teal);font-weight:700">${MM_CONTACT}</a>.</p>
+        <div style="display:flex;gap:9px;flex-wrap:wrap">
+          <a class="btn gold" href="${href}" style="text-decoration:none;display:inline-block">Email us now</a>
+          <button class="btn ghost sm" id="gaCopy">Copy email address</button>
+        </div>
+      </div></div>
+    <div class="panel"><h3>How it works</h3><div class="pad">
+      ${step(1, 'Send us an email', 'Use the button above, or write to ' + MM_CONTACT + ' yourself.')}
+      ${step(2, 'Tell us about yourself', 'Your name, age, where you are from, your position and the kind of player you are.')}
+      ${step(3, 'We create your profile', 'You get a rating, potential and attributes, plus a face and a club in the game.')}
+      ${step(4, 'Find yourself in the game', 'Look for yourself on the World players tab or in your club squad.')}
+    </div></div>
+    <div class="panel"><h3>What to include in your email</h3><div class="pad" style="font-size:14px;line-height:1.8">
+      <ul style="margin:0;padding-left:20px">
+        <li>Full name and age</li>
+        <li>Country and city or township</li>
+        <li>Position (and any other positions you can play)</li>
+        <li>Your club or team, if you have one</li>
+        <li>Your strengths, such as pace, passing, shooting or defending</li>
+        <li>A clear photo of yourself, so we can make your face in the game</li>
+        <li>Links to match footage or social media, if you have them</li>
+      </ul>
+      <p class="hint" style="margin:12px 0 0">Ratings are set by the Mzansi Manager team. Everyone is welcome, whether you play for fun, for a local side or professionally. By emailing a photo you agree to it being used to create your in-game profile.</p>
+    </div></div>`;
+  const c = $('#gaCopy');
+  if (c) c.onclick = () => {
+    const done = () => toast('Email address copied.');
+    try { navigator.clipboard.writeText(MM_CONTACT).then(done, () => toast(MM_CONTACT)); } catch (e) { toast(MM_CONTACT); }
+  };
+}
 function viewInfo() {
   const v = $('#v-info');
   v.innerHTML = `<div class="mb">
