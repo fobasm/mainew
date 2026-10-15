@@ -5995,14 +5995,14 @@ function viewWatchlist() {
       : `<div class="empty">You're not keeping an eye on anyone yet. Open a player's profile and tap "Keep an eye on him" to add them here.</div>`}</div>`;
   bindPlayerRows(v);
 }
-function playerModal(pid) {
+function loanSpellsOf(p, t) {   return (p.clubs || []).filter(c => c.loan).map(c => {     const club = teamById(G, c.id);     if (!club) return null;     const current = !!(p.loan && t && club.id === t.id);     const stat = current ? { apps: p.apps, g: p.goals, a: p.assists, rating: Math.round(p.rating) } : (p.career || []).find(k => k.club === c.id && k.season === c.from);     return { club, season: c.from, stat, current };   }).filter(Boolean); } function playerModal(pid) {
   const found = findPlayer(G, pid) || (G.freeAgents.find(p => p.id === pid) ? { p: G.freeAgents.find(p => p.id === pid), t: null } : null)
     || (me().youth.find(p => p.id === pid) ? { p: me().youth.find(p => p.id === pid), t: me() } : null);
   if (!found) return;
   const p = found.p, t = found.t, isMine = t && t.id === G.myTeam;   if (t) ensureKitNumbers(t);
   const inYouth = isMine && me().youth.some(y => y.id === p.id);
   const listing = G.market.find(m => m.pid === p.id);
-  const clubs = (p.clubs || []).map(c => { const cc = teamById(G, c.id); return cc ? `${esc(cc.s)}${c.loan ? ' (loan)' : ''} <span class="hint">(${c.from})</span>` : null; }).filter(Boolean).join(' → ') || '—';   const watched = isWatched(p.id);   const prevChips = (p.clubs || []).slice(0, -1).map(c => { const cc = teamById(G, c.id); return cc ? `<span class="chip">${esc(cc.s)}${c.loan ? ' (loan)' : ''} <span class="hint">${c.from}</span></span>` : ''; }).join(' ');
+  const clubs = (p.clubs || []).map(c => { const cc = teamById(G, c.id); return cc ? `${esc(cc.s)}${c.loan ? ' (loan)' : ''} <span class="hint">(${c.from})</span>` : null; }).filter(Boolean).join(' → ') || '—';   const watched = isWatched(p.id);   const prevChips = (p.clubs || []).slice(0, -1).map(c => { const cc = teamById(G, c.id); return cc ? `<span class="chip">${esc(cc.s)}${c.loan ? ' (loan)' : ''} <span class="hint">${c.from}</span></span>` : ''; }).join(' ');   const loanSpells = loanSpellsOf(p, t);
   const careerRows = (p.career || []).slice().reverse().slice(0, 8).map(c => {
     const cc = teamById(G, c.club); if (!cc) return '';
     return `<tr><td>${seasonLabel(c.season)}</td><td>${esc(cc.s)}</td><td class="num">${c.apps}</td><td class="num">${c.g}</td><td class="num">${c.a}</td><td class="num">${c.rating}</td></tr>`;
@@ -6066,7 +6066,7 @@ function playerModal(pid) {
       <p class="hint" style="margin:0 0 10px">Add ${esc(p.name)} to your shortlist so you can find him again when you're ready to make a move.</p>
       <button class="btn ${watched ? 'gold' : ''} sm" id="pmWatch">${watched ? '★ On your shortlist — remove' : '☆ Keep an eye on him'}</button>
     </div></div>` : ''}
-    <div class="panel"><h3>Previous clubs</h3><div class="pad" style="display:flex;gap:6px;flex-wrap:wrap">${prevChips || '<span class="hint">No previous clubs — home-grown.</span>'}</div></div>
+    <div class="panel"><h3>Previous clubs</h3><div class="pad" style="display:flex;gap:6px;flex-wrap:wrap">${prevChips || '<span class="hint">No previous clubs — home-grown.</span>'}</div></div>     ${loanSpells.length ? `<div class="panel"><h3>Loan spells<span class="sub">${loanSpells.length} loan${loanSpells.length === 1 ? '' : 's'}</span></h3>       ${loanSpells.map(s => `<div class="prow" style="grid-template-columns:auto 1fr auto">${crestHTML(s.club, 24)}         <span class="who"><b>${esc(s.club.n)}</b><small>${seasonLabel(s.season)}${s.current ? ' · current' : ''}</small></span>         <span class="val">${s.stat ? `${s.stat.apps} apps · ${s.stat.g}g ${s.stat.a}a` : 'No minutes yet'}</span></div>`).join('')}</div>` : ''}
     <p style="margin:12px 0 4px;color:var(--faint);font-size:12.5px">This season: ${p.apps} apps, ${p.goals} goals, ${p.assists} assists${POS_GROUP[p.pos] === 'GK' ? `, ${p.cs} clean sheets` : ''}${(p.yellow || p.red) ? `, ${p.yellow || 0} yellow and ${p.red || 0} red cards` : ''}.</p>
     ${p.releaseClause ? `<p style="font-size:13px;color:var(--dim)">Release clause: <b style="color:var(--ink)">${money(p.releaseClause)}</b>${!isMine ? ` <button class="btn sm" id="pmClause" style="margin-left:6px">Trigger clause</button>` : ` <span class="hint" style="margin-left:6px">${clauseThreatText(p)}</span>`}</p>` : ''}
     ${listing ? `<p style="font-size:13px;color:var(--dim)">Listed at <b>${money(listing.ask)}</b>. Interested: ${listing.interest.map(i => esc(G.teams[i].s)).join(', ') || 'nobody yet'}.</p>` : ''}
