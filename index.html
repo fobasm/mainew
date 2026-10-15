@@ -3082,7 +3082,7 @@ function pickSwapOffer(buyer, targetPlayer, totalValue) {
 function makeBid(buyer, p) {
   const totalValue = Math.round(p.value * (0.8 + rnd() * 0.85) * 100) / 100;
   const swap = pickSwapOffer(buyer, p, totalValue);
-  const bid = { pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: buyer.id, fee: capToClause(p, Math.round(p.value * (0.8 + rnd() * 0.85) * 100) / 100) };
+  const bid = { pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: buyer.id, fee: capToClause(p, Math.round(p.value * (0.8 + rnd() * 0.85) * 100) / 100), round: G.round };
   if (swap) {
     const swapCredit = Math.round(swap.value * 0.9 * 100) / 100;
     bid.fee = Math.max(0, Math.round((totalValue - swapCredit) * 100) / 100);
@@ -3137,7 +3137,7 @@ function buyPlayerWithSwap(G, pid, fee, swapOutPid, terms) {
    that genuinely rates him well above their current option and has reason
    to move now, not just mild admiration — so most weeks most players draw
    nothing at all. */
-function genuineBuyers(p, ownerId) {
+const OFFER_EXPIRE_ROUNDS = 5; // a club waiting this many matchdays with no answer walks away function genuineBuyers(p, ownerId) {
   return interestRanking(p, ownerId).filter(x => x.s >= 6.5 && (p.rating - starterRatingAt(x.t, p.pos)) >= 3);
 }
 function generateBids(G) {
@@ -3199,7 +3199,7 @@ function makeLoanOffer(club, p) {
   const need = p.rating - starterRatingAt(club, p.pos);
   let wageShare = 0.4 + Math.min(0.35, Math.max(0, need) * 0.03) + (rnd() - 0.5) * 0.1;
   wageShare = Math.max(0.25, Math.min(0.85, Math.round(wageShare * 20) / 20));
-  return { pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: club.id, seasons, wageShare };
+  return { pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: club.id, seasons, wageShare, round: G.round };
 }
 function generateLoanOffers(G) {
   const me = G.teams[G.myTeam], offers = [];
@@ -4797,8 +4797,8 @@ function afterRound() {
   updateScouting(G);
   updateOutgoingScouting(G);
 const bids = generateBids(G);  bids.forEach(b => {     const pl = me().squad.find(x => x.id === b.pid), buyer = G.teams[b.from]; if (!pl || !buyer) return;     mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Offer received', flag: true, subject: `Transfer Offer: ${b.name}`,       body: [`${buyer.n} have bid ${money(b.fee)} for ${b.name}.`, `His estimated value is ${money(pl.value)}. Respond to the offer when it appears, or turn it down.`],       rows: [['Bidder', buyer.n], ['Offer', money(b.fee)], ['Estimated value', money(pl.value)], ['Contract', `${pl.contract} year${pl.contract === 1 ? '' : 's'} left`]] });   });   const loanOffers = generateLoanOffers(G);  loanOffers.forEach(o => {     const pl = me().squad.find(x => x.id === o.pid), buyer = G.teams[o.from]; if (!pl || !buyer) return;     mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Loan offer received', flag: true, subject: `Loan Offer: ${o.name}`,       body: [`${buyer.n} would like to take ${o.name} on loan for ${o.seasons} season${o.seasons === 1 ? '' : 's'}.`, `They would cover ${Math.round(o.wageShare * 100)}% of his wages while he's there. Respond to the offer when it appears, or turn it down.`],       rows: [['Club', buyer.n], ['Length', `${o.seasons} season${o.seasons === 1 ? '' : 's'}`], ['Wage share paid by them', Math.round(o.wageShare * 100) + '%']] });   });   try {     const un = unreadCount(G), fresh = un - (G.lastUnread || 0);     if (fresh > 0) toast(`✉ ${fresh} new message${fresh === 1 ? '' : 's'} in your inbox`);     G.lastUnread = un;   } catch (e) { }
-  G.pendingBids = (G.pendingBids || []).concat(bids).slice(-15);
-  G.pendingLoanOffers = (G.pendingLoanOffers || []).concat(loanOffers).slice(-15);
+G.pendingBids = (G.pendingBids || []).concat(bids).filter(b => b.round == null || G.round - b.round < OFFER_EXPIRE_ROUNDS).slice(-15);
+  G.pendingLoanOffers = (G.pendingLoanOffers || []).concat(loanOffers).filter(o => o.round == null || G.round - o.round < OFFER_EXPIRE_ROUNDS).slice(-15);
   fxRound = Math.max(0, G.round - 1);
   if (!G.finished && G.round >= 12 && rnd() < 0.05) {
     const offers = jobOffers(G);
@@ -6343,7 +6343,7 @@ function viewTransfers() {
     const r = sellPlayer(G, bid.pid, bid.fee, bid.from);
     toast(r.msg); if (r.ok) { G.pendingBids.splice(i, 1); save(); render(); }
   });
-  v.querySelectorAll('[data-reject]').forEach(b => b.onclick = () => { G.pendingBids.splice(+b.dataset.reject, 1); save(); render(); });   bindOfferButtons(v);
+  v.querySelectorAll('[data-reject]').forEach(b => b.onclick = () => { G.pendingBids.splice(+b.dataset.reject, 1); save(); render(); });   bindOfferButtons(v);   bindLoanOfferButtons(v);
   v.querySelectorAll('[data-recall]').forEach(b => b.onclick = () => { const r = recallLoan(G, +b.dataset.recall); toast(r.msg); if (r.ok) { save(); render(); } });
   v.querySelectorAll('[data-loanout]').forEach(b => b.onclick = () => { const r = loanOut(G, +b.dataset.loanout, 1); toast(r.msg); if (r.ok) { save(); render(); } });
   bindPlayerRows(v);
