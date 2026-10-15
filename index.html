@@ -3661,18 +3661,22 @@ function askForRaise(G) {
   return { ok: true, wage };
 }
 function jobOffers(G) {
+  // Unsolicited approaches only — never a step up to a better division than
+  // the one you're already in. You earn promotion on the pitch, not a call
+  // from an agent. A club below you needs to be clearly punching above its
+  // own division's weight to make the leap worth it.
   const my = G.teams[G.myTeam], rep = G.manager.rep || 40;
-  if (rep < 40) return [];
-  const stepUpOk = rep >= 55 && my.tier > 0;
+  if (rep < 58) return [];
+  if (G.round - (G.lastJobOfferRound || -99) < 10) return [];
   const cands = G.teams.filter(t => {
     if (t.id === G.myTeam) return false;
-    if (t.tier === my.tier) return t.rep > my.rep + 0.4;
-    if (stepUpOk && t.tier === my.tier - 1) return t.rep <= (rep / 100) * 7 + 3.2;
-    return false;
+    if (t.tier < my.tier) return false;
+    const gap = t.tier > my.tier ? 3.5 : 2.5;
+    return t.rep > my.rep + gap;
   });
   if (!cands.length) return [];
   shuffle(cands);
-  return cands.slice(0, rnd() < 0.5 ? 1 : 2).map(t => ({ id: t.id, wage: Math.round(t.rep * 1.4 * 10) / 10 }));
+  return cands.slice(0, rnd() < 0.7 ? 1 : 2).map(t => ({ id: t.id, wage: Math.round(t.rep * 1.4 * 10) / 10 }));
 }
 function rescueOffers(G) {
   const my = G.teams[G.myTeam];
@@ -4800,10 +4804,10 @@ const bids = generateBids(G);  bids.forEach(b => {     const pl = me().squad.fin
 G.pendingBids = (G.pendingBids || []).concat(bids).filter(b => b.round == null || G.round - b.round < OFFER_EXPIRE_ROUNDS).slice(-15);
   G.pendingLoanOffers = (G.pendingLoanOffers || []).concat(loanOffers).filter(o => o.round == null || G.round - o.round < OFFER_EXPIRE_ROUNDS).slice(-15);
   fxRound = Math.max(0, G.round - 1);
-  if (!G.finished && G.round >= 12 && rnd() < 0.05) {
+if (!G.finished && G.round >= 16 && rnd() < 0.025) {
     const offers = jobOffers(G);
     if (offers.length) {
-      G.pendingJobOffers = offers; G.jobOffersSeen = false;
+      G.pendingJobOffers = offers; G.jobOffersSeen = false; G.lastJobOfferRound = G.round;
 mail(G, { cat: 'career', from: 'Your Agent', flag: true, subject: 'Job Offer: clubs want to talk',
         body: [`${offers.map(o => G.teams[o.id].n).join(' and ')} would like to speak to you about their managerial vacancy.`, 'The offer will be put to you on your next matchday.'] });
     }
