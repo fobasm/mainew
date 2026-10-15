@@ -4876,7 +4876,7 @@ function render() { try { updateNavToggle(); closeNavMenu(); } catch (e) { } try
   const dispatch = { match: viewMatch, table: viewTable, fixtures: viewFixtures, squad: viewSquadHub, tactics: viewSquadHub, finances: viewFinances, trophies: viewTrophies,
      transfers: viewTransfers, youth: viewYouthHub, training: viewYouthHub, inbox: viewInbox, stats: viewStats, news: viewNews,
       cups: viewCups, africa: viewAfrica, nations: viewNations, world: viewWorld, clubrank: viewClubRank, commercial: viewCommercial, stadium: viewStadium, board: viewBoard, legends: viewLegends, stadium: viewStadium, calendar: viewCalendar, watchlist: viewWatchlist,
-     <div class="view" id="v-info"></div>     <div class="view" id="v-getadded"></div>: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub };
+     info: viewInfo, getadded: viewGetAdded, createclub: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub };
   try {
     (dispatch[tab] || viewMatch)();
   } catch (err) {
