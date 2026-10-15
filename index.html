@@ -1504,7 +1504,7 @@ function newGame(clubIndex, manager, seed) {
     v: 2, season, teams, myTeam: clubIndex,
     manager: manager || { name: 'Coach', avatar: 'mgr-01' },
     tables: [], fixtures: [], round: 0, curDay: 0, cup: null,
-    news: [], market: [], freeAgents: [], transferLog: [], pendingBids: [],
+    news: [], market: [], freeAgents: [], transferLog: [], pendingBids: [], pendingLoanOffers: [],
     records: { seasons: [] }, finished: false, liveMode: true, watchlist: []
   };
   G.manager.rep = 40; G.manager.seasons = 0; G.manager.trophies = 0;
@@ -3132,30 +3132,112 @@ function buyPlayerWithSwap(G, pid, fee, swapOutPid, terms) {
   }
   return res;
 }
+/* Interested clubs is a broad, flavour-text "who's admiring him" list for
+   the player profile. An actual bid needs a tighter bar than that — a club
+   that genuinely rates him well above their current option and has reason
+   to move now, not just mild admiration — so most weeks most players draw
+   nothing at all. */
+function genuineBuyers(p, ownerId) {
+  return interestRanking(p, ownerId).filter(x => x.s >= 6.5 && (p.rating - starterRatingAt(x.t, p.pos)) >= 3);
+}
 function generateBids(G) {
+  if (!inTransferWindow(G)) return []; // clubs don't submit formal bids outside the window — scouting continues, offers don't
   const me = G.teams[G.myTeam], bids = [];
   me.squad.forEach(p => {
-    const interested = interestedClubs(p, me.id, 6);
-    const interest = interested.length;
-    const base = p.wantsOut ? 0.22 : 0.05;
-    const interestBoost = Math.min(0.18, interest * 0.045);
-    const longShot = interest ? 1 : 0.35;
-    const chance = (base + interestBoost + (p.rating > 78 ? 0.05 : 0)) * longShot;
+    const suitors = genuineBuyers(p, me.id);
+    const interest = suitors.length;
+    if (!interest) return; // nobody seriously in for him this week — no offer, full stop
+    const base = p.wantsOut ? 0.16 : 0.035;
+    const interestBoost = Math.min(0.12, interest * 0.03);
+    const chance = base + interestBoost + (p.rating > 78 ? 0.04 : 0);
     if (rnd() < chance) {
-      const buyerId = pickBuyer(G, p), buyer = G.teams[buyerId];
+      const buyerId = wpick(suitors, x => Math.max(0.5, x.s)).t.id, buyer = G.teams[buyerId];
       bids.push(makeBid(buyer, p));
       // A genuinely hot prospect can draw a second, rival bid in the same
       // window — a real bidding war rather than always a single lone offer.
-      if (interest >= 3 && rnd() < 0.3) {
-        const rivals = interested.filter(t => t.id !== buyerId);
+      if (interest >= 3 && rnd() < 0.25) {
+        const rivals = suitors.filter(x => x.t.id !== buyerId);
         if (rivals.length) {
-          const rival = pick(rivals);
+          const rival = wpick(rivals, x => Math.max(0.5, x.s)).t;
           bids.push(makeBid(rival, p));
         }
       }
     }
   });
   return bids.slice(0, 6);
+}
+/* ---------------- loan offers (incoming) ----------------
+   Clubs sometimes come asking to borrow a player who isn't nailed on in
+   your first XI — young squad depth, reserves, fringe men — never your
+   captain or a key starter. Genuine need only, same as transfer bids:
+   it's entirely possible a week passes with no loan interest at all. */
+function loanEligible(t, p) {
+  if (p.loan) return false;
+  if (t.captainId === p.id || t.viceCaptainId === p.id) return false;
+  const inXI = (t.lineup || []).includes(p.id);
+  return p.reserve || !inXI || p.age <= 21;
+}
+function loanInterestRanking(p, ownerId) {
+  const owner = G.teams[ownerId], ptier = owner.tier;
+  const windowOpen = inTransferWindow(G);
+  const out = [];
+  for (const t of G.teams) {
+    if (t.id === ownerId || t.squad.length >= 30) continue;
+    if (Math.abs(t.tier - ptier) > 2) continue;
+    const d = p.rating - starterRatingAt(t, p.pos);
+    if (d < -4) continue;
+    if (p.nat !== 'ZA' && t.squad.filter(pl => pl.nat !== 'ZA').length >= MAX_FOREIGN) continue;
+    let s = d + (t.tier > ptier ? 2 : 0);
+    s += (hashS(p.id + '_loan_' + t.id + '_' + G.round) - 0.5) * 6;
+    if (!windowOpen) s -= 4;
+    out.push({ t, s });
+  }
+  return out.filter(x => x.s >= 1).sort((a, b) => b.s - a.s);
+}
+function makeLoanOffer(club, p) {
+  const seasons = rnd() < 0.25 ? 2 : 1;
+  const need = p.rating - starterRatingAt(club, p.pos);
+  let wageShare = 0.4 + Math.min(0.35, Math.max(0, need) * 0.03) + (rnd() - 0.5) * 0.1;
+  wageShare = Math.max(0.25, Math.min(0.85, Math.round(wageShare * 20) / 20));
+  return { pid: p.id, name: p.name, rating: p.rating, pos: p.pos, nat: p.nat, from: club.id, seasons, wageShare };
+}
+function generateLoanOffers(G) {
+  const me = G.teams[G.myTeam], offers = [];
+  if (!inTransferWindow(G)) return offers;
+  me.squad.forEach(p => {
+    if (!loanEligible(me, p)) return;
+    const interested = loanInterestRanking(p, me.id).slice(0, 6).map(x => x.t);
+    if (!interested.length) return;
+    const chance = Math.min(0.3, 0.08 + interested.length * 0.03);
+    if (rnd() < chance) {
+      const club = wpick(interested, t => 1 + Math.max(0, clubLevel(t) - clubLevel(me) + 10));
+      offers.push(makeLoanOffer(club, p));
+    }
+  });
+  return offers.slice(0, 4);
+}
+function acceptLoanOffer(G, pid, from) {
+  const me = G.teams[G.myTeam];
+  const offer = (G.pendingLoanOffers || []).find(o => o.pid === pid && o.from === from);
+  if (!offer) return { ok: false, msg: 'That loan offer is no longer available.' };
+  const p = me.squad.find(x => x.id === pid);
+  if (!p) return { ok: false, msg: 'Not in your squad.' };
+  if (me.squad.length <= MIN_SENIOR) return { ok: false, msg: `You can't loan ${p.name} out: you must keep at least ${MIN_SENIOR} senior players.` };
+  if (me.captainId === pid || me.viceCaptainId === pid) return { ok: false, msg: `${p.name} is captain or vice-captain — can't be loaned out.` };
+  const club = teamById(G, from);
+  if (!club) return { ok: false, msg: 'That club is unavailable.' };
+  p.loan = { from: me.id, seasons: offer.seasons, wageShare: offer.wageShare };
+  me.squad = me.squad.filter(x => x.id !== pid);
+  club.squad.push(p);
+  p.clubs.push({ id: club.id, from: G.season, loan: true });
+  me.wageBill = wageOf(me); club.wageBill = wageOf(club);
+  ensureLineup(me); ensureLineup(club);
+  G.pendingLoanOffers = (G.pendingLoanOffers || []).filter(o => o.pid !== pid);
+  news(G, 'transfer', `${p.name} joins ${club.s} on loan from ${me.s}.`, { pid: p.id, fromId: me.id, toId: club.id });
+  mail(G, { cat: 'leaving', from: 'Chief Executive', p, club, status: `On loan at ${club.s}`, subject: `[Info] Loan Agreed: ${p.name}`,
+    body: [`${p.name} has joined ${club.n} on loan.`, `You can recall him from the Squad screen if you need him back.`],
+    rows: [['Loan club', club.n], ['Length', `${offer.seasons} season${offer.seasons === 1 ? '' : 's'}`], ['Wage share paid by borrower', Math.round(offer.wageShare * 100) + '%']] });
+  return { ok: true, msg: `${p.name} goes out on loan to ${club.s}.` };
 }
 /* Keep a running record of which clubs have been watching each of your
    players, and since when — not just a fresh re-roll every time someone
@@ -4462,7 +4544,7 @@ function load(n) {
     }
     if (!d) return false;
     G = d.G; SEED = d.seed; PID = d.pid; slot = want;
-    G.teams.forEach(t => { t.fin = t.fin || newFin(); t.youth = t.youth || []; t.squad.forEach(p => { p.value = valueOf(p); if (p.portrait) PORTRAIT_USE[p.portrait] = (PORTRAIT_USE[p.portrait] || 0) + 1; }); ensureLineup(t); });     G.watchlist = G.watchlist || []; G.pendingBids = G.pendingBids || []; seedAiClauses(G); try { updateOutgoingScouting(G); } catch (e) { }
+    G.teams.forEach(t => { t.fin = t.fin || newFin(); t.youth = t.youth || []; t.squad.forEach(p => { p.value = valueOf(p); if (p.portrait) PORTRAIT_USE[p.portrait] = (PORTRAIT_USE[p.portrait] || 0) + 1; }); ensureLineup(t); });     G.watchlist = G.watchlist || []; G.pendingBids = G.pendingBids || []; G.pendingLoanOffers = G.pendingLoanOffers || []; seedAiClauses(G); try { updateOutgoingScouting(G); } catch (e) { }
     if (!G.africa) { initAfrica(G); initAfcon(G); buildCAF(G); }
     if (!G.super8) buildExtraCups(G);     if (!G.watchlist) G.watchlist = [];
     G.manager.rep = G.manager.rep || 40;     G.curDay = Math.max(G.curDay != null ? G.curDay : 0, Math.max(0, G.round - 1) * DAYS_PER_ROUND + (G.round > 0 ? 1 : 0));
