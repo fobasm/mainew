@@ -4650,7 +4650,7 @@ buildTierChips();
     const bar = $('#pickTierBar');
     if (bar) bar.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', +x.dataset.tier === pickTier));
     const hint = $('#startHint');
-    if (hint) hint.textContent = 'select default — the game\'s youth academy club. Pick another if you\'d rather.';
+    if (hint) hint.textContent = 'select default — the game's default club';
   }
 })();
 $('#startBtn').onclick = () => {
