@@ -4576,21 +4576,32 @@ function playSound(name) {
     else if (name === 'card') { tone(ctx, 220, 0, .18, 'sawtooth', .06); }
   } catch (e) { }
 }
-const MUSIC_TRACKS = ['menu.mp3', 'menu2.mp3', 'menu3.mp3', 'menu4.mp3', 'menu5.mp3'];
-let bgMusic = null, musicIdx = 0, musicFails = 0;
+const MUSIC_TRACKS = ['menu.mp3', 'menu2.mp3', 'menu3.mp3', 'menu4.mp3', 'menu5.mp3', 'menu6.mp3', 'menu7.mp3', 'menu8.mp3', 'menu9.mp3', 'menu10.mp3', 'menu11.mp3', 'menu12.mp3', 'menu13.mp3', 'menu14.mp3'];
+let bgMusic = null, musicQueue = [], musicLast = null, musicFails = 0;
+function nextMusicTrack() {
+  if (!musicQueue.length) {
+    musicQueue = MUSIC_TRACKS.slice();
+    for (let i = musicQueue.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [musicQueue[i], musicQueue[j]] = [musicQueue[j], musicQueue[i]];
+    }
+    if (musicQueue.length > 1 && musicQueue[0] === musicLast) musicQueue.push(musicQueue.shift());
+  }
+  musicLast = musicQueue.shift();
+  return musicLast;
+}
 function startBgMusic() {
   if (bgMusic || !musicOn) return;
   try {
-    bgMusic = new Audio(MUSIC_TRACKS[musicIdx]);
+    bgMusic = new Audio(nextMusicTrack());
     bgMusic.volume = 0.25;
-    const nextTrack = () => {
-      musicIdx = (musicIdx + 1) % MUSIC_TRACKS.length;
-      bgMusic.src = MUSIC_TRACKS[musicIdx];
+    const playNext = () => {
+      bgMusic.src = nextMusicTrack();
       bgMusic.play().catch(() => { });
     };
-    bgMusic.addEventListener('ended', nextTrack);
+    bgMusic.addEventListener('ended', playNext);
     bgMusic.addEventListener('playing', () => { musicFails = 0; });
-    bgMusic.addEventListener('error', () => { if (++musicFails < MUSIC_TRACKS.length) nextTrack(); });
+    bgMusic.addEventListener('error', () => { if (++musicFails < MUSIC_TRACKS.length) playNext(); });
     bgMusic.play().catch(() => { });
   } catch (e) { }
 }
