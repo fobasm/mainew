@@ -2799,6 +2799,7 @@ function aiClauseTriggers(G) {
   const me = G.teams[G.myTeam];
   if (me.squad.length <= MIN_SENIOR) return;                  // the minimum-squad rule applies to clause moves too
   if (me.squad.length <= MIN_SENIOR) return;                  // the minimum-squad rule applies to clause moves too
+  if (me.squad.length <= MIN_SENIOR) return;                  // the minimum-squad rule applies to clause moves too
   for (const p of me.squad.slice()) {
     if (!p.releaseClause || p.loan) continue;
     if (p.pos === 'GK' && me.squad.filter(x => x.pos === 'GK').length <= 1) continue; // never strip you of your only keeper
@@ -2842,6 +2843,7 @@ function scoutSlot(p, need) {
 /* How good a target is this opposition player for you? null = not realistic. */
 function scoutFit(G, p, t, need) {
   const me = G.teams[G.myTeam];
+  if (t.squad.length <= MIN_SENIOR) return null;             // a club at the minimum squad size can't sell anyone
   if (t.squad.length <= MIN_SENIOR) return null;             // a club at the minimum squad size can't sell anyone
   if (t.squad.length <= MIN_SENIOR) return null;             // a club at the minimum squad size can't sell anyone
   const clauseOk = !!p.releaseClause && p.releaseClause <= me.budget;
