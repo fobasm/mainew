@@ -6282,8 +6282,8 @@ function loanSpellsOf(p, t) {   return (p.clubs || []).filter(c => c.loan).map(c
   let footer = `<button class="btn ghost sm" onclick="closeModal()">Close</button>`;
   if (isMine && !inYouth && !p.loan) {
     footer = `<button class="btn ghost sm" id="pmNeg">${p.wantsOut ? 'Persuade to stay' : 'Negotiate contract'}</button>
-              <button class="btn ghost sm" id="pmSell">Sell</button>               <button class="btn ghost sm" id="pmShop">Shop around</button>
-              <button class="btn ghost sm" id="pmLoanOut">Loan out</button>
+              <button class="btn ghost sm" id="pmSell">${p.tl ? 'Remove from transfer list' : 'Transfer list'}</button>               <button class="btn ghost sm" id="pmShop">Shop around</button>
+              <button class="btn ghost sm" id="pmLoanOut">${p.ll ? 'Remove from loan list' : 'Loan list'}</button>
               <button class="btn ghost sm" id="pmClauseSet">Release clause</button>
               <button class="btn ghost sm" id="pmSquadMove">${p.reserve ? 'Move to first team' : 'Move to reserves'}</button>
               <button class="btn ghost sm" id="pmCaptain">${isCaptain ? 'Remove as captain' : 'Make captain'}</button>
@@ -6479,7 +6479,7 @@ function viewTransfers() {
         squad.map(p => `<tr><td></td><td class="txp"><b>${esc(p.name)}</b> ${flagSVG(p.nat)}</td><td>${posTag(p.pos)}</td><td class="num">${p.age}</td>
           <td class="num">${ratingTag(p.rating)}</td><td class="num">${money(p.value)}</td><td class="num">${p.contract}y</td>
           <td style="display:flex;gap:6px;justify-content:flex-end"><button class="btn ghost sm" data-shop="${p.id}">Shop around</button>
-          <button class="btn sm" data-sell="${p.id}">Sell</button><button class="btn danger sm" data-rel="${p.id}">Release</button></td></tr>`).join('')
+          <button class="btn sm" data-sell="${p.id}">${p.tl ? 'Listed ✓' : 'Transfer list'}</button><button class="btn danger sm" data-rel="${p.id}">Release</button></td></tr>`).join('')
       }</tbody></table></div>` : '<div class="empty">No players to sell.</div>') + `</div>`;
   } else if (txSection === 'watch') {
     const list = (G.watchlist || []).map(pid => {
@@ -6503,7 +6503,7 @@ function viewTransfers() {
       t.squad.filter(p => !p.loan).slice().sort((a, b) => b.rating - a.rating).slice(0, 12).map(p =>
         `<div class="prow" style="grid-template-columns:auto 1fr auto">${ratingTag(p.rating)}
           <span class="who"><b>${esc(p.name)}</b><small>${p.pos} · ${p.age}</small></span>
-          <button class="btn ghost sm" data-loanout="${p.id}">Loan out</button></div>`).join('') + `</div>`;
+          <button class="btn ghost sm" data-loanout="${p.id}">${p.ll ? 'Loan listed ✓' : 'Loan list'}</button></div>`).join('') + `</div>`;
   } else if (txSection === 'hist') {
     const L = G.transferLog.filter(x => txHistFilter === 'all' || x.from === t.id || x.to === t.id).slice(0, 70);
     html += `<div class="panel"><div class="chipbar">${[['all', 'All clubs'], ['me', 'My club']].map(([k, l]) => `<button class="chip" data-txhist="${k}" aria-pressed="${txHistFilter === k}">${l}</button>`).join('')}</div>
