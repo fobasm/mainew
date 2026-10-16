@@ -6398,7 +6398,7 @@ function txRow(p, club, opts) {
   const ask = opts.free ? null : (listing ? listing.ask : p.value);
   return `<tr>
     <td><button class="star ${watched ? 'on' : ''}" data-star="${p.id}" title="Keep an eye on him" aria-label="Keep an eye on him">${watched ? '★' : '☆'}</button></td>
-    <td class="txp">${faceSVG(p, 26, club ? club.c1 : null)}<div><b>${esc(p.name)} ${flagSVG(p.nat)}</b>${listing ? `<div class="hint">listed at ${money(listing.ask)}</div>` : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}${G.scoutBoard && G.scoutBoard[p.id] ? ' <span class="tag xi">🎯 scouted</span>' : ''}</div></td>
+    <td class="txp">${faceSVG(p, 26, club ? club.c1 : null)}<div><b>${esc(p.name)} ${flagSVG(p.nat)}</b>${listing ? `<div class="hint">listed at ${money(listing.ask)}</div>` : ''}${isLoanListed(p.id) ? ' <span class="tag" style="color:var(--teal);border-color:var(--teal)">loan listed</span>' : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}${G.scoutBoard && G.scoutBoard[p.id] ? ' <span class="tag xi">🎯 scouted</span>' : ''}</div></td>
 <td style="white-space:nowrap">${posTag(p.pos)}${(p.alt || []).map(a => `<span class="alt">${a}</span>`).join('')}</td>
     <td class="num">${p.age}</td>
     <td class="num">${ratingTag(p.rating)}</td>
@@ -6463,7 +6463,7 @@ function viewTransfers() {
         ${fa.length ? `<div class="tw"><table class="tbl txtbl"><thead><tr><th></th><th>Player</th><th>Pos</th><th>Age</th><th>Rat</th><th>Pot</th><th>Wage</th><th></th><th></th></tr></thead><tbody>${fa.map(p => txRow(p, null, { free: true })).join('')}</tbody></table></div>`
         : '<div class="empty">No free agents match that right now.</div>'}</div>`;
     }
-  } else if (txSection === 'bids') {     html += offersHTML(t, bids) + loanOffersHTML(t, loanOffers);   } else if (txSection === 'bids_old') {
+  } else if (txSection === 'listed') { html += listedHTML(t); } else if (txSection === 'bids') {     html += offersHTML(t, bids) + loanOffersHTML(t, loanOffers);   } else if (txSection === 'bids_old') {
     html += `<div class="panel"><h3>Offers for your players<span class="sub">clubs bid for players who impress, or anyone you shop around</span></h3>` +
       (bids.length ? bids.map((b, i) =>
         `<div class="prow" style="grid-template-columns:auto 1fr auto auto">${ratingTag(b.rating)}
@@ -6617,7 +6617,7 @@ function loanOfferModal(pid, owner) {
   const p = owner.squad.find(x => x.id === pid); if (!p) return;
   if (!inTransferWindow(G)) { toastWarn(`The transfer window is shut. It reopens in ${roundsToNextWindow(G)} day${roundsToNextWindow(G) === 1 ? '' : 's'}.`); return; }
   const experienced = p.age >= 26 || p.apps >= 15;
-  const chance = clamp((experienced ? 0.22 : 0.55) - Math.max(0, p.rating - clubLevel(owner)) * 0.01, 0.04, 0.75);
+  const chance = clamp((experienced ? 0.22 : 0.55) + (isLoanListed(pid) ? 0.3 : -0.1) - Math.max(0, p.rating - clubLevel(owner)) * 0.01, 0.04, 0.9);
   openModal(`Ask ${esc(owner.s)} about a loan for ${esc(p.name)}`,
     `<p class="hint" style="margin:0 0 8px">${experienced ? 'He is an experienced regular — clubs are reluctant to loan these out.' : 'A fringe or younger player — a loan spell could suit everyone.'}</p>
      <div class="bar"><i style="width:${(chance * 100).toFixed(0)}%;background:${chance > 0.4 ? 'var(--up)' : 'var(--gold)'}"></i></div>`,
