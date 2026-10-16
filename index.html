@@ -4577,17 +4577,20 @@ function playSound(name) {
   } catch (e) { }
 }
 const MUSIC_TRACKS = ['menu.mp3', 'menu2.mp3', 'menu3.mp3', 'menu4.mp3', 'menu5.mp3'];
-let bgMusic = null, musicIdx = 0;
+let bgMusic = null, musicIdx = 0, musicFails = 0;
 function startBgMusic() {
   if (bgMusic || !musicOn) return;
   try {
     bgMusic = new Audio(MUSIC_TRACKS[musicIdx]);
     bgMusic.volume = 0.25;
-    bgMusic.addEventListener('ended', () => {
+    const nextTrack = () => {
       musicIdx = (musicIdx + 1) % MUSIC_TRACKS.length;
       bgMusic.src = MUSIC_TRACKS[musicIdx];
       bgMusic.play().catch(() => { });
-    });
+    };
+    bgMusic.addEventListener('ended', nextTrack);
+    bgMusic.addEventListener('playing', () => { musicFails = 0; });
+    bgMusic.addEventListener('error', () => { if (++musicFails < MUSIC_TRACKS.length) nextTrack(); });
     bgMusic.play().catch(() => { });
   } catch (e) { }
 }
