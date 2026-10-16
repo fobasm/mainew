@@ -6241,7 +6241,7 @@ function loanSpellsOf(p, t) {   return (p.clubs || []).filter(c => c.loan).map(c
   const p = found.p, t = found.t, isMine = t && t.id === G.myTeam;   if (t) ensureKitNumbers(t);
   const inYouth = isMine && me().youth.some(y => y.id === p.id);
   const listing = G.market.find(m => m.pid === p.id);
-  const clubs = (p.clubs || []).map(c => { const cc = teamById(G, c.id); return cc ? `${esc(cc.s)}${c.loan ? ' (loan)' : ''} <span class="hint">(${c.from})</span>` : null; }).filter(Boolean).join(' → ') || '—';   const watched = isWatched(p.id);   const prevChips = (p.clubs || []).slice(0, -1).map(c => { const cc = teamById(G, c.id); return cc ? `<span class="chip">${esc(cc.s)}${c.loan ? ' (loan)' : ''} <span class="hint">${c.from}</span></span>` : ''; }).join(' ');   const loanSpells = loanSpellsOf(p, t);   const loanSpells = loanSpellsOf(p, t);
+  const clubs = (p.clubs || []).map(c => { const cc = teamById(G, c.id); return cc ? `${esc(cc.s)}${c.loan ? ' (loan)' : ''} <span class="hint">(${c.from})</span>` : null; }).filter(Boolean).join(' → ') || '—';   const watched = isWatched(p.id);   const prevChips = (p.clubs || []).slice(0, -1).map(c => { const cc = teamById(G, c.id); return cc ? `<span class="chip">${esc(cc.s)}${c.loan ? ' (loan)' : ''} <span class="hint">${c.from}</span></span>` : ''; }).join(' ');   const loanSpells = loanSpellsOf(p, t);
   const careerRows = (p.career || []).slice().reverse().slice(0, 8).map(c => {
     const cc = teamById(G, c.club); if (!cc) return '';
     return `<tr><td>${seasonLabel(c.season)}</td><td>${esc(cc.s)}</td><td class="num">${c.apps}</td><td class="num">${c.g}</td><td class="num">${c.a}</td><td class="num">${c.rating}</td></tr>`;
