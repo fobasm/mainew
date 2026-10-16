@@ -2996,7 +2996,7 @@ function sellPlayer(G, pid, fee, buyerId, viaClause) {
   me.fin.sales += fee;
   buyer.squad.push(p);
   p.clubs.push({ id: buyer.id, from: G.season });
-p.contract = rint(2, 4); p.wantsOut = false; p.releaseClause = null;
+p.contract = rint(2, 4); p.wantsOut = false; p.releaseClause = null; p.tl = false; p.ll = false;
   buyer.budget = Math.max(0, buyer.budget - fee); buyer.fin.buys += fee;
   me.wageBill = wageOf(me); buyer.wageBill = wageOf(buyer);
   ensureLineup(me); ensureLineup(buyer);
@@ -3298,7 +3298,7 @@ function acceptLoanOffer(G, pid, from) {
   if (me.captainId === pid || me.viceCaptainId === pid) return { ok: false, msg: `${p.name} is captain or vice-captain — can't be loaned out.` };
   const club = teamById(G, from);
   if (!club) return { ok: false, msg: 'That club is unavailable.' };
-  p.loan = { from: me.id, seasons: offer.seasons, wageShare: offer.wageShare };
+  p.loan = { from: me.id, seasons: offer.seasons, wageShare: offer.wageShare }; p.ll = false;
   me.squad = me.squad.filter(x => x.id !== pid);
   club.squad.push(p);
   p.clubs.push({ id: club.id, from: G.season, loan: true });
@@ -6298,9 +6298,9 @@ function loanSpellsOf(p, t) {   return (p.clubs || []).filter(c => c.loan).map(c
   }
   openModal('Player profile', body, footer); $('#modal').classList.add('mmx');
   const r = $('#pmNeg'); if (r) r.onclick = () => { closeModal(); negotiateModal(p.id); };
-  const s = $('#pmSell'); if (s) s.onclick = () => { closeModal(); sellModal(p.id); };   const shop = $('#pmShop'); if (shop) shop.onclick = () => { const res = shopAround(p.id); toast(res.msg); if (res.ok) { save(); closeModal(); render(); } };
+  const s = $('#pmSell'); if (s) s.onclick = () => { closeModal(); toggleTL(p.id); };   const shop = $('#pmShop'); if (shop) shop.onclick = () => { const res = shopAround(p.id); toast(res.msg); if (res.ok) { save(); closeModal(); render(); } };
   const lo = $('#pmLoanOut'); if (lo) lo.onclick = () => {
-    const res = loanOut(G, p.id, 1); toast(res.msg); if (res.ok) { save(); closeModal(); render(); }
+    closeModal(); toggleLL(p.id);
   };
   const cs = $('#pmClauseSet'); if (cs) cs.onclick = () => {
     openModal('Set release clause', `<p class="hint" style="margin:0 0 8px">Any club can trigger this clause to buy him instantly at this price.</p>
@@ -6544,7 +6544,7 @@ function viewTransfers() {
   v.querySelectorAll('[data-buy]').forEach(b => b.onclick = e => { e.stopPropagation(); bidModal(+b.dataset.buy, +b.dataset.ask); });
   v.querySelectorAll('[data-fa]').forEach(b => b.onclick = () => faTermsModal(+b.dataset.fa));   v.querySelectorAll('[data-clause]').forEach(b => b.onclick = () => { const f = findPlayer(G, +b.dataset.clause); if (f && f.p.releaseClause) playerTermsModal(f.p.id, f.p.releaseClause, 3, true); });
   v.querySelectorAll('[data-shop]').forEach(b => b.onclick = () => { const r = shopAround(+b.dataset.shop); toast(r.msg); if (r.ok) { save(); render(); } });
-  v.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => sellModal(+b.dataset.sell));
+  v.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => toggleTL(+b.dataset.sell));
   v.querySelectorAll('[data-rel]').forEach(b => b.onclick = () => txReleaseAsk(+b.dataset.rel));
   v.querySelectorAll('[data-accept]').forEach(b => b.onclick = () => {
     const i = +b.dataset.accept, bid = G.pendingBids[i];
@@ -6553,7 +6553,7 @@ function viewTransfers() {
   });
   v.querySelectorAll('[data-reject]').forEach(b => b.onclick = () => { G.pendingBids.splice(+b.dataset.reject, 1); save(); render(); });   bindOfferButtons(v);   bindLoanOfferButtons(v);
   v.querySelectorAll('[data-recall]').forEach(b => b.onclick = () => { const r = recallLoan(G, +b.dataset.recall); toast(r.msg); if (r.ok) { save(); render(); } });
-  v.querySelectorAll('[data-loanout]').forEach(b => b.onclick = () => { const r = loanOut(G, +b.dataset.loanout, 1); toast(r.msg); if (r.ok) { save(); render(); } });
+  v.querySelectorAll('[data-loanout]').forEach(b => b.onclick = () => { toggleLL(+b.dataset.loanout); });
   bindPlayerRows(v);
 }
 function txReleaseAsk(pid) {
