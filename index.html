@@ -1638,7 +1638,7 @@ function penTag(p, slot) {
   const n = Math.round(posPenalty(p, slot));
   return n > 0 ? `<em class="pen">-${n}</em>` : '';
 }
-function effRating(p, slot) { return clamp(p.rating - posPenalty(p, slot) + p.form * 0.8 + (p.mood == null ? 0 : (p.mood - 58) / 42 * 1.2), 20, 99); }
+/* ---- stamina ---- */ const STA_DRAIN = 18, STA_REC = 12, STA_REST = 8, STA_TIRED = 60; function staOf(p) { return p.sta == null ? 100 : p.sta; } function staPen(p) { const s = staOf(p); return s >= STA_TIRED ? 0 : (STA_TIRED - s) * 0.08; } function staColor(s) { return s >= 75 ? '#4caf50' : s >= STA_TIRED ? '#f2b928' : '#e5322d'; } function staTag(p) { const s = Math.round(staOf(p)); if (s >= 90) return ''; const c = staColor(s); return ` <span class="tag" style="color:${c};border-color:${c}" title="Stamina ${s}%">${s < STA_TIRED ? 'tired' : 'stamina'} ${s}%</span>`; } function staDot(p) { const s = staOf(p); return s >= STA_TIRED ? '' : `<span title="Tired ${Math.round(s)}%" style="position:absolute;top:-3px;left:-3px;width:10px;height:10px;border-radius:50%;background:#e5322d;border:1px solid #111"></span>`; } function effRating(p, slot) { return clamp(p.rating - posPenalty(p, slot) - staPen(p) + p.form * 0.8 + (p.mood == null ? 0 : (p.mood - 58) / 42 * 1.2), 20, 99); }
 
 function ensureLineup(t) {
   const slots = FORMATIONS[t.formation] || FORMATIONS['4-4-2'];
@@ -1776,7 +1776,7 @@ function buildSeason(G, first) {
   G.teams.forEach(t => {
     t.form = [];
     t.fin = newFin();
-    t.squad.forEach(p => { p.goals = 0; p.assists = 0; p.apps = 0; p.cs = 0; p.inj = 0; p.form = 0; p.yellow = 0; p.red = 0; p.red = 0; p.red = 0; p.startRating = p.rating; p.startPot = p.pot; p.ratingSum = 0; p.ratingApps = 0; p.monthRatings = {}; });
+    t.squad.forEach(p => { p.goals = 0; p.assists = 0; p.apps = 0; p.cs = 0; p.inj = 0; p.sta = 100; p.form = 0; p.yellow = 0; p.red = 0; p.red = 0; p.red = 0; p.startRating = p.rating; p.startPot = p.pot; p.ratingSum = 0; p.ratingApps = 0; p.monthRatings = {}; });
     ensureLineup(t);
   });
   if (G.africa) G.africa.squadCache = {};
@@ -2103,7 +2103,7 @@ function finishMatch(G, ctx) {
       p.apps++; p.cApps++;
       p.earned = Math.round((p.earned + p.wage / 34) * 1000) / 1000;
       if (POS_GROUP[p.pos] === 'GK' && conceded === 0) p.cs++;
-      p.form *= 0.72;
+      p.form *= 0.72; p.sta = Math.max(0, staOf(p) - STA_DRAIN); p.stp = 1;
       if (p.pendingInj) { p.inj = p.pendingInj; delete p.pendingInj; }
     });
   };
@@ -2131,7 +2131,7 @@ function finishMatch(G, ctx) {
   });
 }
 
-function tickInjuries(G) { G.teams.forEach(t => t.squad.forEach(p => { if (p.inj > 0) p.inj--; })); }
+function tickInjuries(G) { G.teams.forEach(t => t.squad.forEach(p => { if (p.inj > 0) p.inj--; p.sta = Math.min(100, staOf(p) + STA_REC + (p.stp ? 0 : STA_REST)); delete p.stp; })); }
 
 function tableUpdate(G, tier, m) {
   const tb = G.tables[tier];
@@ -6043,7 +6043,7 @@ function ensureKitNumbers(t) {   const used = new Set();   t.squad.forEach(p => 
     <span class="ratcol">${ratingTag(p.rating)}${growthHtml(p)}</span>
 <span class="who"><b><span style="color:var(--gold);font-weight:800;margin-right:4px">#${p.kitNo || '–'}</span>${esc(p.name)} ${flagSVG(p.nat)}${isCap ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">C</span>' : isVice ? ' <span class="tag">VC</span>' : ''}${watchers ? ` <span class="tag" title="${watchers} club${watchers === 1 ? '' : 's'} scouting him">👁 ${watchers}</span>` : ''}</b>
       <small>${[p.pos].concat(p.alt || []).join('/')} · ${p.age} · ${p.apps} apps · ${p.goals}g ${p.assists}a · ${money(p.wage)}/season · ${p.contract}y
-      ${p.loan ? ' <span class="tag out">on loan</span>' : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}${p.inj > 0 ? ` <span class="tag inj">out ${p.inj}</span>` : ''}${banLeft(p, t) > 0 ? ` <span class="tag inj">banned ${banLeft(p, t)}</span>` : ''}${inXI ? ' <span class="tag xi">XI</span>' : ''}</small></span>
+      ${p.loan ? ' <span class="tag out">on loan</span>' : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}${p.inj > 0 ? ` <span class="tag inj">out ${p.inj}</span>` : ''}${banLeft(p, t) > 0 ? ` <span class="tag inj">banned ${banLeft(p, t)}</span>` : ''}${inXI ? ' <span class="tag xi">XI</span>' : ''}${staTag(p)}</small></span>
     <span class="ratcol pot">${potTag(p)}${potGrowthHtml(p)}</span>
     <span class="val">${extra != null ? extra : money(p.value)}</span></button>`;
 }
