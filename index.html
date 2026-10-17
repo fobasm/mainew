@@ -1674,11 +1674,11 @@ function penTag(p, slot) {
 }
 /* ---- stamina ---- */ const STA_DRAIN = 18, STA_REC = 12, STA_REST = 8, STA_TIRED = 60; function staOf(p) { return p.sta == null ? 100 : p.sta; } function staPen(p) { const s = staOf(p); return s >= STA_TIRED ? 0 : (STA_TIRED - s) * 0.08; } function staColor(s) { return s >= 75 ? '#4caf50' : s >= STA_TIRED ? '#f2b928' : '#e5322d'; } function staTag(p) { const s = Math.round(staOf(p)); if (s >= 90) return ''; const c = staColor(s); return ` <span class="tag" style="color:${c};border-color:${c}" title="Stamina ${s}%">${s < STA_TIRED ? 'tired' : 'stamina'} ${s}%</span>`; } function staDot(p) { const s = staOf(p); return s >= STA_TIRED ? '' : `<span title="Tired ${Math.round(s)}%" style="position:absolute;top:-3px;left:-3px;width:10px;height:10px;border-radius:50%;background:#e5322d;border:1px solid #111"></span>`; } function effRating(p, slot) { return clamp(p.rating - posPenalty(p, slot) - staPen(p) + p.form * 0.8 + (p.mood == null ? 0 : (p.mood - 58) / 42 * 1.2), 20, 99); }
 
-function ensureLineup(t) {
+function pickForSlot(t, slot, used) {   let pool = t.squad.filter(p => isFit(p, t) && !p.reserve && !used.has(p.id));   if (!pool.length) pool = t.squad.filter(p => isFit(p, t) && !used.has(p.id));   if (!pool.length) pool = t.squad.filter(p => !used.has(p.id));   let minPen = Infinity; pool.forEach(p => { minPen = Math.min(minPen, posPenalty(p, slot)); });   let best = null, bv = -1e9;   pool.forEach(p => { if (posPenalty(p, slot) > minPen + 0.001) return; const v = effRating(p, slot); if (v > bv) { bv = v; best = p; } });   return best; } function ensureLineup(t) {
   const slots = FORMATIONS[t.formation] || FORMATIONS['4-4-2'];
   const lineOk = t.lineup && t.lineup.length === 11 && new Set(t.lineup).size === 11 &&
     t.lineup.every(id => t.squad.some(x => x.id === id));
-  if (!lineOk) { t.lineup = autoLineup(t); t.subFor = {}; return t.lineup; }
+  if (!lineOk) {     if (!t.lineup || t.lineup.length !== 11) { t.lineup = autoLineup(t); t.subFor = {}; return t.lineup; }     /* someone left (sold, loaned, released): everyone else stays put, only the empty slots are filled, position first */     const seen = new Set();     t.lineup = t.lineup.map(id => (id != null && t.squad.some(x => x.id === id) && !seen.has(id)) ? (seen.add(id), id) : null);     t.subFor = t.subFor || {};     t.lineup.forEach((id, i) => { if (id !== null) return; delete t.subFor[i]; const b = pickForSlot(t, slots[i], seen); if (b) { t.lineup[i] = b.id; seen.add(b.id); } });     if (t.lineup.some(id => id === null)) { t.lineup = autoLineup(t); t.subFor = {}; return t.lineup; }   }
   t.subFor = t.subFor || {};
   const fit = p => p && isFit(p, t);
   /* 1. a recovered player takes his slot back from the stand-in */
@@ -1695,7 +1695,7 @@ function ensureLineup(t) {
     let pool = t.squad.filter(p => fit(p) && !p.reserve && !t.lineup.includes(p.id));
     if (!pool.length) pool = t.squad.filter(p => fit(p) && !t.lineup.includes(p.id));
     let best = null, bv = -1e9;
-    pool.forEach(p => { const v = effRating(p, slot) - posPenalty(p, slot) * 4; if (v > bv) { bv = v; best = p; } });
+    pool.forEach(p => { const v = effRating(p, slot) - posPenalty(p, slot) * 40; if (v > bv) { bv = v; best = p; } });
     if (best) {
       const prev = t.subFor[i] ? t.subFor[i].orig : id;   /* remember the original starter */
       t.lineup[i] = best.id;
@@ -1737,7 +1737,7 @@ function moveToReserve(G, pid) {
   if (!p) return { ok: false, msg: 'Not in your squad.' };
   if (t.captainId === pid || t.viceCaptainId === pid) return { ok: false, msg: `${p.name} is captain or vice-captain — change that first.` };
   p.reserve = true;
-  if ((t.lineup || []).includes(pid)) t.lineup = autoLineup(t);
+  if ((t.lineup || []).includes(pid)) { t.lineup = t.lineup.map(id => id === pid ? null : id); ensureLineup(t); }
   return { ok: true, msg: `${p.name} moves to the reserves.` };
 }
 function moveToFirstTeam(G, pid) {   if (firstTeamFull(me_(G))) return { ok: false, msg: `First team is full at ${FIRST_TEAM_MAX}. Move someone to the reserves first.` };
