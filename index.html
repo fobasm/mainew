@@ -2280,7 +2280,25 @@ function finishMatch(G, ctx) {
 }
 
 function injWeeks(p) { return Math.max(1, Math.round((p.inj || 0) * DAYS_PER_ROUND / 7)); } function injBack(p) { const d = new Date(new Date(currentDateISO() + 'T12:00:00Z').getTime() + (p.inj || 0) * DAYS_PER_ROUND * 86400000); return `${d.getUTCDate()} ${MONTH_NAMES[d.getUTCMonth()].slice(0, 3)}`; } function tickInjuries(G) { G.teams.forEach(t => t.squad.forEach(p => { const was = p.inj > 0; if (p.inj > 0) p.inj--; p.sta = Math.min(100, staOf(p) + STA_REC + (p.stp ? 0 : STA_REST)); delete p.stp; if (was && p.inj <= 0) { if ((p.injLen || 0) >= 4) { p.sta = Math.min(p.sta, 50); if (t.id === G.myTeam) news(G, 'match', `${p.name} is back after ${p.injLen} matches out, but not match fit. Ease him back in.`); } p.injLen = 0; } })); }
-
+/* ---- board and fans: confidence and loyalty react to runs of form, mails mark the big moments ---- */
+function boardFansTick(G, m) {
+  if (G.jobless || (m.h !== G.myTeam && m.a !== G.myTeam)) return;
+  const t = G.teams[G.myTeam], f = t.form || [], last = f[f.length - 1], st = stadiumOf(t), rd = G.round + 1;
+  const bump = d => { G.board = clamp((G.board != null ? G.board : 62) + d, 0, 100); };
+  const loy = d => { st.loyalty = clamp((st.loyalty != null ? st.loyalty : 50) + d, 0, 100); };
+  const k = x => `bf:${G.season}:${x}`;
+  bump(last === 'W' ? 0.6 : last === 'L' ? -0.8 : 0);
+  const l5 = f.slice(-5), l4 = f.slice(-4), n = f.length;
+  if (n >= 5 && l5.every(x => x === 'W') && (n < 6 || f[0] !== 'W') &&
+    mail(G, { cat: 'general', from: 'Supporters Trust', key: k('win' + rd), subject: 'The fans are buzzing', body: [`Five wins in a row has the stands rocking. The supporters believe something special is building at ${t.n}.`, 'The board are delighted with the run.'] })) { bump(3); loy(3); }
+  if (n >= 5 && !l5.includes('W') && (n < 6 || f[0] === 'W') &&
+    mail(G, { cat: 'general', from: 'Board of Directors', flag: true, key: k('dry' + rd), subject: 'Pressure is building', body: [`Five matches without a win. The board expect an improvement, and the fans are growing restless.`, 'A win soon would settle things down.'] })) { bump(-4); loy(-3); }
+  if (n >= 4 && l4.every(x => x === 'L') && (n < 5 || f[n - 5] !== 'L') &&
+    mail(G, { cat: 'general', from: 'Supporters Trust', flag: true, key: k('lose' + rd), subject: 'The fans are angry', body: [`Four defeats in a row. Banners have gone up outside the ground calling for answers.`, 'Turn the form around before the board lose patience.'] })) { bump(-3); loy(-4); }
+  const pos = posOfTeam(G, t.id);
+  if (rd >= 8 && pos === 1 && mail(G, { cat: 'general', from: 'Board of Directors', key: k('top'), subject: 'Top of the table', body: [`${t.n} sit top of the table. The board and the supporters are delighted.`, 'Keep it going.'] })) { bump(2); loy(2); }
+  if (rd >= 8 && pos >= TIER_SIZE - 2 && mail(G, { cat: 'general', from: 'Board of Directors', flag: true, key: k('drop' + Math.floor(rd / 8)), subject: 'Concern over the league position', body: [`${t.n} are ${ordinal(pos)} and the board are worried about the drop.`, 'They expect the team to climb the table.'] })) { bump(-3); loy(-2); }
+}
 function tableUpdate(G, tier, m) {
   const tb = G.tables[tier];
   const rh = tb.find(r => r.id === m.h), ra = tb.find(r => r.id === m.a);
@@ -2290,7 +2308,7 @@ function tableUpdate(G, tier, m) {
   else { rh.d++; ra.d++; rh.pts++; ra.pts++; }
   const f = m.hg > m.ag ? 'W' : m.hg < m.ag ? 'L' : 'D';
   G.teams[m.h].form.push(f); G.teams[m.a].form.push(f === 'W' ? 'L' : f === 'L' ? 'W' : 'D');
-  [m.h, m.a].forEach(id => { if (G.teams[id].form.length > 6) G.teams[id].form.shift(); });
+  [m.h, m.a].forEach(id => { if (G.teams[id].form.length > 6) G.teams[id].form.shift(); });   try { boardFansTick(G, m); } catch (e) { console.error('boardFans', e); }
   /* gate money */
    { const ht = G.teams[m.h], k = Math.min(ht.tier, 4);     matchdayIncome(G, ht, m);     /* hospitality is now part of matchdayIncome */     const star = clamp((Math.max.apply(null, ht.squad.map(p => p.rating)) - 70) / 50, 0, 0.5);     const shirts = [0.24, 0.05, 0.015, 0.006, 0.003][k] * (0.6 + ht.rep * 0.08) * (1 + star) * kitBoost(ht);     payIncome(G, ht.id, shirts, 'sponsor', 'Shirt sales');     payIncome(G, ht.id, shirts * 0.35, 'sponsor', 'Club shop & merchandise'); }
   /* match bonus: win = full, draw = a third each */
@@ -5314,6 +5332,35 @@ function matchSummaryHTML(m) {
   if (lines.length) h += `<div class="hint" style="margin:10px 0 4px">Changes and incidents</div><ul class="goals">${lines.sort((a, b) => a.min - b.min).map(l => `<li><span class="min">${l.min}'</span><span class="who">${l.t}</span></li>`).join('')}</ul>`;
   return h;
 }
+      /* ---- post-match press: answers move the squad's mood, the board and the fans ---- */
+function postMatchPress(m, done) {
+  if (!m || m.forfeit || (m.h !== G.myTeam && m.a !== G.myTeam)) { done(); return; }
+  const mine = m.h === G.myTeam ? m.hg : m.ag, theirs = m.h === G.myTeam ? m.ag : m.hg, gd = mine - theirs;
+  if (!(Math.abs(gd) >= 3 || (gd < 0 && rnd() < 0.6) || rnd() < 0.3)) { done(); return; }
+  const t = me(), st = stadiumOf(t), opp = G.teams[m.h === G.myTeam ? m.a : m.h];
+  const played = Object.keys(m.rt || {}).map(Number).map(id => t.squad.find(p => p.id === id)).filter(Boolean);
+  const star = m.potm && t.squad.find(p => p.id === m.potm.id);
+  const squad = (v, txt) => (played.length ? played : t.squad).forEach(p => moodAddEv(p, 'press', v, 3, txt));
+  const board = d => { G.board = clamp((G.board != null ? G.board : 62) + d, 0, 100); };
+  const fans = d => { st.loyalty = clamp((st.loyalty != null ? st.loyalty : 50) + d, 0, 100); };
+  const set = gd > 0 ? { q: `A good result against ${opp.s}. What was the difference today?`, a: [
+      { l: 'The players were fantastic. They deserve all the credit.', f: () => { squad(3, 'Pleased to be praised in public'); board(0.5); } },
+      star ? { l: `${star.name} was outstanding. He's a joy to work with.`, f: () => { moodAddEv(star, 'press', 7, 4, 'Delighted by the manager\'s praise'); board(0.5); } } : { l: 'We worked hard on the training pitch all week.', f: () => { squad(1, 'Pleased with the manager\'s words'); board(0.5); } },
+      { l: 'Good, but there is a lot more to do.', f: () => { board(1.5); fans(1); } }] }
+    : gd === 0 ? { q: `A draw with ${opp.s}. Are you satisfied?`, a: [
+      { l: 'We deserved more than a point.', f: () => { squad(2, 'Backed by the manager'); board(-0.5); } },
+      { l: 'A point is a point. We move on.', f: () => { board(0.5); } },
+      { l: 'We have to be sharper in front of goal.', f: () => { squad(-1, 'Stung by the manager\'s criticism'); board(1); } }] }
+    : { q: `A defeat at the hands of ${opp.s}. What went wrong?`, a: [
+      { l: 'That one is on me. I will fix it.', f: () => { squad(2, 'Grateful that the manager took the blame'); board(1); fans(0.5); } },
+      { l: 'The players let themselves and the fans down.', f: () => { squad(-3, 'Hurt by the manager\'s public criticism'); board(0.5); } },
+      { l: 'The referee made some big mistakes today.', f: () => { squad(1, 'Pleased the manager has their back'); board(-2); fans(-1); } }] };
+  openModal('Post-match press conference', `<p style="margin:0 0 12px;color:var(--dim)">A reporter asks: "${esc(set.q)}"</p>` +
+    set.a.map((o, i) => `<button class="btn ghost sm" data-pp="${i}" style="display:block;width:100%;text-align:left;margin-bottom:8px">"${esc(o.l)}"</button>`).join(''),
+    `<button class="btn ghost sm" id="ppSkip">No comment</button>`);
+  document.querySelectorAll('[data-pp]').forEach(b => b.onclick = () => { const o = set.a[+b.dataset.pp]; closeModal(); try { o.f(); } catch (e) { console.error(e); } news(G, 'career', `After the ${mine}–${theirs} result vs ${opp.s}: "${o.l}"`); save(); done(); });
+  $('#ppSkip').onclick = () => { closeModal(); done(); };
+}
 function showMatchdayModal(res) {
   const m = matchOf(res);
   if (!m) { showRunModal([res]); return; }
@@ -5331,7 +5378,7 @@ function showMatchdayModal(res) {
   openModal(`Matchday ${res.round}`, body,
     `<button class="btn ghost sm" onclick="closeModal();tab='table';render()">See the log</button>
      <button class="btn sm" id="potmContinue">Continue</button>`);
-  const pc = $('#potmContinue'); if (pc) pc.onclick = () => { closeModal(); showPOTM(m, true); };
+  const pc = $('#potmContinue'); if (pc) pc.onclick = () => { closeModal(); postMatchPress(m, () => showPOTM(m, true)); };
 }
 function potmCardHTML(m) {   if (!m || !m.potm) return '';   const f = findPlayer(G, m.potm.id); if (!f) return '';   const p = f.p, t = f.t, bits = [];   if (m.potm.goals) bits.push(`${m.potm.goals} goal${m.potm.goals > 1 ? 's' : ''}`);   if (m.potm.assists) bits.push(`${m.potm.assists} assist${m.potm.assists > 1 ? 's' : ''}`);   return `<div class="potmCard"><div class="potmHead">Player of the Match</div>     <div class="mprof" style="margin:0;border-left-width:1px"><div class="mface">${faceSVG(p, 60, t.c1)}</div>       <div><div class="mname">${esc(p.name)} ${flagSVG(p.nat)}</div>         <div class="mtags">${posTag(p.pos)}<span class="potmRate">${m.potm.rating.toFixed(1)}<small>/10</small></span>${bits.length ? `<span class="hint">${bits.join(' · ')}</span>` : ''}</div>         <div class="mclub">${crestHTML(t, 14)}<span>${esc(t.n)}</span></div></div></div><div class="potmNote">${esc(bits.length ? `A standout display — ${bits.join(' and ')} on the day.` : 'A commanding, composed performance from start to finish.')}</div></div>`; } function showPOTM(m, inline) {
   if (!m || !m.potm) { maybeShowPendingOffer(); return; }
