@@ -262,7 +262,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 
 /* ---------- player bits ---------- */
 .rating{display:inline-grid;place-items:center;width:30px;height:24px;border-radius:5px;font-family:var(--head);font-weight:700;font-size:15px;color:#0c110e;background:var(--dim)}
-.r-elite{background:#3ecf7a}.r-good{background:#a8d24a}.r-ok{background:#f5b800}.r-mid{background:#e09b3d}.r-low{background:#b0641f;color:#fff}
+.r-elite{background:#00e676;--rg:#00e676}.r-good{background:#b8f01a;--rg:#b8f01a}.r-ok{background:#ffd60a;--rg:#ffd60a}.r-mid{background:#ff9a1f;--rg:#ff9a1f}.r-low{background:#ff4136;--rg:#ff4136;color:#fff}
 .tag{font-size:10.5px;font-family:var(--head);font-weight:600;padding:1px 6px;border-radius:4px;border:1px solid var(--line2);color:var(--dim);white-space:nowrap}
 .tag.gk{color:#ff7ac6;border-color:#ff7ac666}
 .tag.def{color:#6bb8ff;border-color:#6bb8ff66}
@@ -478,7 +478,7 @@ body{background:radial-gradient(120% 80% at 50% -10%, #1f4d51 0%, var(--bg) 55%)
 .club{background:linear-gradient(180deg, color-mix(in srgb,var(--panel) 92%,#fff 8%), var(--panel));
   box-shadow:0 3px 10px rgba(0,0,0,.25)}
 .hero,.livewrap{box-shadow:0 8px 26px rgba(0,0,0,.34)}
-.rating{box-shadow:inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 0 rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.3)}
+.rating{min-width:34px;height:26px;border-radius:6px;font-size:17px;font-weight:800;letter-spacing:.02em;border:1px solid rgba(255,255,255,.3);box-shadow:inset 0 -3px 0 rgba(0,0,0,.28),0 0 9px -2px var(--rg,transparent),0 1px 2px rgba(0,0,0,.4)}
 header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
 .modal{box-shadow:0 30px 70px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.06)}
 .spot .shirt{box-shadow:inset 0 2px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.3), 0 2px 5px rgba(0,0,0,.45)}
@@ -5270,7 +5270,7 @@ function showRunModal(runs) {
     `<button class="btn sm" onclick="closeModal();maybeShowPendingOffer()">Continue</button>`);
 }
 
-function doEndSeason() {
+function doEndSeason() { if (startPlayoffs()) return; doEndSeason2(); } function doEndSeason2() {
   const totsTier = me().tier;
   const totsXI = pickFormationXI(ratingPool(G, totsTier, null));
   const s = endSeason(G);
