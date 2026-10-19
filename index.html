@@ -1968,7 +1968,7 @@ function cupPairStage(G) {
 }
 function cupResolveTie(G, h, a, stage) {
   const ctx = createMatch(G, h, a, true);
-  runPeriod(G, ctx, 1, 90);
+  runPeriod(G, ctx, 1, 45); simSubs(G, ctx); runPeriod(G, ctx, 46, 90);
   let pens = null, winner;
   if (ctx.hg === ctx.ag) {
     let ph = 0, pa = 0;
