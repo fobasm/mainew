@@ -2187,6 +2187,39 @@ function computeMatchRatings(G, ctx) {
   ctx.ratings = ratings;
   ctx.potm = potm;
 }
+  /* everyone who took part: the starting XI plus anyone who came on */
+function matchSquad(start, xi) { const s = start || []; return s.concat(xi.filter(p => !s.includes(p))); }
+function appsTxt(p) { const s = p.sApps || 0; return s ? `${(p.apps || 0) - s}(${s})` : `${p.apps || 0}`; }
+function appsTxtN(a, s) { return s ? `${a - s}(${s})` : `${a}`; }
+/* simulated matches: both sides make 2-5 changes, injured and tired players go off first */
+function simSubs(G, ctx) {
+  if (ctx.forfeit) return;
+  const m0 = ctx.minute;
+  ['h', 'a'].forEach(side => {
+    const T = G.teams[side === 'h' ? ctx.h : ctx.a]; if (!T || !T.squad) return;
+    const xi = side === 'h' ? ctx.xiH : ctx.xiA, slots = side === 'h' ? ctx.slotsH : ctx.slotsA;
+    const hurt = new Set(ctx.ev.filter(e => e.type === 'injury' && e.side === side).map(e => e.scorer));
+    const gone = offIds(ctx);
+    let bench = T.squad.filter(p => !xi.includes(p) && isFit(p, T) && !p.reserve && p.pos !== 'GK' && !(ctx.subbedOff && ctx.subbedOff.has(p.id)));
+    const n = Math.min(rint(2, 5), bench.length);
+    for (let k = 0; k < n; k++) {
+      const cands = xi.map((p, i) => ({ p, slot: slots[i] || p.pos })).filter(x => !gone.has(x.p.id) && x.slot !== 'GK');
+      if (!cands.length) break;
+      cands.forEach(x => { x.s = (hurt.has(x.p.id) ? 100 : 0) + (100 - staOf(x.p)) * 0.5 + (70 - x.p.rating) * 0.1 + gauss() * 6; });
+      cands.sort((a, b) => b.s - a.s);
+      let done = false;
+      for (const c of cands) {
+        const g = POS_GROUP[c.slot];
+        const opts = bench.filter(b => POS_GROUP[b.pos] === g).sort((a, b) => (b.rating + gauss() * 4) - (a.rating + gauss() * 4));
+        if (!opts.length) continue;
+        ctx.minute = rint(55, 80);
+        if (makeSub(ctx, side, c.p.id, opts[0])) { ctx.ev[ctx.ev.length - 1].outName = c.p.name; bench = bench.filter(b => b !== opts[0]); done = true; break; }
+      }
+      if (!done) break;
+    }
+  });
+  ctx.minute = m0;
+}
 function finishMatch(G, ctx) {
   if (ctx.forfeit) { settleForfeit(G, ctx); return; }
   const played = new Set();
@@ -2435,14 +2468,14 @@ function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('ra
       promoted.push(...st.slice(0, AUTO_PROMOTED).map(r => r.id));
       const contenders = st.slice(AUTO_PROMOTED, AUTO_PROMOTED + PLAYOFF_SPOTS).map(r => r.id);
       if (contenders.length === PLAYOFF_SPOTS) {
-        const po = runPromotionPlayoff(G, contenders);
+        const po = (G.poPlayed && G.poPlayed.season === G.season && G.poPlayed.tier === tier && G.poPlayed.winner != null) ? G.poPlayed : runPromotionPlayoff(G, contenders);
         promoted.push(po.winner);
         playoffs.push({ tier, contenders, semis: po.semis, final: po.final, winner: po.winner });
       }
     }
     if (tier < N_TIERS - 1) relegated.push(...st.slice(TIER_SIZE - RELEGATED).map(r => r.id));
   }
-  sum.playoffs = playoffs;
+  sum.playoffs = playoffs; G.poPlayed = null;
   const move = (ids, dir) => ids.forEach(id => {
     const t = G.teams[id];
     t.tier = clamp(t.tier + dir, 0, N_TIERS - 1);
@@ -5335,7 +5368,7 @@ function poAdvance() {
   else { po.final = po.cur[0]; po.winner = po.final.winner; po.stage = 'done'; }
   po.cur = null; save(); poShow();
 }
-function doEndSeason() { if (startPlayoffs()) return; doEndSeason2(); } function doEndSeason2() {
+  function doEndSeason() { if (startPlayoffs()) return; doEndSeason2(); } function doEndSeason2() { if (startPlayoffs()) return; doEndSeason2(); } function doEndSeason2() {
   const totsTier = me().tier;
   const totsXI = pickFormationXI(ratingPool(G, totsTier, null));
   const s = endSeason(G);
