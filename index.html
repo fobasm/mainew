@@ -3563,6 +3563,25 @@ function warnExposedClauses(G) {
 }
 
 /* ---------------- news ---------------- */
+    /* ---- shortlist alerts: contract running down, listed, free agent, or moved club ---- */
+function watchlistAlerts(G) {
+  G.wlClub = G.wlClub || {};
+  (G.watchlist || []).forEach(pid => {
+    const f = findPlayer(G, pid); if (!f) return;
+    const p = f.p || f, club = f.t || null;
+    if (club && club.id === G.myTeam) return;
+    const send = (tag, subject, lines) => mail(G, { cat: 'scout', from: 'Scouting Department', subject, body: lines, p, club: club || undefined, key: `wl:${tag}:${pid}:${G.season}` });
+    const prev = G.wlClub[pid], cur = club ? club.id : 'FA';
+    if (prev != null && prev !== cur) {
+      if (cur === 'FA') send('fa' + G.round, `${p.name} is a free agent`, [`${p.name} (${p.pos}, ${p.rating}) has left ${prev !== 'FA' && G.teams[prev] ? G.teams[prev].n : 'his club'} and is available on a free.`, 'You can sign him from the Free agents list without a transfer fee.']);
+      else send('mv' + G.round, `${p.name} has joined ${club.n}`, [`Your shortlisted target ${p.name} (${p.pos}, ${p.rating}) is now at ${club.n}.`]);
+    }
+    G.wlClub[pid] = cur;
+    if (!club) return;
+    if (p.contract <= 1) send('ct', `${p.name}: contract running down`, [`${p.name}'s deal at ${club.n} ends this season. He could be a free agent soon, or cheap to buy.`]);
+    if (p.tl || p.ll || p.wantsOut) send('tl', `${p.name} is available`, [`${club.n} are willing to let ${p.name} (${p.pos}, ${p.rating}) go.`, 'Now could be a good time to make an offer.']);
+  });
+}
 function news(G, kind, text, meta) {
   G.news.unshift({ season: G.season, round: G.round, kind, text, meta: meta || null }); try { bthOnNews(G, kind, text, meta); } catch (e) { console.error('Bathini', e); }
   if (G.news.length > 60) G.news.pop();   const myT = G.teams && G.teams[G.myTeam];   if (myT && (kind === 'career' || kind === 'season' || kind === 'cup' || kind === 'nation' || /sponsor/i.test(text)) && (text.includes(myT.n) || text.includes(myT.s))) {     mail(G, { cat: 'news', from: 'Press Office', subject: 'Breaking News: ' + (text.length > 48 ? text.slice(0, 46) + '…' : text), body: [text] });   }
@@ -5247,6 +5266,7 @@ function afterRound() {
   aiClauseTriggers(G);
   updateScouting(G);
   updateOutgoingScouting(G);
+  try { watchlistAlerts(G); } catch (e) { console.error('Watchlist error', e); }
 const bids = G.jobless ? [] : generateBids(G);  bids.forEach(b => {     const pl = me().squad.find(x => x.id === b.pid), buyer = G.teams[b.from]; if (!pl || !buyer) return;     mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Offer received', flag: true, subject: `Transfer Offer: ${b.name}`,       body: [`${buyer.n} have bid ${money(b.fee)} for ${b.name}.`, `His estimated value is ${money(pl.value)}. Respond to the offer when it appears, or turn it down.`],       rows: [['Bidder', buyer.n], ['Offer', money(b.fee)], ['Estimated value', money(pl.value)], ['Contract', `${pl.contract} year${pl.contract === 1 ? '' : 's'} left`]] });   });   const loanOffers = generateLoanOffers(G);  loanOffers.forEach(o => {     const pl = me().squad.find(x => x.id === o.pid), buyer = G.teams[o.from]; if (!pl || !buyer) return;     mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Loan offer received', flag: true, subject: `Loan Offer: ${o.name}`,       body: [`${buyer.n} would like to take ${o.name} on loan for ${o.seasons} season${o.seasons === 1 ? '' : 's'}.`, `They would cover ${Math.round(o.wageShare * 100)}% of his wages while he's there. Respond to the offer when it appears, or turn it down.`],       rows: [['Club', buyer.n], ['Length', `${o.seasons} season${o.seasons === 1 ? '' : 's'}`], ['Wage share paid by them', Math.round(o.wageShare * 100) + '%']] });   });   try {     const un = unreadCount(G), fresh = un - (G.lastUnread || 0);     if (fresh > 0) toast(`✉ ${fresh} new message${fresh === 1 ? '' : 's'} in your inbox`);     G.lastUnread = un;   } catch (e) { }
 G.pendingBids = (G.pendingBids || []).concat(bids).filter(b => b.round == null || G.round - b.round < OFFER_EXPIRE_ROUNDS).slice(-15);
   G.pendingLoanOffers = (G.pendingLoanOffers || []).concat(loanOffers).filter(o => o.round == null || G.round - o.round < OFFER_EXPIRE_ROUNDS).slice(-15);
@@ -7019,7 +7039,39 @@ function showMoneyEffect(label, from, to, tint, onDone) {   uiSound(to >= from ?
     }
   }, 45);
 }
-
+/* ---- rival clubs: another club can step in once the seller has agreed to your bid ---- */
+function rivalBidFlow(p, seller, ask, v, swapId, go) {
+  const rivals = genuineBuyers(p, seller.id).filter(x => x.t.id !== G.myTeam && x.t.id !== seller.id && x.t.budget >= ask * 0.9);
+  if (!rivals.length || rnd() > Math.min(0.5, 0.1 + 0.12 * rivals.length) * (v > ask * 1.2 ? 0.3 : 1)) return false;
+  const rival = wpick(rivals, x => x.s).t, rMax = Math.min(rival.budget, ask * (1.2 + rnd() * 0.35));
+  if (rMax <= v) return false;
+  const r2 = x => Math.round(x * 100) / 100;
+  const round = (mine, theirs, n) => {
+    const up = r2(theirs * 1.05), afford = me().budget >= up;
+    openModal('A rival club has stepped in', `<div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">${crestHTML(rival, 40)}<div><b>${esc(rival.n)}</b><div class="hint">${esc(TIER_SHORT[rival.tier])}</div></div></div>
+      <p style="margin:0 0 8px"><b>${esc(rival.s)}</b> have tabled <b style="color:#f2b928">${money(theirs)}</b> for ${esc(p.name)}. ${esc(seller.s)} will sell to the best offer.</p>
+      <p class="hint" style="margin:0">Your offer: ${money(mine)}${afford ? '' : ' · you cannot afford to raise it'}</p>`,
+      `<button class="btn ghost sm" id="rvOut">Walk away</button><button class="btn sm" id="rvUp" ${afford ? '' : 'disabled'}>Raise to ${money(up)}</button>`);
+    $('#rvOut').onclick = () => { closeModal(); toastWarn(`You pull out. ${rival.s} are left to sign ${p.name}.`); rivalSign(p, seller, rival, theirs); };
+    $('#rvUp').onclick = () => {
+      closeModal();
+      if (up > rMax || n >= 3) { toast(`${rival.s} drop out of the bidding.`); go(up); return; }
+      round(up, r2(Math.min(rMax, up * (1.03 + rnd() * 0.05))), n + 1);
+    };
+  };
+  round(v, r2(Math.min(rMax, Math.max(v * 1.04, ask * 0.98))), 1);
+  return true;
+}
+function rivalSign(p, seller, rival, fee) {
+  seller.squad = seller.squad.filter(x => x.id !== p.id); rival.squad.push(p);
+  p.clubs.push({ id: rival.id, from: G.season }); p.contract = rint(2, 4); p.joinedSeason = G.season; p.wantsOut = false; p.releaseClause = null; p.tl = false; p.ll = false;
+  seller.budget += fee; seller.fin.sales += fee; rival.budget = Math.max(0, rival.budget - fee); rival.fin.buys += fee;
+  seller.wageBill = wageOf(seller); rival.wageBill = wageOf(rival); ensureLineup(seller); ensureLineup(rival);
+  G.market = G.market.filter(m => m.pid !== p.id);
+  logTransfer(G, p, seller.id, rival.id, fee);
+  news(G, 'transfer', `${p.name} joins ${rival.s} from ${seller.s} for ${money(fee)} after a bidding war with ${me().s}.`, { pid: p.id, fromId: seller.id, toId: rival.id });
+  save(); render();
+}
 function bidModal(pid, ask) {
   const f = findPlayer(G, pid); if (!f) { toast('He has moved on.'); return; }
   const p = f.p, seller = f.t, maxOffer = Math.max(ask * 0.56, Math.min(me().budget, ask * 1.6));
@@ -7056,8 +7108,8 @@ function bidModal(pid, ask) {
     const v = +r.value, sp = swapPick(), swapId = sp ? sp.id : null;
     if (Math.random() > chanceOf(v)) { closeModal(); toastWarn(`${f.t.s} turn down your offer for ${p.name}.`); return; }
     closeModal();
-    toast(`${f.t.s} agree a deal for ${p.name}${swapId != null ? ', including a player swap' : ''}. Now convince him personally.`);
-    playerTermsModal(pid, Math.round(v * 100) / 100, undefined, false, swapId);
+    const go = vv => { toast(`${f.t.s} agree a deal for ${p.name}${swapId != null ? ', including a player swap' : ''}. Now convince him personally.`); playerTermsModal(pid, Math.round(vv * 100) / 100, undefined, false, swapId); };
+    if (!rivalBidFlow(p, seller, ask, v, swapId, go)) go(v);
   };
 }
 
