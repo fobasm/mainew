@@ -6253,38 +6253,6 @@ function refreshLiveMarkers() {   const ls = liveState; if (!ls) return;   [['h'
 
   $('#modal .x').onclick = resume;
 
-  const resume = () => {
-    if (secondHalfStarted) return;
-    if (liveState !== ls || ls.ft) return;
-
-    secondHalfStarted = true;
-    const btn = $('#htGo');
-    if (btn) btn.disabled = true;
-
-    closeModal();
-
-    try {
-      ls.half = 2;
-      ls.minute = 45;
-      aiSubs(G, ls.ctx);
-      runPeriod(G, ls.ctx, 46, 92);
-      refreshLiveMarkers();
-
-      ls.started = true;
-      ls.paused = false;
-      resumeAfterBreak(ls);
-      updateLiveScore();
-      liveControls();
-      save();
-    } catch (err) {
-      secondHalfStarted = false;
-      console.error('Second-half start failed:', err);
-      toast('Could not start the second half. Check the browser console.');
-      if (btn) btn.disabled = false;
-    }
-  };
-
-  $('#modal .x').onclick = resume;
   let selOut = null;
   const paint = () => {
     const on = ls.mySide === 'h' ? ls.ctx.xiH : ls.ctx.xiA;
