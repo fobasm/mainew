@@ -705,7 +705,7 @@ header.top{box-shadow:0 2px 12px rgba(0,0,0,.35)}
     <div class="view" id="v-createclub"></div>
     <div class="view" id="v-manager"></div>
     <div class="view" id="v-otherclubs"></div>     <div class="view" id="v-watchlist"></div>
-       <div class="view" id="v-club"></div>     <div class="view" id="v-mmcoins"></div>     <div class="view" id="v-finances"></div>     <div class="view" id="v-trophies"></div>
+       <div class="view" id="v-club"></div>     <div class="view" id="v-bathini"></div>     <div class="view" id="v-mmcoins"></div>     <div class="view" id="v-finances"></div>     <div class="view" id="v-trophies"></div>
   </main>
   </main>
   </div>
@@ -3502,7 +3502,7 @@ function warnExposedClauses(G) {
 
 /* ---------------- news ---------------- */
 function news(G, kind, text, meta) {
-  G.news.unshift({ season: G.season, round: G.round, kind, text, meta: meta || null });
+  G.news.unshift({ season: G.season, round: G.round, kind, text, meta: meta || null }); try { bthOnNews(G, kind, text, meta); } catch (e) { console.error('Bathini', e); }
   if (G.news.length > 60) G.news.pop();   const myT = G.teams && G.teams[G.myTeam];   if (myT && (kind === 'career' || kind === 'season' || kind === 'cup' || kind === 'nation' || /sponsor/i.test(text)) && (text.includes(myT.n) || text.includes(myT.s))) {     mail(G, { cat: 'news', from: 'Press Office', subject: 'Breaking News: ' + (text.length > 48 ? text.slice(0, 46) + '…' : text), body: [text] });   }
 }
 
@@ -4994,7 +4994,7 @@ function buildSlots() {
 
 /* ---------------- tabs ---------------- */
 const MENU_SECTIONS = [
-  ['Career', [['inbox','Inbox'],['match','Matchday'],['calendar','Calendar'],['table','League tables & fixtures']]],
+  ['Career', [['inbox','Inbox'],['bathini','Bathini'],['match','Matchday'],['calendar','Calendar'],['table','League tables & fixtures']]],
   ['Squad', [['squad','Squad & Tactics'], ['youth','Academy & Training'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist']]],
   ['Competitions', [['cups','Cups'],['africa','Continental football'],['nations','Nations'],['world','World players'],['clubrank','Club rankings'],['stats','Player Stats']]],
   ['Club', [['club','Club & Finances'],['mmcoins','MM Coins'],['commercial','Commercial'],['stadium','Stadium & tickets'],['board','Board & objectives'], ['trophies','Trophy room'],['legends','MM Legends'],['manager','Manager'],['news','News']]],
@@ -5053,12 +5053,12 @@ function render() { try { updateNavToggle(); closeNavMenu(); } catch (e) { } try
   $('#statPos').textContent = ordinal(posOfTeam(G, G.myTeam));
   $('#statSquad').textContent = `${t.squad.length}/32`;
   $('#statBudget').textContent = money(t.budget); try { mmRefreshChip(); } catch (e) { }
-  document.querySelectorAll('.navlink').forEach(b => b.classList.toggle('on', b.dataset.tab === tab)); try { updateInboxBadge(); } catch (e) { } try { syncNav(); } catch (e) { }   const navBadges = { watchlist: (G.watchlist || []).length, youth: me().youth.length, transfers: (G.pendingBids || []).length, manager: (G.pendingJobOffers || []).length, mmcoins: (typeof mmCanClaim === 'function' && mmCanClaim()) ? 1 : 0 };   Object.keys(navBadges).forEach(tabId => {     const btn = document.querySelector(`.navlink[data-tab="${tabId}"]`); if (!btn) return;     const n = navBadges[tabId];     let badge = btn.querySelector('.nb');     if (n) { if (!badge) { badge = document.createElement('span'); badge.className = 'nb'; btn.appendChild(badge); } badge.textContent = n; }     else if (badge) badge.remove();   });
+  document.querySelectorAll('.navlink').forEach(b => b.classList.toggle('on', b.dataset.tab === tab)); try { updateInboxBadge(); } catch (e) { } try { syncNav(); } catch (e) { }   const navBadges = { watchlist: (G.watchlist || []).length, youth: me().youth.length, transfers: (G.pendingBids || []).length, manager: (G.pendingJobOffers || []).length, bathini: (typeof bthUnread === 'function') ? bthUnread() : 0, mmcoins: (typeof mmCanClaim === 'function' && mmCanClaim()) ? 1 : 0 };   Object.keys(navBadges).forEach(tabId => {     const btn = document.querySelector(`.navlink[data-tab="${tabId}"]`); if (!btn) return;     const n = navBadges[tabId];     let badge = btn.querySelector('.nb');     if (n) { if (!badge) { badge = document.createElement('span'); badge.className = 'nb'; btn.appendChild(badge); } badge.textContent = n; }     else if (badge) badge.remove();   });
   document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
   const active = $('#v-' + tab);
   if (active) active.classList.add('on');
   const dispatch = { match: viewMatch, table: viewTable, fixtures: viewFixtures, squad: viewSquadHub, tactics: viewSquadHub, finances: viewFinances, trophies: viewTrophies,
-     transfers: viewTransfers, youth: viewYouthHub, training: viewYouthHub, inbox: viewInbox, stats: viewStats, news: viewNews,
+     transfers: viewTransfers, youth: viewYouthHub, training: viewYouthHub, inbox: viewInbox, bathini: viewBathini, stats: viewStats, news: viewNews,
       cups: viewCups, africa: viewAfrica, nations: viewNations, world: viewWorld, clubrank: viewClubRank, commercial: viewCommercial, stadium: viewStadium, board: viewBoard, legends: viewLegends, stadium: viewStadium, calendar: viewCalendar, watchlist: viewWatchlist,
      info: viewInfo, getadded: viewGetAdded, createclub: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub, mmcoins: viewMMCoins };
   try {
