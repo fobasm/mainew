@@ -3345,10 +3345,10 @@ function generateBids(G) {
   if (!inTransferWindow(G)) return []; // clubs don't submit formal bids outside the window — scouting continues, offers don't
   const me = G.teams[G.myTeam], bids = [];
   me.squad.forEach(p => {
-    const suitors = p.tl ? interestRanking(p, me.id).filter(x => x.s >= 4.5 && (p.rating - starterRatingAt(x.t, p.pos)) >= 0) : genuineBuyers(p, me.id);
+    const suitors = p.tl ?    interestRanking(p, me.id).filter(x => x.s >= 3 && (p.rating - starterRatingAt(x.t, p.pos)) >= -1) : genuineBuyers(p, me.id);
     const interest = suitors.length;
     if (!interest) return; // nobody seriously in for him this week — no offer, full stop
-    const base = p.tl ? 0.3 : (p.wantsOut ? 0.16 : 0.035);
+    const base = p.tl ? 0.55 : (p.wantsOut ? 0.16 : 0.035);
     const interestBoost = Math.min(0.12, interest * 0.03);
     const chance = base + interestBoost + (p.rating > 78 ? 0.04 : 0);
     if (rnd() < chance) {
@@ -6389,12 +6389,13 @@ function interestRanking(p, ownerId) {
     if (t.tier > ptier + 1 || t.tier < ptier - 2) continue;
     if (t.budget < p.value * 0.5) continue;
     const d = p.rating - starterRatingAt(t, p.pos);
-    if (d < 1) continue;
+    if (d < (p.tl ? -1 : 1)) continue;
     if (p.nat !== 'ZA' && t.squad.filter(pl => pl.nat !== 'ZA').length >= MAX_FOREIGN) continue;
     if (p.rating - clubLevel(t) >= 15) continue;
     let s = d + (t.tier < ptier ? 2 : 0) - (t.tier > ptier ? 3 : 0);
     s += (hashS(p.id + '_' + t.id + '_' + G.round) - 0.5) * 6;
     if (p.wantsOut) s += 2.5;
+    if (p.tl) s += 2;   /* transfer-listed: clubs know he's available */
     if (p.contract <= 1) s += 1.5;
     if (!windowOpen) s -= 4;
     if (p.contractSignedRound != null && G.round - p.contractSignedRound < 8) s -= (8 - (G.round - p.contractSignedRound)) * 0.8;
