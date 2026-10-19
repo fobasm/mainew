@@ -3405,11 +3405,12 @@ function makeLoanOffer(club, p) {
 function generateLoanOffers(G) {
   const me = G.teams[G.myTeam], offers = [];
   if (!inTransferWindow(G)) return offers;
+  const xi = lineupOf(me);
   me.squad.forEach(p => {
     if (!loanEligible(me, p)) return;
     const interested = loanInterestRanking(p, me.id).slice(0, 6).map(x => x.t);
     if (!interested.length) return;
-    const chance = p.ll ? Math.min(0.6, 0.25 + interested.length * 0.05) : Math.min(0.08, 0.02 + interested.length * 0.01);
+    if (!p.ll && xi.includes(p)) return;   /* regular starters don't get unsolicited loan requests */     const fit = p.age >= 30 ? 0.12 : p.age >= 27 ? 0.45 : (p.age <= 23 || p.reserve) ? 1.6 : 1;   /* mostly young and fringe players */     const chance = p.ll ? Math.min(0.6, 0.25 + interested.length * 0.05) : Math.min(0.08, (0.02 + interested.length * 0.01) * fit);
     if (rnd() < chance) {
       const club = wpick(interested, t => 1 + Math.max(0, clubLevel(t) - clubLevel(me) + 10));
       offers.push(makeLoanOffer(club, p));
@@ -7051,7 +7052,7 @@ let statTab = 'goals', statLimit = 20, totmMonth = null; function viewStats() { 
         <td class="pos num">${i + 1}</td>
         <td><b>${esc(x.p.name)}</b> ${flagSVG(x.p.nat)}</td>
         <td class="hide-s" style="color:var(--dim)">${esc(x.club.s)}</td>
-        ${cols.map(c => `<td class="num">${c[1] === 'v' ? x.v : x.p[c[1]]}</td>`).join('')}</tr>`).join('') + '</tbody></table>'
+        ${cols.map(c => `<td class="num">${c[1] === 'v' ? x.v : c[1] === 'apps' ? appsTxt(x.p) : x.p[c[1]]}</td>`).join('')}</tr>`).join('') + '</tbody></table>'
     : '<div class="empty">Nothing to show until the ball starts rolling.</div>';
   const teams = sortTable(G, statTier).map(r => G.teams[r.id]).sort((a, b) => teamOverall(b) - teamOverall(a));
   v.innerHTML = `<div class="panel"><div class="chipbar"> ${[0,1,2,3,4].map(i => `<button class="chip" data-st="${i}" aria-pressed="${statTier === i}">${TIER_SHORT[i]}</button>`).join('')}</div></div>
