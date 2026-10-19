@@ -2296,7 +2296,7 @@ function commitMatch(G, tier, m, ctx) {
   m.hg = ctx.hg; m.ag = ctx.ag; m.played = true;   if (ctx.forfeit) { m.forfeit = ctx.forfeit; m.fine = ctx.fine || 0; }
   m.ev = ctx.ev.filter(e => e.type === 'goal');
   m.allEv = ctx.ev;
-  m.potm = ctx.potm || null;   if (ctx.h === G.myTeam || ctx.a === G.myTeam) {     if (ctx.xgP) m.xg = tacSumXG(ctx);     m.tc = { h: tacCode(ctx.tacH || TAC_DEFAULT), a: tacCode(ctx.tacA || TAC_DEFAULT) };   }
+  m.potm = ctx.potm || null; m.rt = (ctx.h === G.myTeam || ctx.a === G.myTeam) ? ctx.ratings : null;   if (ctx.h === G.myTeam || ctx.a === G.myTeam) {     if (ctx.xgP) m.xg = tacSumXG(ctx);     m.tc = { h: tacCode(ctx.tacH || TAC_DEFAULT), a: tacCode(ctx.tacA || TAC_DEFAULT) };   }
   tableUpdate(G, tier, m);
 }
 
@@ -5243,7 +5243,28 @@ function goalList(ev) {   const goals = ev.filter(e => e.type === 'goal');   con
     `<li><span class="min">${e.min}'</span><span class="who">${esc(e.sName)} <span class="tag">${esc(G.teams[e.team].s)}</span></span>
      <span class="aw">${e.aName ? 'assist ' + esc(e.aName) : ''}</span></li>`).join('') + '</ul>';
 }
-
+/* ---- post-match summary: ratings, changes and incidents for your side ---- */
+function matchSummaryHTML(m) {
+  if (!m || !m.allEv || m.forfeit) return '';
+  const my = G.teams[G.myTeam], ev = m.allEv, rt = m.rt || {};
+  const mine = e => e.team === G.myTeam;
+  const rated = Object.keys(rt).map(id => ({ p: my.squad.find(x => x.id === +id), r: rt[id] })).filter(x => x.p).sort((a, b) => b.r - a.r);
+  const col = r => r >= 7.5 ? '#3ddc84' : r < 6 ? '#ff6b6b' : '#f2b928';
+  const row = x => `<div class="res" style="grid-template-columns:1fr auto;gap:8px"><div class="h">${esc(x.p.name)} <span class="hint">${esc(x.p.pos)}</span></div><div class="a"><b style="color:${col(x.r)}">${x.r.toFixed(1)}</b></div></div>`;
+  let h = '';
+  if (rated.length) {
+    const avg = rated.reduce((a, x) => a + x.r, 0) / rated.length;
+    h += `<div class="hint" style="margin:12px 0 4px">Top performers · team average <b style="color:${col(avg)}">${avg.toFixed(1)}</b></div>${rated.slice(0, 3).map(row).join('')}`;
+    const low = rated[rated.length - 1];
+    if (rated.length > 3 && low.r < 6) h += `<div class="hint" style="margin:8px 0 4px">Struggled</div>${row(low)}`;
+  }
+  const lines = [];
+  ev.filter(e => e.type === 'sub' && mine(e)).forEach(e => lines.push({ min: e.min, t: `🔄 ${e.sName} ${e.outName ? 'on for ' + esc(e.outName) : 'came on'}` }));
+  ev.filter(e => e.type === 'card' && mine(e)).forEach(e => lines.push({ min: e.min, t: `${e.card === 'red' ? '🟥' : '🟨'} ${esc(e.sName)}` }));
+  ev.filter(e => e.type === 'injury' && mine(e)).forEach(e => lines.push({ min: e.min, t: `🩹 ${esc(e.sName)} picked up a knock` }));
+  if (lines.length) h += `<div class="hint" style="margin:10px 0 4px">Changes and incidents</div><ul class="goals">${lines.sort((a, b) => a.min - b.min).map(l => `<li><span class="min">${l.min}'</span><span class="who">${l.t}</span></li>`).join('')}</ul>`;
+  return h;
+}
 function showMatchdayModal(res) {
   const m = matchOf(res);
   if (!m) { showRunModal([res]); return; }
@@ -5256,7 +5277,7 @@ function showMatchdayModal(res) {
       <div class="side away">${crestHTML(A, 30)}<div><b>${esc(A.s)}</b><small>${esc(A.city)}</small></div></div>
     </div>
     <p style="text-align:center;color:var(--dim);margin:0">${verdict} ${ordinal(posOfTeam(G, G.myTeam))} after ${G.round} ${G.round === 1 ? 'game' : 'games'}.</p>
-   ${m.forfeit ? forfeitNoteHTML(m) : goalList(m.allEv || m.ev) + potmCardHTML(m) + tacStatsHTML(m)}`;
+   ${m.forfeit ? forfeitNoteHTML(m) : goalList(m.allEv || m.ev) + potmCardHTML(m) + tacStatsHTML(m) + matchSummaryHTML(m)}`;
   body += myCupResultsHTML(res);   if (res.cup) body += cupRoundHTML(res.cup);
   openModal(`Matchday ${res.round}`, body,
     `<button class="btn ghost sm" onclick="closeModal();tab='table';render()">See the log</button>
@@ -5579,7 +5600,7 @@ function showMatchPreview(opp, mySide, kind, next) {
   openModal('Match preview', body, `<button class="btn sm" id="mpGo">Continue</button>`);
   $('#mpGo').onclick = () => { closeModal(); next(); };
 }
-  function preMatchFlow(ctx, m, kind, tier, mySide, oppTeam) {   showPressConference(oppTeam.n, (presTone) => {     const myTeamObj = G.teams[G.myTeam];     const myOverall = teamOverall(myTeamObj);     const oppOverall = teamOverall(oppTeam);     showTeamTalk(myOverall, oppOverall, (talk) => {       const delta = presTone.mood + talk.delta;       if (delta) { if (mySide === 'h') ctx.luckH += delta; else ctx.luckA += delta; }       if (presTone.key !== 'skip' || talk.key !== 'skip') {         news(G, 'career', `Before kickoff vs ${oppTeam.n}: "${presTone.label}"${talk.key !== 'skip' ? ` — team talk: ${talk.label}.` : '.'}`);       }       beginLiveMatch(ctx, m, kind, tier);     });   }); } function beginLiveMatch(ctx, m, kind, tier) {
+  function preMatchFlow(ctx, m, kind, tier, mySide, oppTeam) { showMatchPreview(oppTeam, mySide, kind, () => preMatchFlow0(ctx, m, kind, tier, mySide, oppTeam)); } function preMatchFlow0(ctx, m, kind, tier, mySide, oppTeam) {   showPressConference(oppTeam.n, (presTone) => {     const myTeamObj = G.teams[G.myTeam];     const myOverall = teamOverall(myTeamObj);     const oppOverall = teamOverall(oppTeam);     showTeamTalk(myOverall, oppOverall, (talk) => {       const delta = presTone.mood + talk.delta;       if (delta) { if (mySide === 'h') ctx.luckH += delta; else ctx.luckA += delta; }       if (presTone.key !== 'skip' || talk.key !== 'skip') {         news(G, 'career', `Before kickoff vs ${oppTeam.n}: "${presTone.label}"${talk.key !== 'skip' ? ` — team talk: ${talk.label}.` : '.'}`);       }       beginLiveMatch(ctx, m, kind, tier);     });   }); } function beginLiveMatch(ctx, m, kind, tier) {
   if (tab !== 'match') { tab = 'match'; document.querySelectorAll('.view').forEach(v => v.classList.remove('on')); const av = $('#v-match'); if (av) av.classList.add('on'); }
   playSound('whistle');
   if (bgMusic) bgMusic.volume = 0.05;
