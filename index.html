@@ -5048,7 +5048,7 @@ function render() { try { updateNavToggle(); closeNavMenu(); } catch (e) { } try
   const t = me();
   $('#myCrest').innerHTML = crestHTML(t, 30);
   $('#myName').textContent = G.jobless ? 'Unemployed' : t.n;
-  $('# mySub').textContent = (G.jobless ? 'Looking for a club' : TIER_SHORT[t.tier]) + (document.querySelector('header.top .tmgr') && getComputedStyle(document.querySelector('header.top .tmgr')).display === 'none' ? ' · ' + G.manager.name : '');
+  $('#mySub').textContent = (G.jobless ? 'Looking for a club' : TIER_SHORT[t.tier]) + (document.querySelector('header.top .tmgr') && getComputedStyle(document.querySelector('header.top .tmgr')).display === 'none' ? ' · ' + G.manager.name : '');
   $('#statOvr').textContent = teamOverall(t);
   $('#statPos').textContent = ordinal(posOfTeam(G, G.myTeam));
   $('#statSquad').textContent = `${t.squad.length}/32`;
