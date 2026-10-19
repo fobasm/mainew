@@ -8986,11 +8986,24 @@ if (lccGoBtn) lccGoBtn.onclick = () => {
   const nat = ($('#mgrNat') && $('#mgrNat').value) || 'ZA';
   const dob = ($('#mgrDob') && $('#mgrDob').value) || '1988-06-15';
   if (slotInfo(slot)) slot = firstFreeSlot();
-  G = newGame(pickClub != null ? pickClub : Math.max(0, CLUBS.findIndex(c => c.t === lccTier)), { name: nm, avatar: pickAvatar, nat, dob });
+G = newGame(pickClub != null ? pickClub : Math.max(0, CLUBS.findIndex(c => c.t === lccTier)), { name: nm, avatar: pickAvatar, nat, dob });
   const idx = foundClub(G, { name: lccName.trim(), city: lccCity.trim() || 'Mzansi', tier: lccTier, c1: lccC1, c2: lccC2, icon: lccIcon, shape: lccShape });
   G.myTeam = idx;
-  enterApp(); save();
-  toast(`Welcome to ${G.teams[idx].n}.`);
+  const t = G.teams[idx];
+  openContractOfferOld({
+    team: t, heading: 'Contract Offer', mgrName: nm, dateISO: new Date().toISOString().slice(0, 10),
+    paragraphs: [
+      `The club's board — which, as founder, is you — formally appoints you <b>Head Coach</b> of <b>${esc(t.n)}</b>.`,
+      `You will be taking charge in the ${esc(TIER_NAMES[t.tier])}.`
+    ],
+    options: [{ key: 'accept', label: 'Accept Offer' }, { key: 'reject', label: 'Reject Offer' }],
+    defaultKey: 'accept',
+    onChoice: (k) => {
+      if (k !== 'accept') { G = null; return; }
+      enterApp(); save();
+      toast(`Welcome to ${G.teams[idx].n}.`);
+    }
+  });
 };
 renderLandingCreateClub();
 </script>
