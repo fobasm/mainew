@@ -5269,7 +5269,72 @@ function showRunModal(runs) {
     rows + `<p style="margin:13px 0 0;color:var(--dim)">You're ${ordinal(posOfTeam(G, G.myTeam))} in the ${TIER_SHORT[me().tier]} after ${G.round} games.</p>`,
     `<button class="btn sm" onclick="closeModal();maybeShowPendingOffer()">Continue</button>`);
 }
-
+/* ---- promotion playoffs you can see and play ---- */
+function poContenders() { const t = me(); if (!t || t.tier <= 0) return null; const c = sortTable(G, t.tier).slice(AUTO_PROMOTED, AUTO_PROMOTED + PLAYOFF_SPOTS).map(r => r.id); return c.length === PLAYOFF_SPOTS ? c : null; }
+function poFinalPair(po) { const w0 = po.semis[0].winner, w1 = po.semis[1].winner; return po.contenders.indexOf(w1) < po.contenders.indexOf(w0) ? [w1, w0] : [w0, w1]; }
+function poPairs(po) { const c = po.contenders; return po.stage === 'semi' ? [[c[0], c[3]], [c[1], c[2]]] : [poFinalPair(po)]; }
+function poLine(h, a, r, label) {
+  const H = G.teams[h], A = G.teams[a], mineRow = h === G.myTeam || a === G.myTeam;
+  const sc = r ? `${r.hg}–${r.ag}${r.pens ? ` <small>(${r.pens[0]}–${r.pens[1]} pens)</small>` : ''}` : 'v';
+  return `<div class="hint" style="margin:8px 0 2px">${label}</div><div class="res" style="${mineRow ? 'background:rgba(242,185,40,.14)' : ''}"><div class="h">${crestHTML(H, 16)} ${esc(H.s)}</div><div class="sc">${sc}</div><div class="a">${esc(A.s)} ${crestHTML(A, 16)}</div></div>`;
+}
+function poBodyHTML(po) {
+  const c = po.contenders, o = i => ordinal(AUTO_PROMOTED + i + 1);
+  let h = `<p style="margin:0 0 6px;color:var(--dim)">The ${esc(TIER_SHORT[po.tier])} playoffs decide the last promotion spot. ${o(0)} hosts ${o(3)}, ${o(1)} hosts ${o(2)}, and the better-placed winner hosts the final.</p>`;
+  const sp = po.stage === 'semi' ? [[c[0], c[3]], [c[1], c[2]]] : [[c[0], c[3]], [c[1], c[2]]];
+  sp.forEach((p, i) => { h += poLine(p[0], p[1], po.semis[i], `Semi-final ${i + 1} · ${o(c.indexOf(p[0]))} v ${o(c.indexOf(p[1]))}`); });
+  if (po.stage !== 'semi') { const fp = poFinalPair(po); h += poLine(fp[0], fp[1], po.final, 'Final'); }
+  else h += `<div class="hint" style="margin:8px 0 2px">Final</div><div class="res"><div class="h hint">Winner of semi 1 / semi 2</div><div class="sc">v</div><div class="a"></div></div>`;
+  return h;
+}
+function startPlayoffs() {
+  const c = poContenders(); if (!c) return false;
+  if (!G.poPlayed || G.poPlayed.season !== G.season) {
+    G.poPlayed = { season: G.season, tier: me().tier, contenders: c, semis: [null, null], final: null, winner: null, stage: 'semi', cur: null };
+    if (c.includes(G.myTeam)) mail(G, { cat: 'general', from: 'Board of Directors', flag: true, subject: 'You are in the promotion playoffs', body: [`${me().n} finished ${ordinal(posOfTeam(G, G.myTeam))} and have qualified for the promotion playoffs.`, 'Win the semi-final and the final to earn the last promotion spot.'] });
+  }
+  if (G.poPlayed.winner != null) return false;
+  poShow(); return true;
+}
+function poShow() {
+  const po = G.poPlayed, mine = po.contenders.includes(G.myTeam);
+  if (po.stage === 'done') {
+    const w = G.teams[po.winner], won = po.winner === G.myTeam;
+    openModal('Playoff final', poBodyHTML(po) + `<p style="margin:12px 0 0;color:${won ? '#3ddc84' : 'var(--dim)'}">${won ? 'You won the playoffs and earned promotion!' : `${esc(w.n)} win the playoffs and take the last promotion spot.`}</p>`, `<button class="btn sm" id="poGo">Continue</button>`);
+    $('#poGo').onclick = () => { closeModal(); doEndSeason2(); }; return;
+  }
+  const pairs = poPairs(po), inIt = pairs.some(p => p.includes(G.myTeam));
+  const intro = po.stage === 'semi' ? (mine ? `<p style="margin:0 0 8px;color:#3ddc84"><b>You are in the promotion playoffs!</b> You finished ${ordinal(posOfTeam(G, G.myTeam))}.</p>` : '') : (mine && !inIt ? `<p style="margin:0 0 8px;color:#ff8a84">You were knocked out in the semi-finals.</p>` : (inIt ? `<p style="margin:0 0 8px;color:#3ddc84"><b>You are through to the final!</b></p>` : ''));
+  const btn = inIt ? (G.liveMode ? 'Play the match' : 'Simulate the match') : (po.stage === 'semi' ? 'Simulate the semi-finals' : 'Simulate the final');
+  openModal(po.stage === 'semi' ? (mine ? 'You made the playoffs!' : 'Promotion playoffs') : 'Playoff final', intro + poBodyHTML(po), `<button class="btn sm" id="poGo">${btn}</button>`);
+  $('#poGo').onclick = poRun;
+}
+function poRun() {
+  const po = G.poPlayed; closeModal();
+  const stg = po.stage === 'semi' ? 'promo-semi' : 'promo-final', pairs = poPairs(po);
+  po.cur = pairs.map(() => null); po.mineIdx = -1;
+  pairs.forEach((p, i) => { if (p.includes(G.myTeam) && G.liveMode) { po.mineIdx = i; return; } po.cur[i] = cupResolveTie(G, p[0], p[1], stg); });
+  if (po.mineIdx >= 0) { poLive(pairs[po.mineIdx], stg); return; }
+  poAdvance();
+}
+function poLive(p, stg) {
+  const po = G.poPlayed, h = p[0], a = p[1], ctx = createMatch(G, h, a, true);
+  if (ctx.forfeit) { po.cur[po.mineIdx] = cupResolveTie(G, h, a, stg); poAdvance(); return; }
+  const side = h === G.myTeam ? 'h' : 'a';
+  preMatchFlow(ctx, { h, a }, 'playoff', null, side, G.teams[side === 'h' ? a : h]);
+}
+function poLiveDone(ls) {
+  const po = G.poPlayed, m = ls.m, c = ls.ctx; let pens = null, winner;
+  if (c.hg === c.ag) { let ph = 0, pa = 0; do { ph += rnd() < 0.76 ? 1 : 0; pa += rnd() < 0.74 ? 1 : 0; } while (ph === pa); pens = [ph + 3, pa + 3]; winner = ph > pa ? m.h : m.a; } else winner = c.hg > c.ag ? m.h : m.a;
+  po.cur[po.mineIdx] = { h: m.h, a: m.a, hg: c.hg, ag: c.ag, pens, winner, stage: po.stage === 'semi' ? 'promo-semi' : 'promo-final', ev: c.ev };
+  liveState = null; poAdvance();
+}
+function poAdvance() {
+  const po = G.poPlayed;
+  if (po.stage === 'semi') { po.semis = po.cur; po.stage = 'final'; }
+  else { po.final = po.cur[0]; po.winner = po.final.winner; po.stage = 'done'; }
+  po.cur = null; save(); poShow();
+}
 function doEndSeason() { if (startPlayoffs()) return; doEndSeason2(); } function doEndSeason2() {
   const totsTier = me().tier;
   const totsXI = pickFormationXI(ratingPool(G, totsTier, null));
@@ -5946,6 +6011,7 @@ function endLive() {
   stopCrowd();
   if (bgMusic) bgMusic.volume = 0.25;
   finishMatch(G, ls.ctx);
+  if (ls.kind === 'playoff') { poLiveDone(ls); return; }
   if (ls.kind === 'cup') {
     let pens = null, winner;
     if (ls.ctx.hg === ls.ctx.ag) {
