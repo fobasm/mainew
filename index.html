@@ -4990,6 +4990,14 @@ function enterApp() { try { inboxTick(G); } catch (e) { } $('#landing').style.di
 
 /* ---------------- save slots ---------------- */
 const LZ_MAX = 0xD000; function lzCompress(str) {   const b = new TextEncoder().encode(str);   if (!b.length) return '';   const codes = new Uint16Array(b.length + 1); let n = 0;   let dict = new Map(), next = 256, w = b[0];   for (let i = 1; i < b.length; i++) {     const c = b[i], key = w * 256 + c, hit = dict.get(key);     if (hit !== undefined) { w = hit; continue; }     codes[n++] = w;     if (next < LZ_MAX) dict.set(key, next++); else { dict = new Map(); next = 256; }     w = c;   }   codes[n++] = w;   let out = '';   for (let i = 0; i < n; i += 8192) out += String.fromCharCode.apply(null, codes.subarray(i, Math.min(n, i + 8192)));   return out; } function lzDecompress(s) {   const n = s.length; if (!n) return '';   const pre = new Int32Array(LZ_MAX), suf = new Uint8Array(LZ_MAX), len = new Int32Array(LZ_MAX);   let out = new Uint8Array(Math.max(1024, n * 16)), op = 0, next = 256, prev = -1;   const firstOf = c => { while (c >= 256) c = pre[c]; return c; };   const write = c => {     const l = c < 256 ? 1 : len[c];     if (op + l > out.length) { const g = new Uint8Array(Math.max(out.length * 2, op + l)); g.set(out); out = g; }     let p = op + l; op = p;     while (true) { if (c < 256) { out[--p] = c; break; } out[--p] = suf[c]; c = pre[c]; }   };   for (let i = 0; i < n; i++) {     const cur = s.charCodeAt(i);     if (prev === -1) { write(cur); prev = cur; continue; }     if (next === LZ_MAX) { next = 256; write(cur); prev = cur; continue; }     const first = cur < next ? firstOf(cur) : firstOf(prev);     pre[next] = prev; suf[next] = first; len[next] = (prev < 256 ? 1 : len[prev]) + 1; next++;     write(cur); prev = cur;   }   return new TextDecoder().decode(out.subarray(0, op)); } function packSave(obj) {   const json = JSON.stringify(obj);   try { return 'LZ1:' + lzCompress(json); } catch (e) { return json; } } function unpackSave(raw) {   if (!raw) return null;   try {     const d = JSON.parse(raw.slice(0, 4) === 'LZ1:' ? lzDecompress(raw.slice(4)) : raw);     return (d && d.G && d.G.teams) ? d : null;   } catch (e) { return null; } } function saveMeta(k) {   try {     const t = G.teams[G.myTeam];     localStorage.setItem(SAVE_PREFIX + 'meta_' + k, JSON.stringify({ club: t.n, tier: t.tier, season: G.season, round: G.round, manager: (G.manager && G.manager.name) || 'Coach', trophies: t.trophies.length, saved: Date.now() }));   } catch (e) { } } function slotInfo(n) {   try {     const raw = localStorage.getItem(slotKey(n)); if (!raw) return null;     let m = null; try { m = JSON.parse(localStorage.getItem(SAVE_PREFIX + 'meta_' + n) || 'null'); } catch (e) { }     if (!m) {       const d = unpackSave(raw); if (!d) return null;       const t = d.G.teams[d.G.myTeam];       m = { club: t.n, tier: t.tier, season: d.G.season, round: d.G.round, manager: (d.G.manager && d.G.manager.name) || 'Coach', trophies: t.trophies.length, saved: d.saved || 0 };     }     return Object.assign({ n, name: getSlotName(n) }, m);   } catch (e) { return null; } } let _saveSoonTimer = null; function saveSoon() { if (_saveSoonTimer) return; _saveSoonTimer = setTimeout(() => { _saveSoonTimer = null; if (G) save(); }, 1500); } const STORE_QUOTA_KB = 5000; let _storeWarned = false; function storageGuard() {   if (_storeWarned || storageUsageKB() < STORE_QUOTA_KB * 0.8) return;   _storeWarned = true;   toastWarn('Browser storage is getting full. Open Save & Load → Export career file to back up, or delete an old slot.'); } function slotKB(n) { try { return Math.round((localStorage.getItem(slotKey(n)) || '').length / 1024); } catch (e) { return 0; } } function shrinkAllSlots() {   let freed = 0;   for (let i = 1; i <= SLOT_COUNT; i++) {     try {       const raw = localStorage.getItem(slotKey(i));       if (!raw || raw.slice(0, 4) === 'LZ1:') continue;       const d = unpackSave(raw); if (!d) continue;       const packed = packSave(d); localStorage.setItem(slotKey(i), packed); freed += raw.length - packed.length;     } catch (e) { }   }   return Math.round(freed / 1024); } function storageReportHTML() {   const used = storageUsageKB(), pct = Math.min(100, Math.round(used / STORE_QUOTA_KB * 100)), col = pct > 80 ? '#ff5a5a' : pct > 55 ? '#f2b928' : '#34c471';   return `<div style="flex-basis:100%;margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:12px"><span>Browser storage</span><b>${used > 1024 ? (used / 1024).toFixed(1) + ' MB' : used + ' KB'} of about ${STORE_QUOTA_KB / 1000} MB</b></div>     <div style="height:6px;background:#2c2c2e;border-radius:4px;overflow:hidden;margin-top:3px"><i style="display:block;height:100%;width:${pct}%;background:${col}"></i></div>     <div class="hint" style="margin-top:4px">This career: ${slotKB(slot)} KB${pct > 80 ? ' · nearly full, export a backup' : ''}</div></div>`; } function exportCareer() {   save();   const raw = localStorage.getItem(slotKey(slot)); if (!raw) { toast('Nothing to export yet.'); return; }   const name = ('mzansi-' + me().s + '-' + seasonLabel(G.season)).replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.mmsave';   const url = URL.createObjectURL(new Blob([raw], { type: 'text/plain' }));   const a = document.createElement('a'); a.href = url; a.download = name;   document.body.appendChild(a); a.click(); document.body.removeChild(a);   setTimeout(() => URL.revokeObjectURL(url), 4000);   toast('Career file saved: ' + name); } function importCareer() {   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.mmsave,.txt,.json,text/plain';   inp.onchange = async () => {     const f = inp.files && inp.files[0]; if (!f) return;     try { const raw = (await f.text()).trim(), d = unpackSave(raw); if (!d) throw new Error('bad'); chooseImportSlot(raw, d); }     catch (e) { toast('That file is not a Mzansi Manager career.'); }   };   inp.click(); } function chooseImportSlot(raw, d) {   const t = d.G.teams[d.G.myTeam];   const rows = []; for (let i = 1; i <= SLOT_COUNT; i++) { const s = slotInfo(i); rows.push(`<button class="btn ${s ? 'ghost ' : ''}sm" data-imp="${i}" style="display:block;width:100%;margin:6px 0;text-align:left">Slot ${i} — ${s ? 'replace ' + esc(s.club) + ' (' + seasonLabel(s.season) + ')' : 'empty'}</button>`); }   openModal('Import career', `<p style="margin:0 0 8px"><b>${esc(t.n)}</b> · ${seasonLabel(d.G.season)} · managed by ${esc((d.G.manager && d.G.manager.name) || 'Coach')}</p><p class="hint" style="margin:0 0 6px">Pick a slot. The game restarts into the imported career.</p>${rows.join('')}`,     `<button class="btn ghost sm" onclick="closeModal()">Cancel</button>`);   document.querySelectorAll('[data-imp]').forEach(b => b.onclick = () => {     const i = +b.dataset.imp;     try {       localStorage.setItem(slotKey(i), raw.slice(0, 4) === 'LZ1:' ? raw : packSave(d));       localStorage.setItem(SAVE_PREFIX + 'meta_' + i, JSON.stringify({ club: t.n, tier: t.tier, season: d.G.season, round: d.G.round, manager: (d.G.manager && d.G.manager.name) || 'Coach', trophies: t.trophies.length, saved: d.saved || Date.now() }));       localStorage.setItem(LAST_SLOT_KEY, String(i));     } catch (e) { toastWarn('Not enough storage to import. Delete an old slot first.'); return; }     leavingApp = true; location.reload();   }); } function slotKey(n) { return SAVE_PREFIX + n; }
+/* ---- small "Saved" pill so you know the game has saved ---- */
+let _sfT = 0;
+function saveFlash() {
+  const now = Date.now(); if (now - _sfT < 4000) return; _sfT = now;
+  let e = document.getElementById('saveFlash');
+  if (!e) { e = document.createElement('div'); e.id = 'saveFlash'; e.textContent = '✓ Saved'; e.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:10px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(20,26,34,.92);border:1px solid rgba(255,255,255,.15);color:#3ddc84;font:600 12px sans-serif;opacity:0;transition:opacity .25s;pointer-events:none'; document.body.appendChild(e); }
+  e.style.opacity = 1; clearTimeout(e._t); e._t = setTimeout(() => { e.style.opacity = 0; }, 1400);
+}
 function save(n) {
   const k = n || slot;
   let payload;
@@ -4997,7 +5005,8 @@ function save(n) {
   catch (e) { console.error('save() stringify failed:', e); toastWarn('Could not save — try again.'); return false; }
   try {
     localStorage.setItem(slotKey(k), payload);
-    localStorage.setItem(LAST_SLOT_KEY, String(k)); saveMeta(k); storageGuard();
+localStorage.setItem(LAST_SLOT_KEY, String(k)); saveMeta(k); storageGuard();
+    try { saveFlash(); } catch (e) { }
     return true;
   } catch (e) {
     console.error('save() failed:', e && e.name, e && e.message, 'approx size (KB):', (payload.length / 1024).toFixed(0));
@@ -6668,7 +6677,51 @@ function viewWatchlist() {
       : `<div class="empty">You're not keeping an eye on anyone yet. Open a player's profile and tap "Keep an eye on him" to add them here.</div>`}</div>`;
   bindPlayerRows(v);
 }
-function loanSpellsOf(p, t) {   return (p.clubs || []).filter(c => c.loan).map(c => {     const club = teamById(G, c.id);     if (!club) return null;     const current = !!(p.loan && t && club.id === t.id);     const stat = current ? { apps: p.apps, g: p.goals, a: p.assists, rating: Math.round(p.rating) } : (p.career || []).find(k => k.club === c.id && k.season === c.from);     return { club, season: c.from, stat, current };   }).filter(Boolean); } function loanSpellsOf(p, t) {   return (p.clubs || []).filter(c => c.loan).map(c => {     const club = teamById(G, c.id);     if (!club) return null;     const current = !!(p.loan && t && club.id === t.id);     const stat = current ? { apps: p.apps, g: p.goals, a: p.assists, rating: Math.round(p.rating) } : (p.career || []).find(k => k.club === c.id && k.season === c.from);     return { club, season: c.from, stat, current };   }).filter(Boolean); } function playerModal(pid) {
+function loanSpellsOf(p, t) {   return (p.clubs || []).filter(c => c.loan).map(c => {     const club = teamById(G, c.id);     if (!club) return null;     const current = !!(p.loan && t && club.id === t.id);     const stat = current ? { apps: p.apps, g: p.goals, a: p.assists, rating: Math.round(p.rating) } : (p.career || []).find(k => k.club === c.id && k.season === c.from);     return { club, season: c.from, stat, current };   }).filter(Boolean); } function loanSpellsOf(p, t) {   return (p.clubs || []).filter(c => c.loan).map(c => {     const club = teamById(G, c.id);     if (!club) return null;     const current = !!(p.loan && t && club.id === t.id);     const stat = current ? { apps: p.apps, g: p.goals, a: p.assists, rating: Math.round(p.rating) } : (p.career || []).find(k => k.club === c.id && k.season === c.from);     return { club, season: c.from, stat, current };   }).filter(Boolean); } /* ---- compare two players side by side ---- */
+function anyPlayer(pid) {
+  const f = findPlayer(G, pid); if (f) return f.p ? { p: f.p, t: f.t } : { p: f, t: null };
+  const p = (G.freeAgents || []).find(x => x.id === pid); return p ? { p, t: null } : null;
+}
+function comparePicker(aid) {
+  const A = anyPlayer(aid); if (!A) return;
+  const pool = q => {
+    const list = [], seen = new Set([aid]), lq = q.toLowerCase();
+    if (q.length >= 2) { G.teams.forEach(t => t.squad.forEach(p => { if (p.id !== aid && p.name.toLowerCase().includes(lq)) list.push({ p, t }); })); (G.freeAgents || []).forEach(p => { if (p.id !== aid && p.name.toLowerCase().includes(lq)) list.push({ p, t: null }); }); }
+    else me().squad.map(p => p.id).concat(G.watchlist || []).forEach(id => { if (seen.has(id)) return; seen.add(id); const x = anyPlayer(id); if (x) list.push(x); });
+    return list.sort((a, b) => b.p.rating - a.p.rating).slice(0, 25);
+  };
+  const rows = q => pool(q).map(x => `<button class="btn ghost sm" data-cmp="${x.p.id}" style="display:flex;width:100%;justify-content:space-between;text-align:left;margin-bottom:6px"><span>${esc(x.p.name)} <span class="hint">${esc(x.p.pos)} · ${x.p.age}</span></span><span class="hint">${x.t ? esc(x.t.s) : 'Free agent'} · ${x.p.rating}</span></button>`).join('') || '<div class="hint">No players found.</div>';
+  openModal(`Compare ${esc(A.p.name)} with…`, `<input id="cmpQ" type="search" placeholder="Search any player by name" style="width:100%;box-sizing:border-box;background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:inherit;padding:8px;margin-bottom:8px"><div id="cmpList">${rows('')}</div><p class="hint" style="margin:6px 0 0">Your squad and shortlist are listed first. Search to find anyone else.</p>`, `<button class="btn ghost sm" onclick="closeModal()">Close</button>`);
+  const bind = () => document.querySelectorAll('[data-cmp]').forEach(b => b.onclick = () => compareModal(aid, +b.dataset.cmp));
+  bind(); $('#cmpQ').oninput = e => { $('#cmpList').innerHTML = rows(e.target.value.trim()); bind(); };
+}
+function compareModal(aid, bid) {
+  const A = anyPlayer(aid), B = anyPlayer(bid); if (!A || !B) return;
+  const avg = p => p.ratingApps ? p.ratingSum / p.ratingApps : 0;
+  const R = [
+    ['Club', x => x.t ? esc(x.t.s) : 'Free agent', null, 0],
+    ['Position', x => esc(x.p.pos), null, 0],
+    ['Age', x => x.p.age, x => x.p.age, -1],
+    ['Rating', x => x.p.rating, x => x.p.rating, 1],
+    ['Potential', x => potTxt(x.p), x => potMid(x.p), 1],
+    ['Value', x => money(x.p.value), x => x.p.value, 1],
+    ['Wage', x => money(x.p.wage), x => x.p.wage, -1],
+    ['Contract', x => `${x.p.contract}y`, x => x.p.contract, 1],
+    ['Apps', x => appsTxt(x.p), x => x.p.apps || 0, 1],
+    ['Goals', x => x.p.goals || 0, x => x.p.goals || 0, 1],
+    ['Assists', x => x.p.assists || 0, x => x.p.assists || 0, 1],
+    ['Avg rating', x => avg(x.p) ? avg(x.p).toFixed(2) : '—', x => avg(x.p), 1]];
+  const head = x => `<div style="text-align:center">${faceSVG(x.p, 52, x.t ? x.t.c1 : undefined)}<div style="font-weight:700;margin-top:4px">${esc(x.p.name)}</div></div>`;
+  const body = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">${head(A)}${head(B)}</div>` +
+    R.map(([l, f, n, d]) => {
+      let ca = '', cb = '';
+      if (n && d) { const a = n(A), b = n(B); if (a !== b) { const aw = d > 0 ? a > b : a < b; (aw ? (ca = '#3ddc84') : (cb = '#3ddc84')); } }
+      return `<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;padding:6px 0;border-top:1px solid var(--line);align-items:center"><b style="text-align:center;color:${ca || 'inherit'}">${f(A)}</b><span class="hint" style="min-width:70px;text-align:center">${l}</span><b style="text-align:center;color:${cb || 'inherit'}">${f(B)}</b></div>`;
+    }).join('');
+  openModal('Player comparison', body, `<button class="btn ghost sm" id="cmpBack">Pick another</button><button class="btn ghost sm" onclick="closeModal()">Close</button>`);
+  $('#modal').classList.add('mmx');
+  $('#cmpBack').onclick = () => comparePicker(aid);
+} function playerModal(pid) {
   const found = findPlayer(G, pid) || (G.freeAgents.find(p => p.id === pid) ? { p: G.freeAgents.find(p => p.id === pid), t: null } : null)
     || (me().youth.find(p => p.id === pid) ? { p: me().youth.find(p => p.id === pid), t: me() } : null);
   if (!found) return;
@@ -6760,7 +6813,7 @@ function loanSpellsOf(p, t) {   return (p.clubs || []).filter(c => c.loan).map(c
     footer = `<button class="btn sm" id="pmOffer">Make an offer</button>
               <button class="btn ghost sm" id="pmOfferLoan">Ask about a loan</button>` + footer;
   }
-  openModal('Player profile', body, footer); $('#modal').classList.add('mmx');
+  if (!inYouth) footer = `<button class="btn ghost sm" id="pmCmp">Compare</button>` + footer;   openModal('Player profile', body, footer); $('#modal').classList.add('mmx');   const cmpB = $('#pmCmp'); if (cmpB) cmpB.onclick = () => comparePicker(p.id);
   const r = $('#pmNeg'); if (r) r.onclick = () => { closeModal(); negotiateModal(p.id); };
   const s = $('#pmSell'); if (s) s.onclick = () => { closeModal(); toggleTL(p.id); };   const shop = $('#pmShop'); if (shop) shop.onclick = () => { const res = shopAround(p.id); toast(res.msg); if (res.ok) { save(); closeModal(); render(); } };
   const lo = $('#pmLoanOut'); if (lo) lo.onclick = () => {
