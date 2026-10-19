@@ -3127,7 +3127,7 @@ function buyPlayer(G, pid, fee, viaClause, terms) {
   f.t.squad = f.t.squad.filter(p => p.id !== pid);
   f.t.budget += fee; f.t.fin.sales += fee;
 f.p.contract = terms ? terms.years : rint(2, 4); if (terms) f.p.wage = terms.wage; f.p.fee = fee; f.p.joinedSeason = G.season; f.p.wantsOut = false; f.p.releaseClause = null;
-  f.p.clubs.push({ id: me.id, from: G.season });
+     f.p.clubs.push({ id: me.id, from: G.season });   if (G.pendingSellOn && G.pendingSellOn.pid === pid) { f.p.sellOn = { club: G.pendingSellOn.club, pct: G.pendingSellOn.pct }; G.pendingSellOn = null; }
    f.p.reserve = firstTeamFull(me); me.squad.push(f.p);
   me.budget = Math.round((me.budget - fee) * 100) / 100;
   me.fin.buys += fee;
@@ -3151,6 +3151,7 @@ function sellPlayer(G, pid, fee, buyerId, viaClause) {
   me.squad = me.squad.filter(x => x.id !== pid);
   me.budget = Math.round((me.budget + fee) * 100) / 100;
   me.fin.sales += fee;
+  if (p.sellOn && G.teams[p.sellOn.club]) { const cut = Math.round(fee * p.sellOn.pct) / 100, sc = G.teams[p.sellOn.club]; if (cut > 0) { me.budget = Math.round((me.budget - cut) * 100) / 100; sc.budget += cut; news(G, 'transfer', `${sc.s} receive ${money(cut)} from ${p.name}'s sale under their ${p.sellOn.pct}% sell-on clause.`); } p.sellOn = null; }
   buyer.squad.push(p);
   p.clubs.push({ id: buyer.id, from: G.season });
 p.contract = rint(2, 4); p.wantsOut = false; p.releaseClause = null; p.tl = false; p.ll = false;
@@ -7085,16 +7086,16 @@ function bidModal(pid, ask) {
        <option value="">None — cash only</option>
        ${swapOptions.map(x => `<option value="${x.id}">${esc(x.name)} (${x.pos}, ${x.rating}) · valued ${money(x.value)}</option>`).join('')}
      </select>` : ''}
-     <input class="range" type="range" id="bidR" min="${(ask * 0.2).toFixed(2)}" max="${maxOffer.toFixed(2)}" step="0.05" value="${Math.min(ask, maxOffer).toFixed(2)}">
+     <label class="hint" for="bidSO">Sell-on clause (optional): they get a share of your next sale</label>      <select id="bidSO" style="width:100%;margin:4px 0 10px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:inherit;padding:8px"><option value="0">None</option><option value="10">10% of his next sale</option><option value="15">15% of his next sale</option><option value="20">20% of his next sale</option></select>      <input class="range" type="range" id="bidR" min="${(ask * 0.2).toFixed(2)}" max="${maxOffer.toFixed(2)}" step="0.05" value="${Math.min(ask, maxOffer).toFixed(2)}">
      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--faint)"><span>Cash offered</span>
        <span id="bidV" style="font-family:var(--head);font-size:22px;color:var(--ink)"></span></div>
      <p id="bidSwapNote" class="hint" style="margin:6px 0 0"></p>
      <div class="bar" style="margin-top:8px"><i id="bidBar"></i></div>
      <p id="bidOdds" class="hint" style="margin:6px 0 0"></p>`,
     `<button class="btn ghost sm" onclick="closeModal()">Walk away</button><button class="btn sm" id="bidGo">Make the offer</button>`);
-  const r = $('#bidR'), sw = $('#bidSwap');
+  const r = $('#bidR'), sw = $('#bidSwap'), so = $('#bidSO'), soVal = () => so ? (+so.value / 100) * Math.max(p.value, ask) * (p.age <= 23 ? 1.6 : 1.2) : 0;
   const swapPick = () => sw ? swapOptions.find(x => x.id === +sw.value) : null;
-  const chanceOf = v => { const sp = swapPick(), eff = v + (sp ? sp.value * sellerSwapFactor(seller, sp) : 0); return Math.max(0.03, Math.min(0.97, (eff / ask - 0.72) / 0.45)); };
+  const chanceOf = v => { const sp = swapPick(), eff = v + (sp ? sp.value * sellerSwapFactor(seller, sp) : 0) + soVal(); return Math.max(0.03, Math.min(0.97, (eff / ask - 0.72) / 0.45)); };
   const upd = () => {
     const c = chanceOf(+r.value), sp = swapPick();
     $('#bidV').textContent = money(+r.value);
@@ -7103,12 +7104,12 @@ function bidModal(pid, ask) {
     $('#bidOdds').textContent = c > 0.8 ? 'They would bite your hand off.' : c > 0.5 ? 'Likely to be accepted.' : c > 0.25 ? 'Could go either way.' : 'Close to an insult.';
     if ($('#bidSwapNote')) $('#bidSwapNote').textContent = sp ? `${esc(f.t.s)} would count ${esc(sp.name)} as worth about ${money(sp.value * sellerSwapFactor(seller, sp))} toward the deal.` : '';
   };
-  r.oninput = upd; if (sw) sw.onchange = upd; upd();
+  r.oninput = upd; if (sw) sw.onchange = upd; if (so) so.onchange = upd; upd();
   $('#bidGo').onclick = () => {
     const v = +r.value, sp = swapPick(), swapId = sp ? sp.id : null;
     if (Math.random() > chanceOf(v)) { closeModal(); toastWarn(`${f.t.s} turn down your offer for ${p.name}.`); return; }
     closeModal();
-    const go = vv => { toast(`${f.t.s} agree a deal for ${p.name}${swapId != null ? ', including a player swap' : ''}. Now convince him personally.`); playerTermsModal(pid, Math.round(vv * 100) / 100, undefined, false, swapId); };
+        G.pendingSellOn = so && +so.value > 0 ? { pid, club: seller.id, pct: +so.value } : null;     const go = vv => { toast(`${f.t.s} agree a deal for ${p.name}${swapId != null ? ', including a player swap' : ''}. Now convince him personally.`); playerTermsModal(pid, Math.round(vv * 100) / 100, undefined, false, swapId); };
     if (!rivalBidFlow(p, seller, ask, v, swapId, go)) go(v);
   };
 }
