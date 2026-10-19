@@ -2252,7 +2252,7 @@ function finishMatch(G, ctx) {
       p.earned = Math.round((p.earned + p.wage / 34) * 1000) / 1000;
       if (POS_GROUP[p.pos] === 'GK' && conceded === 0) p.cs++;
       p.form *= 0.72; p.sta = Math.max(0, staOf(p) - STA_DRAIN); p.stp = 1;
-      if (p.pendingInj) { p.inj = p.pendingInj; delete p.pendingInj; }
+      if (p.pendingInj) { p.inj = p.pendingInj; p.injLen = p.inj; delete p.pendingInj; }
     });
   };
   credit(matchSquad(ctx.startH, ctx.xiH), ctx.ag, ctx.h);
@@ -2279,7 +2279,7 @@ function finishMatch(G, ctx) {
   });
 }
 
-function tickInjuries(G) { G.teams.forEach(t => t.squad.forEach(p => { if (p.inj > 0) p.inj--; p.sta = Math.min(100, staOf(p) + STA_REC + (p.stp ? 0 : STA_REST)); delete p.stp; })); }
+function injWeeks(p) { return Math.max(1, Math.round((p.inj || 0) * DAYS_PER_ROUND / 7)); } function injBack(p) { const d = new Date(new Date(currentDateISO() + 'T12:00:00Z').getTime() + (p.inj || 0) * DAYS_PER_ROUND * 86400000); return `${d.getUTCDate()} ${MONTH_NAMES[d.getUTCMonth()].slice(0, 3)}`; } function tickInjuries(G) { G.teams.forEach(t => t.squad.forEach(p => { const was = p.inj > 0; if (p.inj > 0) p.inj--; p.sta = Math.min(100, staOf(p) + STA_REC + (p.stp ? 0 : STA_REST)); delete p.stp; if (was && p.inj <= 0) { if ((p.injLen || 0) >= 4) { p.sta = Math.min(p.sta, 50); if (t.id === G.myTeam) news(G, 'match', `${p.name} is back after ${p.injLen} matches out, but not match fit. Ease him back in.`); } p.injLen = 0; } })); }
 
 function tableUpdate(G, tier, m) {
   const tb = G.tables[tier];
@@ -6410,7 +6410,7 @@ function ensureKitNumbers(t) {   const used = new Set();   t.squad.forEach(p => 
     <span class="ratcol">${ratingTag(p.rating)}${growthHtml(p)}</span>
 <span class="who"><b><span style="color:var(--gold);font-weight:800;margin-right:4px">#${p.kitNo || '–'}</span>${esc(p.name)} ${flagSVG(p.nat)}${isCap ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">C</span>' : isVice ? ' <span class="tag">VC</span>' : ''}${watchers ? ` <span class="tag" title="${watchers} club${watchers === 1 ? '' : 's'} scouting him">👁 ${watchers}</span>` : ''}</b>
       <small>${[p.pos].concat(p.alt || []).join('/')} · ${p.age} · ${appsTxt(p)} apps · ${p.goals}g ${p.assists}a · ${money(p.wage)}/season · ${p.contract}y
-      ${p.loan ? ' <span class="tag out">on loan</span>' : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}${p.inj > 0 ? ` <span class="tag inj">out ${p.inj}</span>` : ''}${banLeft(p, t) > 0 ? ` <span class="tag inj">banned ${banLeft(p, t)}</span>` : ''}${inXI ? ' <span class="tag xi">XI</span>' : ''}${p.pr ? ` <span class="tag" style="color:#f2b928;border-color:#f2b928">promise ${promiseTag(p)}</span>` : ''}${p.tl ? ' <span class="tag" style="color:var(--teal);border-color:var(--teal)">TL</span>' : ''}${p.ll ? ' <span class="tag" style="color:var(--teal);border-color:var(--teal)">LL</span>' : ''}${staTag(p)}</small></span>
+      ${p.loan ? ' <span class="tag out">on loan</span>' : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}${p.inj > 0 ? ` <span class="tag inj" title="Back around ${injBack(p)}">out ${p.inj} · ${injWeeks(p)}w</span>` : ''}${banLeft(p, t) > 0 ? ` <span class="tag inj">banned ${banLeft(p, t)}</span>` : ''}${inXI ? ' <span class="tag xi">XI</span>' : ''}${p.pr ? ` <span class="tag" style="color:#f2b928;border-color:#f2b928">promise ${promiseTag(p)}</span>` : ''}${p.tl ? ' <span class="tag" style="color:var(--teal);border-color:var(--teal)">TL</span>' : ''}${p.ll ? ' <span class="tag" style="color:var(--teal);border-color:var(--teal)">LL</span>' : ''}${staTag(p)}</small></span>
     <span class="ratcol pot">${potTag(p)}${potGrowthHtml(p)}</span>
     <span class="val">${extra != null ? extra : money(p.value)}</span></button>`;
 }
@@ -6620,7 +6620,7 @@ function loanSpellsOf(p, t) {   return (p.clubs || []).filter(c => c.loan).map(c
     </div>
     <div class="mstats solo"><div><small>Age</small><b>${p.age}</b></div><div><small>Value</small><b>${money(p.value)}</b></div>
       <div><small>Wage</small><b>${money(p.wage)}</b></div><div><small>Contract</small><b>${p.contract}y</b></div>
-      <div><small>This season</small><b>${appsTxt(p)}A ${p.goals}G</b></div><div><small>Fitness</small><b>${p.inj > 0 ? 'Out ' + p.inj : banLeft(p, t) > 0 ? 'Banned ' + banLeft(p, t) : (staOf(p) < STA_TIRED ? 'Tired ' : 'Fit ') + Math.round(staOf(p)) + '%'}</b></div></div>
+      <div><small>This season</small><b>${appsTxt(p)}A ${p.goals}G</b></div><div><small>Fitness</small><b>${p.inj > 0 ? 'Out ' + p.inj + ' · back ' + injBack(p) : banLeft(p, t) > 0 ? 'Banned ' + banLeft(p, t) : (staOf(p) < STA_TIRED ? 'Tired ' : 'Fit ') + Math.round(staOf(p)) + '%'}</b></div></div>
     ${devLine ? `<p style="margin:0 0 6px;font-size:13px;color:var(--teal)">${devLine}</p>` : ''}
     ${loanLine ? `<p style="margin:0 0 10px;font-size:13px;color:var(--gold)">${loanLine}</p>` : ''}     ${moodPanelHTML(p, t)}
     <div class="cols">
@@ -6739,7 +6739,7 @@ function tacticsPitchSpots(t, xi, slots, coords) {   return xi.map((p, i) => {  
   <div class="panel"><h3>Injured</h3>${
     t.squad.filter(p => p.inj > 0).length
       ? t.squad.filter(p => p.inj > 0).map(p => `<div class="prow" style="grid-template-columns:auto 1fr auto">${ratingTag(p.rating)}
-          <span class="who"><b>${esc(p.name)}</b><small>${p.pos}</small><span class="tag inj">${p.inj > 0 ? 'out ' + p.inj : 'banned ' + banLeft(p, t)}</span></div>`).join('')
+          <span class="who"><b>${esc(p.name)}</b><small>${p.pos}</small><span class="tag inj">${p.inj > 0 ? 'out ' + p.inj + ' · back ' + injBack(p) : 'banned ' + banLeft(p, t)}</span></div>`).join('')
       : '<div class="empty">A clean bill of health.</div>'}</div>`;
   $('#formSel').onchange = e => { t.formation = e.target.value; t.lineup = autoLineup(t); selSpot = null; save(); render(); };
   $('#autoPick').onclick = () => { t.lineup = autoLineup(t); selSpot = null; save(); render(); };
