@@ -2312,7 +2312,7 @@ function playRound(G, skipMine) {
       if (skipMine && (m.h === G.myTeam || m.a === G.myTeam)) { out.tiers[tier].push(m); return; }
       const ctx = createMatch(G, m.h, m.a, false);
       runPeriod(G, ctx, 1, 45);
-      aiSubs(G, ctx);
+      simSubs(G, ctx);
       runPeriod(G, ctx, 46, 92);
       finishMatch(G, ctx);
       commitMatch(G, tier, m, ctx);
@@ -2534,7 +2534,7 @@ function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('ra
       }
     });
     const leaving = t.squad.filter(p => p.contract <= 0);
-    leaving.forEach(p => {       p.contract = 0; G.freeAgents.push(p); news(G, 'transfer', `${p.name} leaves ${t.s} as a free agent.`);       if (t.id === G.myTeam) mail(G, { cat: 'leaving', from: 'Chief Executive', p, club: null, status: 'Left on a free transfer', flag: true, subject: `Contract Expired: ${p.name} has left`,         body: [`${p.name}'s contract ran out and he has left ${t.n} as a free agent.`, 'Renew key players before their final six months to avoid losing them for nothing.'],         rows: [['Rating / potential', `${p.rating} / ${potTxt(p)}`], ['Last wage', money(p.wage) + ' a season'], ['This season', `${p.apps} apps, ${p.goals} goals`]] });     });
+    leaving.forEach(p => {       p.contract = 0; G.freeAgents.push(p); news(G, 'transfer', `${p.name} leaves ${t.s} as a free agent.`);       if (t.id === G.myTeam) mail(G, { cat: 'leaving', from: 'Chief Executive', p, club: null, status: 'Left on a free transfer', flag: true, subject: `Contract Expired: ${p.name} has left`,         body: [`${p.name}'s contract ran out and he has left ${t.n} as a free agent.`, 'Renew key players before their final six months to avoid losing them for nothing.'],         rows: [['Rating / potential', `${p.rating} / ${potTxt(p)}`], ['Last wage', money(p.wage) + ' a season'], ['This season: ${appsTxt(p)} apps, ${p.goals} goals`]] });     });
     t.squad = t.squad.filter(p => !leaving.includes(p));
     if (t.id !== G.myTeam) fillSquad(G, t);   /* AI clubs top up to a full squad; yours is left exactly as it finished, minus expired contracts and retirements */
     else if (t.squad.length < MIN_SENIOR) {
@@ -6321,7 +6321,7 @@ function ensureKitNumbers(t) {   const used = new Set();   t.squad.forEach(p => 
     ${faceSVG(p, 34, t.c1)}
     <span class="ratcol">${ratingTag(p.rating)}${growthHtml(p)}</span>
 <span class="who"><b><span style="color:var(--gold);font-weight:800;margin-right:4px">#${p.kitNo || '–'}</span>${esc(p.name)} ${flagSVG(p.nat)}${isCap ? ' <span class="tag" style="color:var(--gold);border-color:var(--gold)">C</span>' : isVice ? ' <span class="tag">VC</span>' : ''}${watchers ? ` <span class="tag" title="${watchers} club${watchers === 1 ? '' : 's'} scouting him">👁 ${watchers}</span>` : ''}</b>
-      <small>${[p.pos].concat(p.alt || []).join('/')} · ${p.age} · ${p.apps} apps · ${p.goals}g ${p.assists}a · ${money(p.wage)}/season · ${p.contract}y
+      <small>${[p.pos].concat(p.alt || []).join('/')} · ${p.age} · ${appsTxt(p)} apps · ${p.goals}g ${p.assists}a · ${money(p.wage)}/season · ${p.contract}y
       ${p.loan ? ' <span class="tag out">on loan</span>' : ''}${p.wantsOut ? ' <span class="tag out">wants out</span>' : ''}${p.inj > 0 ? ` <span class="tag inj">out ${p.inj}</span>` : ''}${banLeft(p, t) > 0 ? ` <span class="tag inj">banned ${banLeft(p, t)}</span>` : ''}${inXI ? ' <span class="tag xi">XI</span>' : ''}${p.tl ? ' <span class="tag" style="color:var(--teal);border-color:var(--teal)">TL</span>' : ''}${p.ll ? ' <span class="tag" style="color:var(--teal);border-color:var(--teal)">LL</span>' : ''}${staTag(p)}</small></span>
     <span class="ratcol pot">${potTag(p)}${potGrowthHtml(p)}</span>
     <span class="val">${extra != null ? extra : money(p.value)}</span></button>`;
@@ -6492,7 +6492,7 @@ function loanSpellsOf(p, t) {   return (p.clubs || []).filter(c => c.loan).map(c
   const clubs = (p.clubs || []).map(c => { const cc = teamById(G, c.id); return cc ? `${esc(cc.s)}${c.loan ? ' (loan)' : ''} <span class="hint">(${c.from})</span>` : null; }).filter(Boolean).join(' → ') || '—';   const watched = isWatched(p.id);   const prevChips = (p.clubs || []).slice(0, -1).map(c => { const cc = teamById(G, c.id); return cc ? `<span class="chip">${esc(cc.s)}${c.loan ? ' (loan)' : ''} <span class="hint">${c.from}</span></span>` : ''; }).join(' ');   const loanSpells = loanSpellsOf(p, t);
   const careerRows = (p.career || []).slice().reverse().slice(0, 8).map(c => {
     const cc = teamById(G, c.club); if (!cc) return '';
-    return `<tr><td>${seasonLabel(c.season)}</td><td>${esc(cc.s)}</td><td class="num">${c.apps}</td><td class="num">${c.g}</td><td class="num">${c.a}</td><td class="num">${c.rating}</td></tr>`;
+    return `<tr><td>${seasonLabel(c.season)}</td><td>${esc(cc.s)}</td><td class="num">${appsTxtN(c.apps, c.sApps)}</td><td class="num">${c.g}</td><td class="num">${c.a}</td><td class="num">${c.rating}</td></tr>`;
   }).join('');
   const devId = developedBy(p);
   const devClub = devId != null ? teamById(G, devId) : null;
@@ -6531,7 +6531,7 @@ function loanSpellsOf(p, t) {   return (p.clubs || []).filter(c => c.loan).map(c
     </div>
     <div class="mstats solo"><div><small>Age</small><b>${p.age}</b></div><div><small>Value</small><b>${money(p.value)}</b></div>
       <div><small>Wage</small><b>${money(p.wage)}</b></div><div><small>Contract</small><b>${p.contract}y</b></div>
-      <div><small>This season</small><b>${p.apps}A ${p.goals}G</b></div><div><small>Fitness</small><b>${p.inj > 0 ? 'Out ' + p.inj : banLeft(p, t) > 0 ? 'Banned ' + banLeft(p, t) : (staOf(p) < STA_TIRED ? 'Tired ' : 'Fit ') + Math.round(staOf(p)) + '%'}</b></div></div>
+      <div><small>This season</small><b>${appsTxt(p)}A ${p.goals}G</b></div><div><small>Fitness</small><b>${p.inj > 0 ? 'Out ' + p.inj : banLeft(p, t) > 0 ? 'Banned ' + banLeft(p, t) : (staOf(p) < STA_TIRED ? 'Tired ' : 'Fit ') + Math.round(staOf(p)) + '%'}</b></div></div>
     ${devLine ? `<p style="margin:0 0 6px;font-size:13px;color:var(--teal)">${devLine}</p>` : ''}
     ${loanLine ? `<p style="margin:0 0 10px;font-size:13px;color:var(--gold)">${loanLine}</p>` : ''}     ${moodPanelHTML(p, t)}
     <div class="cols">
