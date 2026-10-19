@@ -5439,9 +5439,38 @@ function poAdvance() {
   else { po.final = po.cur[0]; po.winner = po.final.winner; po.stage = 'done'; }
   po.cur = null; save(); poShow();
 }
-  function doEndSeason() { if (startPlayoffs()) return; doEndSeason2(); } function doEndSeason2() { if (startPlayoffs()) return; doEndSeason2(); } function doEndSeason2() {
+  function doEndSeason() { if (startPlayoffs()) return; doEndSeason2(); } /* ---- season story: your year in numbers, captured before the season rolls over ---- */
+function seasonStory() {
+  const t = me(), res = [];
+  (G.fixtures[t.tier] || []).forEach(rd => {
+    const m = rd.find(x => (x.h === G.myTeam || x.a === G.myTeam) && x.played && !x.forfeit); if (!m) return;
+    const home = m.h === G.myTeam; res.push({ opp: G.teams[home ? m.a : m.h].s, gf: home ? m.hg : m.ag, ga: home ? m.ag : m.hg, home });
+  });
+  if (!res.length) return null;
+  let w = 0, d = 0, l = 0, run = 0, best = 0, wr = 0, bestW = 0;
+  res.forEach(r => { if (r.gf > r.ga) w++; else if (r.gf === r.ga) d++; else l++; run = r.gf >= r.ga ? run + 1 : 0; best = Math.max(best, run); wr = r.gf > r.ga ? wr + 1 : 0; bestW = Math.max(bestW, wr); });
+  const bw = res.slice().sort((a, b) => (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf)[0], bl = res.slice().sort((a, b) => (a.gf - a.ga) - (b.gf - b.ga) || b.ga - a.ga)[0];
+  const sq = t.squad, top = k => sq.slice().sort((a, b) => (b[k] || 0) - (a[k] || 0))[0];
+  const bestAvg = sq.filter(p => (p.ratingApps || 0) >= 8).map(p => ({ p, avg: p.ratingSum / p.ratingApps })).sort((a, b) => b.avg - a.avg)[0];
+  return { w, d, l, gf: res.reduce((a, r) => a + r.gf, 0), ga: res.reduce((a, r) => a + r.ga, 0), unbeaten: best, wins: bestW, bw, bl, scorer: top('goals'), assist: top('assists'), mostUsed: top('apps'), bestAvg };
+}
+function seasonStoryHTML(st, last) {
+  const mood = last.pos <= 3 ? 'A season to remember' : last.pos <= 10 ? 'A solid campaign' : last.pos <= 15 ? 'A season of two halves' : 'A season of struggle';
+  const sc = r => r ? `${r.gf}–${r.ga} ${r.home ? 'v' : 'at'} ${esc(r.opp)}` : '—';
+  const pl = (p, k, u) => p && p[k] ? `${esc(p.name)} · ${p[k]} ${u}` : '—';
+  return `<div class="panel" style="margin:12px 0"><h3>${mood}<span class="sub">your season in numbers</span></h3><dl class="kv" style="padding:0 12px 8px">
+    <dt>Record</dt><dd>${st.w}W ${st.d}D ${st.l}L · ${st.gf} for, ${st.ga} against</dd>
+    <dt>Best result</dt><dd>${sc(st.bw)}</dd>
+    <dt>Worst result</dt><dd>${st.bl && st.bl.gf < st.bl.ga ? sc(st.bl) : 'You were never beaten'}</dd>
+    <dt>Longest unbeaten run</dt><dd>${st.unbeaten} match${st.unbeaten === 1 ? '' : 'es'}${st.wins >= 3 ? ` · ${st.wins} wins in a row` : ''}</dd>
+    <dt>Top scorer</dt><dd>${pl(st.scorer, 'goals', 'goals')}</dd>
+    <dt>Most assists</dt><dd>${pl(st.assist, 'assists', 'assists')}</dd>
+    <dt>Ever-present</dt><dd>${pl(st.mostUsed, 'apps', 'apps')}</dd>
+    ${st.bestAvg ? `<dt>Best average rating</dt><dd>${esc(st.bestAvg.p.name)} · ${st.bestAvg.avg.toFixed(2)}</dd>` : ''}</dl></div>`;
+} function doEndSeason2() { if (startPlayoffs()) return; doEndSeason2(); } 
   const totsTier = me().tier;
   const totsXI = pickFormationXI(ratingPool(G, totsTier, null));
+  let story = null; try { story = seasonStory(); } catch (e) { console.error('story', e); }
   const s = endSeason(G);
   fxRound = 0; tableTier = me().tier; statTier = Math.min(me().tier, 2);
   save();
@@ -5473,7 +5502,7 @@ function poAdvance() {
     mineRetired.map(r => `${esc(r.name)} (${r.age}, ${r.apps} apps)`).join(', ') + `.</p>`;
   body = (last.pos === 1 ? `<div class="rvBanner">🏆 ${esc(my.n)} are champions</div>` : '') +
     `<div class="rvHero"><div><small>Finished</small><b>${ordinal(last.pos)}</b></div><div><small>Points</small><b>${last.pts}</b></div>
-      <div><small>Season result</small><b style="color:${fin.net >= 0 ? '#3ddc84' : '#ff6b6b'}">${money(fin.net)}</b></div><div><small>Reputation</small><b>${G.manager.rep}</b></div></div>` + body;
+      <div><small>Season result</small><b style="color:${fin.net >= 0 ? '#3ddc84' : '#ff6b6b'}">${money(fin.net)}</b></div><div><small>Reputation</small><b>${G.manager.rep}</b></div></div>` + (story ? seasonStoryHTML(story, last) : '') + body;
   const showReview = () => {
     openModal(`${seasonLabel(s.season)} review`, body,
       `<button class="btn sm" id="revNext">Continue</button>`);
