@@ -2048,7 +2048,7 @@ function createMatchTeams(H, A, neutral) {
   return {
     h: H.id, a: A.id, neutral: !!neutral, hg: 0, ag: 0, ev: [],
     sh, sa, subsH: 0, subsA: 0,
-    xiH: sh.xi.slice(), xiA: sa.xi.slice(),
+    xiH: sh.xi.slice(), xiA: sa.xi.slice(), startH: sh.xi.slice(), startA: sa.xi.slice(),
     slotsH: sh.slots.slice(), slotsA: sa.slots.slice(),
     luckH: gauss() * 2.2, luckA: gauss() * 2.2, minute: 0,     tacH: tacForMatch(G, H, sh, sa), tacA: tacForMatch(G, A, sa, sh),      roleH: H.id === G.myTeam ? tacRoleFx(H, sh.xi, sh.slots) : null, roleA: A.id === G.myTeam ? tacRoleFx(A, sa.xi, sa.slots) : null,     hmH: H.id === G.myTeam ? moodHarmFx(H) : 0, hmA: A.id === G.myTeam ? moodHarmFx(A) : 0,     markA: H.id === G.myTeam ? oppFocusTarget(H, A) : null, markH: A.id === G.myTeam ? oppFocusTarget(A, H) : null
   };
@@ -2133,7 +2133,7 @@ function makeSub(ctx, side, outId, inPlayer) {
   (ctx.subbedOff || (ctx.subbedOff = new Set())).add(xi[i].id);   xi[i] = inPlayer;
   ctx.ev.push({ min: ctx.minute || 45, type: 'sub', side, team: side === 'h' ? ctx.h : ctx.a, sName: inPlayer.name, outName: null });
   if (side === 'h') ctx.subsH++; else ctx.subsA++;
-  inPlayer._subbedIn = true;
+  inPlayer._subbedIn = true; (ctx.subbedIn || (ctx.subbedIn = new Set())).add(inPlayer.id);
   return true;
 }
 
@@ -2227,14 +2227,14 @@ function finishMatch(G, ctx) {
     xi.forEach(p => {
       if (played.has(p.id)) return;
       played.add(p.id);
-      p.apps++; p.cApps++;
+      p.apps++; p.cApps++; if (ctx.subbedIn && ctx.subbedIn.has(p.id)) p.sApps = (p.sApps || 0) + 1;
       p.earned = Math.round((p.earned + p.wage / 34) * 1000) / 1000;
       if (POS_GROUP[p.pos] === 'GK' && conceded === 0) p.cs++;
       p.form *= 0.72; p.sta = Math.max(0, staOf(p) - STA_DRAIN); p.stp = 1;
       if (p.pendingInj) { p.inj = p.pendingInj; delete p.pendingInj; }
     });
   };
-  credit(ctx.xiH, ctx.ag, ctx.h);
+  credit(matchSquad(ctx.startH, ctx.xiH), ctx.ag, ctx.h);
   credit(ctx.xiA, ctx.hg, ctx.a);
   computeMatchRatings(G, ctx);
   const teamOf = id => G.teams[id] || (G.africa && G.africa.squadCache && G.africa.squadCache[id]);
