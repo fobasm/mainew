@@ -6223,41 +6223,19 @@ function refreshLiveMarkers() {   const ls = liveState; if (!ls) return;   [['h'
       <div><h4 style="font-size:16px;margin-bottom:6px">Bench</h4><div id="benchList"></div></div>
     </div>`;
   openModal('Half time', body, `<button class="btn sm" id="htGo">Play the second half</button>`);
-  let secondHalfStarted = false;
-
   const resume = () => {
-    if (secondHalfStarted || liveState !== ls || ls.half !== 1 || ls.ft) return;
+    closeModal();
+    ls.half = 2;
+    ls.minute = 45;
 
-    const btn = $('#htGo');
-    secondHalfStarted = true;
-    if (btn) btn.disabled = true;
+    aiSubs(G, ls.ctx);
+    runPeriod(G, ls.ctx, 46, 92);
+    refreshLiveMarkers();
 
-    try {
-      ls.half = 2;
-      ls.minute = 45;
+    ls.started = true;
+    ls.paused = false;
 
-      aiSubs(G, ls.ctx);
-      runPeriod(G, ls.ctx, 46, 92);
-      refreshLiveMarkers();
-
-      ls.started = true;
-      ls.paused = false;
-
-      closeModal();
-      resumeAfterBreak(ls);
-      updateLiveScore();
-      liveControls();
-      save();
-    } catch (err) {
-      console.error('Second-half start failed:', err);
-
-      ls.half = 1;
-      secondHalfStarted = false;
-
-      if (btn) btn.disabled = false;
-
-      toast('Could not start the second half. Check the browser console.');
-    }
+    resumeAfterBreak(ls);
   };
 
   $('#modal .x').onclick = resume;
