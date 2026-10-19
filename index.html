@@ -1869,7 +1869,7 @@ function buildSeason(G, first) {
   G.teams.forEach(t => {
     t.form = [];
     t.fin = newFin();
-    t.squad.forEach(p => { p.goals = 0; p.assists = 0; p.apps = 0; p.cs = 0; p.inj = 0; p.sta = 100; p.form = 0; p.yellow = 0; p.red = 0; p.red = 0; p.red = 0; p.startRating = p.rating; p.startPot = p.pot; p.ratingSum = 0; p.ratingApps = 0; p.monthRatings = {}; });
+    t.squad.forEach(p => { p.goals = 0; p.assists = 0; p.apps = 0; p.sApps = 0; p.cs = 0; p.inj = 0; p.sta = 100; p.form = 0; p.yellow = 0; p.red = 0; p.red = 0; p.red = 0; p.startRating = p.rating; p.startPot = p.pot; p.ratingSum = 0; p.ratingApps = 0; p.monthRatings = {}; });
     ensureLineup(t);
   });
   if (G.africa) G.africa.squadCache = {};
@@ -2182,8 +2182,8 @@ function computeMatchRatings(G, ctx) {
   };
   const resH = ctx.hg > ctx.ag ? 0.2 : ctx.hg < ctx.ag ? -0.2 : 0;
   const resA = ctx.ag > ctx.hg ? 0.2 : ctx.ag < ctx.hg ? -0.2 : 0;
-  rateSide(ctx.xiH, ctx.ag, resH);
-  rateSide(ctx.xiA, ctx.hg, resA);
+  rateSide(matchSquad(ctx.startH, ctx.xiH), ctx.ag, resH);
+  rateSide(matchSquad(ctx.startA, ctx.xiA), ctx.hg, resA);
   ctx.ratings = ratings;
   ctx.potm = potm;
 }
@@ -2235,7 +2235,7 @@ function finishMatch(G, ctx) {
     });
   };
   credit(matchSquad(ctx.startH, ctx.xiH), ctx.ag, ctx.h);
-  credit(ctx.xiA, ctx.hg, ctx.a);
+  credit(matchSquad(ctx.startA, ctx.xiA), ctx.hg, ctx.a);
   computeMatchRatings(G, ctx);
   const teamOf = id => G.teams[id] || (G.africa && G.africa.squadCache && G.africa.squadCache[id]);
   ctx.ev.forEach(e => {
@@ -2497,7 +2497,7 @@ function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('ra
     t.fin.wages = t.wageBill;
     t.budget -= t.wageBill;
     t.squad.forEach(p => {
-      p.career.push({ season: G.season, club: t.id, tier: t.tier, apps: p.apps, g: p.goals, a: p.assists, rating: p.rating });       if (p.career.length > 20) p.career.shift();
+      p.career.push({ season: G.season, club: t.id, tier: t.tier, apps: p.apps, sApps: p.sApps || 0, g: p.goals, a: p.assists, rating: p.rating });       if (p.career.length > 20) p.career.shift();
       p.age++;
       const before = p.rating;
       p.rating = Math.round(clamp(p.rating + seasonDelta(p), 32, Math.max(p.pot, 40)));
