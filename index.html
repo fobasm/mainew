@@ -716,7 +716,16 @@ function bthPostHTML(g, p) {
     <div class="bp-acts v2"><span class="pl" title="Talk">${BTH_IC2.talk}<em>Talk</em><i>${bthK(p.rn)}</i></span><button data-a="rt" class="pl ${rt ? 'on' : ''}" title="Spread it">${BTH_IC2.spread}<em>Spread</em><i>${bthK(p.rt + (rt ? 1 : 0))}</i></button><button data-a="lk" class="pl ${lk ? 'on' : ''}" title="Ayoba">${BTH_IC2.ayoba}<em>Ayoba</em><i>${bthK(p.lk + (lk ? 1 : 0))}</i></button><span class="pl seen" title="Seen by">${BTH_IC2.seen}<i>${bthK(p.lk * 11 + p.rt * 7 + 40)}</i></span></div>${rp}</div></article>`;
 }
 /* official MM coin beside the MM Coins menu item */
-try { const st = document.createElement('style'); st.textContent = '.navlink[data-tab="mmcoins"]>span{display:inline-flex;align-items:center;gap:8px}.navlink[data-tab="mmcoins"]>span::before{content:"";width:20px;height:20px;flex:0 0 20px;background:url("' + MM_COIN_IMG + '") center/contain no-repeat}'; document.head.appendChild(st); } catch (e) { } .bp-acts.v2 button.mx.on{color:#ff6b6b;background:rgba(255,107,107,.12);border-color:#ff6b6b66} </style>
+try { const st = document.createElement('style'); st.textContent = '.navlink[data-tab="mmcoins"]>span{display:inline-flex;align-items:center;gap:8px}.navlink[data-tab="mmcoins"]>span::before{content:"";width:20px;height:20px;flex:0 0 20px;background:url("' + MM_COIN_IMG + '") center/contain no-repeat}'; document.head.appendChild(st); } catch (e) { } .bp-acts.v2 button.mx.on{color:#ff6b6b;background:rgba(255,107,107,.12);border-color:#ff6b6b66} /* ---- top bar: Bathini button + badge crest fix ---- */
+header.top .tmgr{border-left:0!important;margin-left:10px}
+#myCrest{flex:0 0 auto}
+.myclub{min-width:34px}
+.homebtn.bthlogo{position:relative;overflow:visible;padding:0;background:radial-gradient(circle at 50% 40%,#16305f,#0b1430);border:1px solid #3b82ff99;box-shadow:0 0 8px rgba(59,130,255,.7),0 0 18px rgba(59,130,255,.35);animation:bthglow 2.8s ease-in-out infinite}
+.homebtn.bthlogo img{width:22px;height:22px;object-fit:contain;display:block;filter:drop-shadow(0 0 4px rgba(120,180,255,.9))}
+.homebtn.bthlogo:hover{border-color:#8fd4ff;box-shadow:0 0 12px rgba(120,190,255,.95),0 0 26px rgba(59,130,255,.5)}
+.homebtn.bthlogo .bthb{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#e5322d;color:#fff;font:700 11px/17px var(--body);text-align:center}
+@keyframes bthglow{0%,100%{box-shadow:0 0 6px rgba(59,130,255,.55),0 0 14px rgba(59,130,255,.25)}50%{box-shadow:0 0 11px rgba(90,160,255,.95),0 0 24px rgba(59,130,255,.5)}}
+@media(prefers-reduced-motion:reduce){.homebtn.bthlogo{animation:none}} </style>
 </head>
 <!-- built and developed in South Africa (panar.co.za) -->
 <body>
@@ -805,9 +814,7 @@ try { const st = document.createElement('style'); st.textContent = '.navlink[dat
       <button class="navbtn" id="fwdBtn" title="Forward" aria-label="Forward" disabled>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
       </button>
-      <button class="homebtn" id="homeBtn" title="Back to Choose Your Club" aria-label="Choose Your Club">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>
-      </button>
+<button class="homebtn bthlogo" id="homeBtn" title="Open Bathini" aria-label="Open Bathini"><img src="bathini.png" alt="Bathini"></button>
       <button class="navbtn" id="inboxBtn" title="Inbox" aria-label="Inbox">         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6.5L20.5 7"/></svg>         <span class="ibadge" id="inboxBadge"></span>       </button>       <button class="navbtn" id="careerBtn" title="Save & Load" aria-label="Save & Load">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
@@ -5134,7 +5141,7 @@ const RESIGN_REASONS = [   { id: 'challenge', label: 'I want a new challenge' },
   const yes = $('#homeYes');
   if (yes) yes.onclick = () => { leavingApp = true; try { localStorage.removeItem(LAST_SLOT_KEY); } catch (e) { } location.reload(); };
 }
-$('#homeBtn').onclick = confirmQuit;
+$('#homeBtn').onclick = () => goTo('bathini');
 $('#backBtn').onclick = navBack;
 $('#fwdBtn').onclick = navFwd;
 $('#careerBtn').onclick = openCareerModal; function headerContinue() {   if (autoSimTimer) { stopAutoSim(); return; }   if (liveState) { goTo('match'); return; }   if (G.finished) { doEndSeason(); return; }   if (isCupDayToday()) { goTo('match'); if (G.liveMode) startCupMatchday(); else { bumpCurDayForCup(G); const ties = playCupRound(G, false); afterCupMatchday({ cup: ties }); } return; }   if (isMatchdayToday()) { goTo('match'); if (G.liveMode) startLive(); else simRounds(1); return; }   startAutoSim(); } $('#contBtn').onclick = headerContinue;
@@ -8668,7 +8675,34 @@ if (!window.__bthMx) {
     if (b === mxb) { const on = !B.mxd[id]; setMx(on); if (on && B.liked[id]) { delete B.liked[id]; lkb.classList.remove('on'); lkb.querySelector('i').textContent = bthK(p.lk); } }
     else if (B.mxd[id]) setMx(false);
   }, true);
-}                                                  
+}
+
+function bthRefreshBadge() {
+  const n = bthUnread(), btn = document.querySelector('.navlink[data-tab="bathini"]');
+  if (btn) { let b = btn.querySelector('.nb'); if (n) { if (!b) { b = document.createElement('span'); b.className = 'nb'; btn.appendChild(b); } b.textContent = n; } else if (b) b.remove(); }
+  const h = document.getElementById('homeBtn'); if (h) { let t = h.querySelector('.bthb'); if (n) { if (!t) { t = document.createElement('span'); t.className = 'bthb'; h.appendChild(t); } t.textContent = n; } else if (t) t.remove(); }
+}
+ /* ---- season review: read stats from several sources so it never shows blanks ---- */
+function seasonStory() {
+  const t = me(), res = [], evG = {}, evA = {};
+  (G.fixtures[t.tier] || []).forEach(rd => {
+    const m = rd.find(x => (x.h === G.myTeam || x.a === G.myTeam) && x.played && !x.forfeit); if (!m) return;
+    const home = m.h === G.myTeam; res.push({ opp: G.teams[home ? m.a : m.h].s, gf: home ? m.hg : m.ag, ga: home ? m.ag : m.hg, home });
+    (m.ev || []).forEach(e => { if (e.type === 'goal' && e.team === G.myTeam) { if (e.scorer != null) evG[e.scorer] = (evG[e.scorer] || 0) + 1; if (e.assist) evA[e.assist] = (evA[e.assist] || 0) + 1; } });
+  });
+  if (!res.length) return null;
+  let w = 0, d = 0, l = 0, run = 0, best = 0, wr = 0, bestW = 0;
+  res.forEach(r => { if (r.gf > r.ga) w++; else if (r.gf === r.ga) d++; else l++; run = r.gf >= r.ga ? run + 1 : 0; best = Math.max(best, run); wr = r.gf > r.ga ? wr + 1 : 0; bestW = Math.max(bestW, wr); });
+  const bw = res.slice().sort((a, b) => (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf)[0], bl = res.slice().sort((a, b) => (a.gf - a.ga) - (b.gf - b.ga) || b.ga - a.ga)[0];
+  const sq = t.squad, top = k => sq.slice().sort((a, b) => (b[k] || 0) - (a[k] || 0))[0];
+  const bestAvg = sq.filter(p => (p.ratingApps || 0) >= 8).map(p => ({ p, avg: p.ratingSum / p.ratingApps })).sort((a, b) => b.avg - a.avg)[0];
+  const fromEv = (map, key) => { const id = Object.keys(map).sort((a, b) => map[b] - map[a])[0]; if (id == null) return null; const p = sq.find(x => String(x.id) === id) || (typeof findPlayer === 'function' && (findPlayer(G, +id) || {}).p); return p ? Object.assign({}, p, { [key]: map[id] }) : null; };
+  let scorer = top('goals'), assist = top('assists'), used = top('apps');
+  if (!(scorer && scorer.goals > 0)) scorer = fromEv(evG, 'goals') || scorer;
+  if (!(assist && assist.assists > 0)) assist = fromEv(evA, 'assists') || assist;
+  if (!(used && used.apps > 0)) { const u = sq.slice().sort((a, b) => (b.ratingApps || 0) - (a.ratingApps || 0))[0]; if (u && u.ratingApps) used = Object.assign({}, u, { apps: u.ratingApps }); }
+  return { w, d, l, gf: res.reduce((a, r) => a + r.gf, 0), ga: res.reduce((a, r) => a + r.ga, 0), unbeaten: best, wins: bestW, bw, bl, scorer, assist, mostUsed: used, bestAvg };
+} 
 /* ---------------- boot ---------------- */
 buildAvatars();
 buildClubGrid();
