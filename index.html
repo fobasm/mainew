@@ -751,22 +751,22 @@ const AUTO_PROMOTED = 2;   /* teams promoted automatically (top positions) */ co
 /* base = sporting strength 1-10 · fin = transfer kitty in millions · youth = academy level 1-5 */
 const CLUBS = [
   /* ---------------- Tier 1 — Mzansi Premiership ---------------- */
-  { n:'Mamelodi Sundowns', s:'Sundowns', nick:'Masandawana', city:'Pretoria', t:0, base:9.6, fin:150, youth:5, c1:'#f9e300', c2:'#0b7a3b', scout:'SAM' },
-  { n:'Orlando Pirates', s:'Pirates', nick:'Buccaneers', city:'Soweto', t:0, base:9.6, fin:105, youth:4, c1:'#1a1a1a', c2:'#eeeeee', scout:'AFR' },
-  { n:'Kaizer Chiefs', s:'Chiefs', nick:'Amakhosi', city:'Soweto', t:0, base:9.5, fin:95, youth:4, c1:'#d4af00', c2:'#000000', scout:'AFR' },
-  { n:'AmaZulu FC', s:'AmaZulu', nick:'Usuthu', city:'Durban', t:0, base:8.5, fin:36, youth:3, c1:'#0b8a4b', c2:'#111111', scout:'AFR' },
-  { n:'Stellenbosch FC', s:'Stellies', nick:'Stellies', city:'Stellenbosch', t:0, base:8.6, fin:42, youth:4, c1:'#8e1b2f', c2:'#f2c200', scout:'AFR' },
-  { n:'Sekhukhune United', s:'Sekhukhune', nick:'Babina Noko', city:'Polokwane', t:0, base:7.2, fin:32, youth:3, c1:'#0e6b3d', c2:'#f4d03f', scout:'AFR' },
-  { n:'Golden Arrows', s:'Arrows', nick:"Abafana Bes'thende", city:'Durban', t:0, base:7.9, fin:24, youth:3, c1:'#f2a007', c2:'#111111', scout:'AFR' },
-  { n:'Polokwane City', s:'Polokwane', nick:'Rise and Shine', city:'Polokwane', t:0, base:7.7, fin:22, youth:2, c1:'#1d7f3a', c2:'#f0f0f0', scout:'AFR' },
-  { n:'Durban City', s:'Durban City', nick:'The Coastal Kings', city:'Durban', t:0, base:7.8, fin:26, youth:3, c1:'#0e7490', c2:'#f8fafc', scout:'AFR' },
-  { n:'TS Galaxy', s:'Galaxy', nick:'Rockets', city:'Mbombela', t:0, base:6.7, fin:25, youth:3, c1:'#1a1a1a', c2:'#d8d8d8', scout:'AFR' },
-  { n:'Chippa United', s:'Chippa', nick:'Chilli Boys', city:'Gqeberha', t:0, base:6.3, fin:19, youth:2, c1:'#0f5fa8', c2:'#f2f2f2', scout:'AFR' },
-  { n:'Richards Bay FC', s:'Richards Bay', nick:'The Natal Rich Boyz', city:'Richards Bay', t:0, base:6.2, fin:18, youth:2, c1:'#123f8c', c2:'#e8b21a', scout:'AFR' },
-  { n:'Marumo Gallants', s:'Gallants', nick:'Bahlabane ba Ntwa', city:'Polokwane', t:0, base:6.3, fin:20, youth:2, c1:'#046a38', c2:'#f6d327', scout:'AFR' },
-  { n:'Siwelele FC', s:'Siwelele', nick:'Siwelele', city:'Bloemfontein', t:0, base:6.4, fin:28, youth:3, c1:'#0a3d91', c2:'#ffffff', scout:'AFR' },
-  { n:'Kruger United', s:'Kruger', nick:'The Wildcats', city:'Mbombela', t:0, base:6.0, fin:17, youth:2, c1:'#166534', c2:'#fbbf24', scout:'AFR' },
-  { n:'Milford FC', s:'Milford', nick:'The Millers', city:'Durban', t:0, base:6.4, fin:21, youth:3, c1:'#1e40af', c2:'#e5e7eb', scout:'AFR' },   { n:'East London City', s:'EL City', nick:'The Buffalo City Boys', city:'East London', t:0, base:7.1, fin:20, youth:4, c1:'#0f4c81', c2:'#f2b705', scout:'AFR' },   { n:'Potchefstroom FC', s:'Potch', nick:'The Platinum Students', city:'Potchefstroom', t:0, base:5.8, fin:18, youth:2, c1:'#7c1d2e', c2:'#f5f5f5', scout:'AFR' },   { n:'Welkom City', s:'Welkom City', nick:'The Goldfields', city:'Welkom', t:0, base:5.9, fin:17, youth:2, c1:'#b45309', c2:'#111827', scout:'AFR' },   { n:'Newcastle Royals', s:'Newcastle', nick:'The Royals', city:'Newcastle', t:0, base:5.8, fin:16, youth:2, c1:'#4c1d95', c2:'#fbbf24', scout:'AFR' },
+  { n:'Sundowns FC', s:'Sundowns', nick:'Dawana Boys', city:'Pretoria', t:0, base:9.6, fin:150, youth:5, c1:'#f9e300', c2:'#0b7a3b', scout:'SAM' },
+  { n:'Pirates FC', s:'Pirates', nick:'Zimnyama', city:'Soweto', t:0, base:9.6, fin:105, youth:4, c1:'#1a1a1a', c2:'#eeeeee', scout:'AFR' },
+  { n:'Chiefs FC', s:'Chiefs', nick:'Khosi Boys', city:'Soweto', t:0, base:9.5, fin:95, youth:4, c1:'#d4af00', c2:'#000000', scout:'AFR' },
+  { n:'Amazulu United', s:'AmaZulu', nick:'The Zulus', city:'Durban', t:0, base:8.5, fin:36, youth:3, c1:'#0b8a4b', c2:'#111111', scout:'AFR' },
+  { n:'FC Stellenbosch', s:'Stellen', nick:'The Vineyard Boys', city:'Stellenbosch', t:0, base:8.6, fin:42, youth:4, c1:'#8e1b2f', c2:'#f2c200', scout:'AFR' },
+  { n:'FC Sekhukhune', s:'Sekhukhune', nick:'Noko Boys', city:'Polokwane', t:0, base:7.2, fin:32, youth:3, c1:'#0e6b3d', c2:'#f4d03f', scout:'AFR' },
+  { n:'Lamontville FC', s:'Lamontville', nick:'Abafana Baso', city:'Durban', t:0, base:7.9, fin:24, youth:3, c1:'#f2a007', c2:'#111111', scout:'AFR' },
+  { n:'Polokwane FC', s:'Polokwane', nick:'Rise and Shoot', city:'Polokwane', t:0, base:7.7, fin:22, youth:2, c1:'#1d7f3a', c2:'#f0f0f0', scout:'AFR' },
+  { n:'Durban FC', s:'Durban', nick:'The C Kings', city:'Durban', t:0, base:7.8, fin:26, youth:3, c1:'#0e7490', c2:'#f8fafc', scout:'AFR' },
+  { n:'Witbank FC', s:'Witbank', nick:'Roarwit', city:'Mbombela', t:0, base:6.7, fin:25, youth:3, c1:'#1a1a1a', c2:'#d8d8d8', scout:'AFR' },
+  { n:'Nyanga FC', s:'Nyanga', nick:'Moon Boys', city:'Gqeberha', t:0, base:6.3, fin:19, youth:2, c1:'#0f5fa8', c2:'#f2f2f2', scout:'AFR' },
+  { n:'FC Richards Bay', s:'Richards Bay', nick:'The Natal Boyz', city:'Richards Bay', t:0, base:6.2, fin:18, youth:2, c1:'#123f8c', c2:'#e8b21a', scout:'AFR' },
+  { n:'Marumo FC', s:'Marumo', nick:'Bahlabane', city:'Polokwane', t:0, base:6.3, fin:20, youth:2, c1:'#046a38', c2:'#f6d327', scout:'AFR' },
+  { n:'Bloemfontein FC', s:'Bloem', nick:'Siwe', city:'Bloemfontein', t:0, base:6.4, fin:28, youth:3, c1:'#0a3d91', c2:'#ffffff', scout:'AFR' },
+  { n:'Bushbuckridge FC', s:'Bushbuck', nick:'The Wild', city:'Mbombela', t:0, base:6.0, fin:17, youth:2, c1:'#166534', c2:'#fbbf24', scout:'AFR' },
+  { n:'Milford United', s:'Milford', nick:'The Mill', city:'Durban', t:0, base:6.4, fin:21, youth:3, c1:'#1e40af', c2:'#e5e7eb', scout:'AFR' },   { n:'East London City', s:'EL City', nick:'The Buffalo City Boys', city:'East London', t:0, base:7.1, fin:20, youth:4, c1:'#0f4c81', c2:'#f2b705', scout:'AFR' },   { n:'Potchefstroom FC', s:'Potch', nick:'The Platinum Students', city:'Potchefstroom', t:0, base:5.8, fin:18, youth:2, c1:'#7c1d2e', c2:'#f5f5f5', scout:'AFR' },   { n:'Welkom City', s:'Welkom City', nick:'The Goldfields', city:'Welkom', t:0, base:5.9, fin:17, youth:2, c1:'#b45309', c2:'#111827', scout:'AFR' },   { n:'Newcastle Royals', s:'Newcastle', nick:'The Royals', city:'Newcastle', t:0, base:5.8, fin:16, youth:2, c1:'#4c1d95', c2:'#fbbf24', scout:'AFR' },
 
   /* ---------------- Tier 2 — Mzansi Championship ---------------- */
   { n:'Orbit College FC', s:'Orbit', nick:'The Scholars', city:'Rustenburg', t:1, base:5.7, fin:9, youth:2, c1:'#1f4ea1', c2:'#f59e0b', scout:'AFR' },
@@ -791,7 +791,7 @@ const CLUBS = [
   { n:'Mahikeng United', s:'Mahikeng', nick:'The Capital Boys', city:'Mahikeng', t:1, base:4.1, fin:3, youth:1, c1:'#0369a1', c2:'#fde047', scout:'AFR' },
 
   /* ---------------- Tier 3 — Mzansi 3rd division ---------------- */
-  { n:'Bright PMB FC', s:'PMB', nick:'AzaseMphitha', city:'Pietermaritzburg', t:2, base:4.2, fin:2.5, youth:5, c1:'#F5B800', c2:'#111111', scout:'AFR', badge:'bright', youthClub:true },
+  { n:'Bright PMB FC', s:'PMB', nick:'AzaseMphitha', city:'Pietermaritzburg', t:2, base:4.9, fin:2.5, youth:5, c1:'#F5B800', c2:'#111111', scout:'AFR', badge:'bright', youthClub:true },
   { n:'Baroka FC', s:'Baroka', nick:'Bakgaga', city:'Ga-Mphahlele', t:2, base:4.4, fin:3, youth:2, c1:'#0a6b45', c2:'#ffffff', scout:'AFR' },
   { n:'Black Leopards', s:'Leopards', nick:'Lidoda Duvha', city:'Thohoyandou', t:2, base:4.3, fin:3, youth:2, c1:'#0b0b0b', c2:'#e0b200', scout:'AFR' },
   { n:'Mthatha Bucks', s:'Mthatha', nick:'The Bucks', city:'Mthatha', t:2, base:4.1, fin:2.4, youth:2, c1:'#166534', c2:'#f8fafc', scout:'AFR' },
