@@ -4991,6 +4991,18 @@ function stopCrowd() {
   ls.crowdBase = base;
   ls.crowd.g.gain.setTargetAtTime(base, ctx.currentTime, 2.5);
 }
+  let _evSndT = 0;
+function evSound(type) {
+  const ctx = ac(); if (!ctx) return;
+  const now = performance.now();
+  if (now - _evSndT < 350) return;
+  _evSndT = now;
+  try {
+    if (type === 'card') { tone(ctx, 1900, 0, .1, 'sine', .04); tone(ctx, 1900, .14, .1, 'sine', .04); tone(ctx, 140, .02, .2, 'triangle', .05); }
+    else if (type === 'injury') { tone(ctx, 262, 0, .3, 'sine', .05); tone(ctx, 220, .2, .4, 'sine', .045); }
+    else if (type === 'sub') { tone(ctx, 1046, 0, .08, 'sine', .035); tone(ctx, 1318, .08, .1, 'sine', .03); }
+  } catch (e) { }
+}
 function crowdRoar() {
   const ctx = ac(); if (!ctx || !liveState || !liveState.crowd) return;
   const g = liveState.crowd.g, now = ctx.currentTime;
@@ -6177,7 +6189,7 @@ function commShot(ls, k, onTarget) {
 }
   function pushTick(e) {
   if (e.type === 'goal' && (!liveState || e.side === liveState.mySide)) playSound('goal');
-  else if (e.type === 'card') playSound('card');
+  else if (e.type !== 'goal') evSound(e.type);
   const t = $('#liveTicker'); if (!t) return;
  const icon = e.type === 'goal' ? evIcon('goal') : e.type === 'card' ? evIcon(e.card === 'red' ? 'red' : 'yellow') : e.type === 'injury' ? evIcon('injury') : evIcon('sub');
   const team = G.teams[e.team];
