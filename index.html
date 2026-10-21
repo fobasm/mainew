@@ -589,7 +589,7 @@ header.top .tmgr{border-left:0!important;margin-left:10px}
 .homebtn.bthlogo:hover{border-color:#8fd4ff;box-shadow:0 0 12px rgba(120,190,255,.95),0 0 26px rgba(59,130,255,.5)}
 .homebtn.bthlogo .bthb{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#e5322d;color:#fff;font:700 11px/17px var(--body);text-align:center}
 @keyframes bthglow{0%,100%{box-shadow:0 0 6px rgba(59,130,255,.55),0 0 14px rgba(59,130,255,.25)}50%{box-shadow:0 0 11px rgba(90,160,255,.95),0 0 24px rgba(59,130,255,.5)}}
-@media(prefers-reduced-motion:reduce){.homebtn.bthlogo{animation:none}} </style>
+@media(prefers-reduced-motion:reduce){.homebtn.bthlogo{animation:none}} /* team selection: lighter cards so crests stand out */ #start .club{background:#2b333e;border-color:#3d4856;padding:12px 14px;gap:14px} #start .club:hover{background:#343e4b;border-color:#566376} #start .club[aria-pressed="true"]{background:#37424f;border-color:#f2b928} #start .club small{color:#b4bcc6} </style>
 </head>
 <!-- built and developed in South Africa (panar.co.za) -->
 <body>
@@ -4364,7 +4364,7 @@ function crestHTML(t, size) {
   const star = `<svg viewBox="0 0 24 24" width="${st}" height="${st}" style="margin:0 -${ov}px;flex:0 0 auto"><path d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.5 5.6 21.1 7 14l-5.3-5 7.2-.9z" fill="#f5c518" stroke="#8a5f10" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
   return `<span class="cstars" style="position:relative;display:inline-block;flex:0 0 auto;line-height:0;vertical-align:middle">${base}<span title="${cafStars(t)}x ${CAF_NAME} winners" style="position:absolute;left:50%;top:-${Math.round(st * 0.7)}px;transform:translateX(-50%);display:flex;pointer-events:none;z-index:2;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))">${star.repeat(n)}</span></span>`;
 }
-function crestBaseHTML(t, size) {
+function crestBaseHTML(t, size) {   size = Math.round((size || 22) * 1.35); /* bigger crests everywhere */
   const s = size || 22;
   const _ci = CREST_IMGS[t.n + '|' + t.s];   if (_ci && t.badge !== 'bright' && !t.icon) {     return `<span class="crest img" style="width:${s}px;height:${s}px;border-radius:0;background-image:url('${_ci}')"></span>`;   }   if (t.badge === 'bright') {
     return `<span class="crest img" style="width:${s}px;height:${s}px;background-image:url('${IMG_BRIGHT}')"></span>`;
@@ -5122,7 +5122,7 @@ function buildClubGrid() {
     if (c.t !== pickTier) return;
     const b = el('button', 'club');
     b.setAttribute('aria-pressed', pickClub === i);
-    b.innerHTML = `${crestHTML(c, 26)}<span style="min-width:0"><b>${esc(c.n)}</b><small>${esc(c.nick)} · ${esc(c.city)}</small></span>`;
+    b.innerHTML = `${crestHTML(c, 38)}<span style="min-width:0"><b>${esc(c.n)}</b><small>${esc(c.nick)} · ${esc(c.city)}</small></span>`;
     b.onclick = () => {
       pickClub = i; buildClubGrid();
       $('#startBtn').disabled = false;
