@@ -4834,16 +4834,16 @@ function potGrowthHtml(p) {
 }
 
 /* ---------------- sound ---------------- */
-let audioCtx = null, soundOn = true, musicOn = true; try { const _ap = JSON.parse(localStorage.getItem('mm_audio') || 'null'); if (_ap) { soundOn = _ap.sfx !== false; musicOn = _ap.music !== false; } } catch (e) { } function saveAudioPrefs() { try { localStorage.setItem('mm_audio', JSON.stringify({ sfx: soundOn, music: musicOn })); } catch (e) { } }
+let audioCtx = null, soundOn = true, musicOn = true, musicVol = 1, sfxVol = 1, crowdVol = 1; try { const _ap = JSON.parse(localStorage.getItem('mm_audio') || 'null'); if (_ap) { soundOn = _ap.sfx !== false; musicOn = _ap.music !== false; if (_ap.mv != null) musicVol = _ap.mv; if (_ap.sv != null) sfxVol = _ap.sv; if (_ap.cv != null) crowdVol = _ap.cv; } } catch (e) { } function saveAudioPrefs() { try { localStorage.setItem('mm_audio', JSON.stringify({ sfx: soundOn, music: musicOn, mv: musicVol, sv: sfxVol, cv: crowdVol })); } catch (e) { } }
 function ac() {
-  if (!soundOn) return null;
+  if (!soundOn || document.hidden) return null;
   try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; } catch (e) { return null; }
 }
-function tone(ctx, freq, t0, dur, type, gain) {
+function tone(ctx, freq, t0, dur, type, gain) {   if (sfxVol <= 0) return;
   const o = ctx.createOscillator(), g = ctx.createGain();
   o.type = type || 'sine'; o.frequency.value = freq;
   g.gain.setValueAtTime(0, ctx.currentTime + t0);
-  g.gain.linearRampToValueAtTime(gain || 0.12, ctx.currentTime + t0 + 0.01);
+  g.gain.linearRampToValueAtTime((gain || 0.12) * sfxVol, ctx.currentTime + t0 + 0.01);
   g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t0 + dur);
   o.connect(g); g.connect(ctx.destination);
   o.start(ctx.currentTime + t0); o.stop(ctx.currentTime + t0 + dur + 0.02);
@@ -4923,7 +4923,7 @@ function startBgMusic() {
   if (bgMusic || !musicOn) return;
   try {
     bgMusic = new Audio(nextMusicTrack());
-    bgMusic.volume = 0.25;
+    bgMusic.volume = 0.25 * musicVol;
     const playNext = () => {
       bgMusic.src = nextMusicTrack();
       bgMusic.play().catch(() => { });
@@ -5101,6 +5101,29 @@ function windowTickCheck(winOpen) {
     tone(ctx, 1760, .17, .3, 'sine', .012);
   } catch (e) { }
 }
+  let _musicFadeT = null;
+function musicFade(target, ms) {
+  if (!bgMusic) return;
+  clearInterval(_musicFadeT);
+  const from = bgMusic.volume, steps = Math.max(1, Math.round((ms || 1000) / 50));
+  let i = 0;
+  _musicFadeT = setInterval(() => {
+    i++;
+    try { bgMusic.volume = Math.max(0, Math.min(1, from + (target - from) * (i / steps))); } catch (e) { }
+    if (i >= steps) clearInterval(_musicFadeT);
+  }, 50);
+}
+  let _musicWasPlaying = false;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (bgMusic && !bgMusic.paused) { bgMusic.pause(); _musicWasPlaying = true; }
+    try { if (audioCtx && audioCtx.state === 'running') audioCtx.suspend(); } catch (e) { }
+  } else {
+    if (_musicWasPlaying && musicOn && bgMusic) bgMusic.play().catch(() => { });
+    _musicWasPlaying = false;
+    try { if (audioCtx) audioCtx.resume(); } catch (e) { }
+  }
+});
 function crowdRoar() {
   const ctx = ac(); if (!ctx || !liveState || !liveState.crowd) return;
   const g = liveState.crowd.g, now = ctx.currentTime;
@@ -5122,12 +5145,12 @@ if (window.speechSynthesis) {
   goalVoice = pickGoalVoice();
 }
 function shoutGoal() {
-  if (!soundOn || !window.speechSynthesis) return;
+   if (!soundOn || document.hidden || !window.speechSynthesis) return;
   try {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance('Goaaal!');
     if (goalVoice) u.voice = goalVoice;
-    u.pitch = 0.55; u.rate = 1.2; u.volume = 1;
+    u.pitch = 0.55; u.rate = 1.2; u.volume = sfxVol;
     window.speechSynthesis.speak(u);
   } catch (e) { }
 }
@@ -6038,7 +6061,7 @@ function showMatchPreview(opp, mySide, kind, next) {
   function preMatchFlow(ctx, m, kind, tier, mySide, oppTeam) { showMatchPreview(oppTeam, mySide, kind, () => preMatchFlow0(ctx, m, kind, tier, mySide, oppTeam)); } function preMatchFlow0(ctx, m, kind, tier, mySide, oppTeam) {   showPressConference(oppTeam.n, (presTone) => {     const myTeamObj = G.teams[G.myTeam];     const myOverall = teamOverall(myTeamObj);     const oppOverall = teamOverall(oppTeam);     showTeamTalk(myOverall, oppOverall, (talk) => {       const delta = presTone.mood + talk.delta;       if (delta) { if (mySide === 'h') ctx.luckH += delta; else ctx.luckA += delta; }       if (presTone.key !== 'skip' || talk.key !== 'skip') {         news(G, 'career', `Before kickoff vs ${oppTeam.n}: "${presTone.label}"${talk.key !== 'skip' ? ` — team talk: ${talk.label}.` : '.'}`);       }       beginLiveMatch(ctx, m, kind, tier);     });   }); } function beginLiveMatch(ctx, m, kind, tier) {
   if (tab !== 'match') { tab = 'match'; document.querySelectorAll('.view').forEach(v => v.classList.remove('on')); const av = $('#v-match'); if (av) av.classList.add('on'); }
   playSound('whistle');
-  if (bgMusic) bgMusic.volume = 0.05;
+  musicFade(0.05 * musicVol, 1500);
   const mySide = m.h === G.myTeam ? 'h' : 'a';
   const oppPool = MANAGER_AVATARS.filter(a => a !== G.manager.avatar);
   const oppAvatar = oppPool[Math.floor(rnd() * oppPool.length)] || MANAGER_AVATARS[0];
@@ -6554,7 +6577,7 @@ function endLive() {
   const ls = liveState;
   setLiveFullscreen(false);
   stopCrowd();
-  if (bgMusic) bgMusic.volume = 0.25;
+   musicFade(0.25 * musicVol, 2000);
   finishMatch(G, ls.ctx);
   fullTimeSting(ls.mySide === 'h' ? ls.ctx.hg : ls.ctx.ag, ls.mySide === 'h' ? ls.ctx.ag : ls.ctx.hg);
   if (ls.kind === 'playoff') { poLiveDone(ls); return; }
