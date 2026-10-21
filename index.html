@@ -4966,13 +4966,38 @@ function stopCrowd() {
     liveState.crowd = null;
   }
 }
+                                                        function crowdHush() {
+  const ctx = ac(); if (!ctx || !liveState) return;
+  try {
+    tone(ctx, 196, 0, .35, 'triangle', .05);
+    tone(ctx, 147, .18, .5, 'triangle', .05);
+    if (!liveState.crowd) return;
+    const g = liveState.crowd.g, now = ctx.currentTime;
+    g.gain.cancelScheduledValues(now);
+    g.gain.setValueAtTime(g.gain.value, now);
+    g.gain.linearRampToValueAtTime(0.004, now + 0.35);
+    g.gain.linearRampToValueAtTime(0.004, now + 1.6);
+    g.gain.linearRampToValueAtTime(liveState.crowdBase || 0.028, now + 3.6);     liveState.crowdBusyUntil = performance.now() + 3800;
+  } catch (e) { }
+}     
+  function crowdMood() {
+  const ls = liveState, ctx = ac(); if (!ctx || !ls || !ls.crowd) return;
+  if (ls.crowdBusyUntil && performance.now() < ls.crowdBusyUntil) return;
+  const m = ls.minute;
+  const goals = ls.ctx.ev.filter(e => e.type === 'goal' && e.min <= m);
+  const diff = Math.abs(goals.filter(e => e.side === 'h').length - goals.filter(e => e.side === 'a').length);
+  let base = 0.026 + Math.min(m, 90) / 90 * 0.014;
+  if (m >= 75 && diff <= 1) base += 0.016;
+  ls.crowdBase = base;
+  ls.crowd.g.gain.setTargetAtTime(base, ctx.currentTime, 2.5);
+}
 function crowdRoar() {
   const ctx = ac(); if (!ctx || !liveState || !liveState.crowd) return;
   const g = liveState.crowd.g, now = ctx.currentTime;
   g.gain.cancelScheduledValues(now);
   g.gain.setValueAtTime(g.gain.value, now);
   g.gain.linearRampToValueAtTime(0.32, now + 0.12);
-  g.gain.linearRampToValueAtTime(0.028, now + 2.6);
+   g.gain.linearRampToValueAtTime(liveState.crowdBase || 0.028, now + 2.6);   liveState.crowdBusyUntil = performance.now() + 2800;
 }
 let goalVoice = null;
 function pickGoalVoice() {
@@ -6151,7 +6176,7 @@ function commShot(ls, k, onTarget) {
     : [`${n} drags his shot wide`, `${n} fires over the bar`, `${n} hits the side netting`, `A half chance for ${n}, but it goes wide`, `${n} blazes it over`]));
 }
   function pushTick(e) {
-  if (e.type === 'goal') playSound('goal');
+  if (e.type === 'goal' && (!liveState || e.side === liveState.mySide)) playSound('goal');
   else if (e.type === 'card') playSound('card');
   const t = $('#liveTicker'); if (!t) return;
  const icon = e.type === 'goal' ? evIcon('goal') : e.type === 'card' ? evIcon(e.card === 'red' ? 'red' : 'yellow') : e.type === 'injury' ? evIcon('injury') : evIcon('sub');
@@ -6213,6 +6238,7 @@ function liveTick() {
   if (!ls || ls.paused) return;
   try {
     ls.minute++;
+    crowdMood();
     if (!ls.ballHoldUntil || performance.now() > ls.ballHoldUntil) {
       const s = ls.ctx.sh.att - ls.ctx.sa.att;
       const bias = clamp(s * 0.4, -5, 5);
@@ -6235,8 +6261,8 @@ function liveTick() {
           ls.ball.tx = netX; ls.ball.ty = netY;
           ls.ballX = netX; ls.ballY = netY;
           ls.ballHoldUntil = performance.now() + 1800;
-          crowdRoar();
-          shoutGoal();
+          if (e.side === ls.mySide) { crowdRoar(); shoutGoal(); }
+          else crowdHush();
         }
         if (e.scorer) {
           const xi = e.side === 'h' ? ls.ctx.xiH : ls.ctx.xiA;
