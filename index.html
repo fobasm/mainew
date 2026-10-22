@@ -5122,7 +5122,7 @@ function buildClubGrid() {
     if (c.t !== pickTier) return;
     const b = el('button', 'club');
     b.setAttribute('aria-pressed', pickClub === i);
-    b.innerHTML = `${crestHTML(c, 40)}<span style="min-width:0"><b>${esc(c.n)}</b><small>${esc(c.nick)} · ${esc(c.city)}</small></span>`;
+    b.innerHTML = `${crestHTML(c, 44)}<span style="min-width:0"><b>${esc(c.n)}</b><small>${esc(c.nick)} · ${esc(c.city)}</small></span>`;
     b.onclick = () => {
       pickClub = i; buildClubGrid();
       $('#startBtn').disabled = false;
