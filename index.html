@@ -721,7 +721,7 @@ header.top .tmgr{border-left:0!important;margin-left:10px}
     <div class="view" id="v-news"></div>     <div class="view" id="v-inbox"></div>
     <div class="view" id="v-cups"></div>
     <div class="view" id="v-africa"></div>
-    <div class="view" id="v-nations"></div>     <div class="view" id="v-world"></div>     <div class="view" id="v-clubrank"></div>     <div class="view" id="v-commercial"></div>     <div class="view" id="v-stadium"></div>     <div class="view" id="v-board"></div>     <div class="view" id="v-legends"></div>     <div class="view" id="v-stadium"></div>
+    <div class="view" id="v-nations"></div>     <div class="view" id="v-world"></div>     <div class="view" id="v-clubrank"></div>     <div class="view" id="v-cities"></div>     <div class="view" id="v-commercial"></div>     <div class="view" id="v-stadium"></div>     <div class="view" id="v-board"></div>     <div class="view" id="v-legends"></div>     <div class="view" id="v-stadium"></div>
     <div class="view" id="v-calendar"></div>
     <div class="view" id="v-info"></div>     <div class="view" id="v-getadded"></div>
     <div class="view" id="v-createclub"></div>
@@ -5314,7 +5314,7 @@ function buildSlots() {
 const MENU_SECTIONS = [
   ['Career', [['inbox','Inbox'],['bathini','Bathini'],['match','Matchday'],['calendar','Calendar'],['table','League tables & fixtures']]],
   ['Squad', [['squad','Squad & Tactics'], ['youth','Academy & Training'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist']]],
-  ['Competitions', [['cups','Cups'],['africa','Continental football'],['nations','Nations'],['world','World players'],['clubrank','Club rankings'],['stats','Player Stats']]],
+  ['Competitions', [['cups','Cups'],['africa','Continental football'],['nations','Nations'],['world','World players'],['clubrank','Club rankings'],['cities','Club Cities'],['stats','Player Stats']]],
   ['Club', [['club','Club & Finances'],['mmcoins','MM Coins'],['commercial','Commercial'],['stadium','Stadium & tickets'],['board','Board & objectives'], ['trophies','Trophy room'],['legends','MM Legends'],['manager','Manager'],['news','News']]],
   ['More', [['careerfile','Save & Load'],['soundsettings','Music & sound effects'],['info','How to play'],['getadded','Get added to the game']]]
 ];
@@ -5377,7 +5377,7 @@ function render() { try { updateNavToggle(); closeNavMenu(); } catch (e) { } try
   if (active) active.classList.add('on');
   const dispatch = { match: viewMatch, table: viewTable, fixtures: viewFixtures, squad: viewSquadHub, tactics: viewSquadHub, finances: viewFinances, trophies: viewTrophies,
      transfers: viewTransfers, youth: viewYouthHub, training: viewYouthHub, inbox: viewInbox, bathini: viewBathini, stats: viewStats, news: viewNews,
-      cups: viewCups, africa: viewAfrica, nations: viewNations, world: viewWorld, clubrank: viewClubRank, commercial: viewCommercial, stadium: viewStadium, board: viewBoard, legends: viewLegends, stadium: viewStadium, calendar: viewCalendar, watchlist: viewWatchlist,
+      cups: viewCups, africa: viewAfrica, nations: viewNations, world: viewWorld, clubrank: viewClubRank, cities: viewCities, commercial: viewCommercial, stadium: viewStadium, board: viewBoard, legends: viewLegends, stadium: viewStadium, calendar: viewCalendar, watchlist: viewWatchlist,
      info: viewInfo, getadded: viewGetAdded, createclub: viewCreateClub, manager: viewManager, otherclubs: viewOtherClubs, club: viewClub, mmcoins: viewMMCoins };
   try {
     if (G.jobless && JOBLESS_BLOCKED.indexOf(tab) >= 0) viewJoblessGate(); else (dispatch[tab] || viewMatch)();     if (G.jobless && active && JOBLESS_BLOCKED.indexOf(tab) < 0 && tab !== 'manager') joblessBanner(active);
@@ -9407,7 +9407,7 @@ let mgrTab = 'profile'; let vacTier = -1; function viewManager() {   const v = $
 
 /* ---------------- other clubs ---------------- */
 let ocTier = 0, ocPick = null;
-function viewOtherClubs() {
+function viewCities() {   const v = $('#v-cities'); v.classList.add('mmx');   const teams = (G && G.teams && G.teams.length) ? G.teams : CLUBS;   const byCity = {};   teams.forEach(t => { const city = t.city || 'Unknown'; (byCity[city] = byCity[city] || []).push(t); });   const cities = Object.keys(byCity).map(city => {     const clubs = byCity[city].slice().sort((a, b) => (a.tier || 0) - (b.tier || 0) || a.n.localeCompare(b.n));     return { city, clubs };   }).sort((a, b) => b.clubs.length - a.clubs.length || a.city.localeCompare(b.city));   const namedCount = teams.filter(t => (t.n || '').toLowerCase().includes((t.city || '§').toLowerCase())).length;   const tiles = sqTiles([     ['Cities represented', cities.length],     ['Clubs total', teams.length],     ['Biggest hub', cities[0] ? esc(cities[0].city) + ' · ' + cities[0].clubs.length : '—'],     ['Named after their city', namedCount + ' of ' + teams.length]   ]);   const rows = cities.map(d => {     const chips = d.clubs.map(t => {       const namedAfterCity = (t.n || '').toLowerCase().includes(d.city.toLowerCase());       const youTag = (G && t.id === G.myTeam) ? ' <span class="tag xi">YOU</span>' : '';       return `<div style="margin:0 0 6px"><span class="team">${crestHTML(t, 18)}<span>${esc(t.n)}</span></span>` +         `<span class="muted" style="font-size:11px"> · ${esc(TIER_SHORT[t.tier])}${namedAfterCity ? ' · named after its city' : ''}</span>${youTag}</div>`;     }).join('');     return `<tr><td style="white-space:nowrap"><b>${esc(d.city)}</b></td><td class="pos">${d.clubs.length}</td><td>${chips}</td></tr>`;   }).join('');   const body = `<div class="panel tbl-google"><h3>Club cities<span class="sub">where every club in the game is based, and how many call each city home</span></h3>     <div class="cf-wrap"><table class="gtable"><thead><tr><th>City</th><th class="pos">Clubs</th><th>Who's based there</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;   v.innerHTML = tiles + body; } function viewOtherClubs() {
   const v = $('#v-otherclubs');
   v.classList.add('mmx');
   const list = CLUBS.map((c, i) => ({ c, i })).filter(x => x.c.t === ocTier && x.i !== G.myTeam);
