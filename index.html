@@ -4390,7 +4390,7 @@ function avatarSVG(id, size) {
   return `<img class="face" src="managers/${id}.jpg" width="${s}" height="${s}" style="object-fit:cover" alt="">`;
 }
 
-function cafStars(t) { return (t && t.trophies) ? t.trophies.filter(x => x.name === CAF_NAME).length : 0; }
+function cafWinsByName(name) {   return (G && G.africa && G.africa.cafHistory) ? G.africa.cafHistory.filter(h => h.winner === name).length : 0; } function cafStars(t) {   if (!t) return 0;   let n = t.trophies ? t.trophies.filter(x => x.name === CAF_NAME).length : 0;   if (G && G.africa && G.africa.squadCache && G.africa.squadCache[t.id] === t) n = Math.max(n, cafWinsByName(t.n));   return n; } function afrStarsHTML(name) {   const n = Math.min(5, cafWinsByName(name));   if (!n) return '';   const star = '<svg viewBox="0 0 24 24" width="11" height="11" style="flex:0 0 auto"><path d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.5 5.6 21.1 7 14l-5.3-5 7.2-.9z" fill="#f5c518" stroke="#8a5f10" stroke-width="1.2" stroke-linejoin="round"/></svg>';   return `<span title="${n}x ${CAF_NAME} winners" style="display:inline-flex;gap:1px;margin-left:5px;vertical-align:middle">${star.repeat(n)}</span>`; }
 function crestHTML(t, size) {
   const base = crestBaseHTML(t, size), n = Math.min(5, cafStars(t)), sz = size || 22;
   if (!n || sz < 14) return base;
@@ -4398,7 +4398,7 @@ function crestHTML(t, size) {
   const star = `<svg viewBox="0 0 24 24" width="${st}" height="${st}" style="margin:0 -${ov}px;flex:0 0 auto"><path d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.5 5.6 21.1 7 14l-5.3-5 7.2-.9z" fill="#f5c518" stroke="#8a5f10" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
   return `<span class="cstars" style="position:relative;display:inline-block;flex:0 0 auto;line-height:0;vertical-align:middle">${base}<span title="${cafStars(t)}x ${CAF_NAME} winners" style="position:absolute;left:50%;top:-${Math.round(st * 0.7)}px;transform:translateX(-50%);display:flex;pointer-events:none;z-index:2;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))">${star.repeat(n)}</span></span>`;
 }
-function crestBaseHTML(t, size) {   const _S = Math.round((size || 22) * 1.6), _p = Math.max(2, Math.round(_S * 0.08));   const _plain = !t.icon && t.badge !== 'bright' && !CREST_IMGS[t.n + '|' + t.s];   const _in = Math.round((_S - 2 * _p) / (_plain ? 1.15 : 1));   return `<span class="cbx" style="display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;box-sizing:border-box;width:${_S}px;height:${_S}px;padding:${_p}px;background:#fff;border-radius:${Math.max(4, Math.round(_S * 0.2))}px;box-shadow:0 1px 4px rgba(0,0,0,.4);vertical-align:middle">${crestRawHTML(t, _in)}</span>`; } function crestRawHTML(t, size) {
+function crestBaseHTML(t, size) {   const _S = Math.round((size || 22) * 1.5), _p = Math.max(1, Math.round(_S * 0.03));   const _plain = !t.icon && t.badge !== 'bright' && !CREST_IMGS[t.n + '|' + t.s];   const _in = Math.round((_S - 2 * _p) / (_plain ? 1.15 : 1));   return `<span class="cbx" style="display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;box-sizing:border-box;width:${_S}px;height:${_S}px;padding:${_p}px;background:#fff;border-radius:${Math.max(4, Math.round(_S * 0.2))}px;box-shadow:0 1px 4px rgba(0,0,0,.4);vertical-align:middle">${crestRawHTML(t, _in)}</span>`; } function crestRawHTML(t, size) {
   const s = size || 22;
   const _ci = CREST_IMGS[t.n + '|' + t.s];   if (_ci && t.badge !== 'bright' && !t.icon) {     return `<span class="crest img" style="width:${s}px;height:${s}px;border-radius:0;background-image:url('${_ci}')"></span>`;   }   if (t.badge === 'bright') {
     return `<span class="crest img" style="width:${s}px;height:${s}px;background-image:url('${IMG_BRIGHT}')"></span>`;
@@ -7911,7 +7911,7 @@ function viewAfrica() {
       <div class="cf-wrap"><table class="gtable"><thead><tr><th class="pos">#</th><th>Club</th><th class="hide-s">Rat</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>` +
       st.map((r, i) => {
         const c = afrClub(G, r.id);
-        return `<tr class="clickrow ${i === 0 ? 'zone-up' : ''} ${afrClubPick === r.id ? 'me' : ''}" data-afc="${r.id}" style="cursor:pointer"><td class="pos">${i + 1}</td><td><span class="team">${flagSVG(L.nat, 18)}<span>${esc(c.n)}</span></span></td>
+        return `<tr class="clickrow ${i === 0 ? 'zone-up' : ''} ${afrClubPick === r.id ? 'me' : ''}" data-afc="${r.id}" style="cursor:pointer"><td class="pos">${i + 1}</td><td><span class="team">${flagSVG(L.nat, 18)}<span>${esc(c.n)}</span>${afrStarsHTML(c.n)}</span></td>
           <td class="hide-s muted">${c.rating}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
           <td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td><b>${r.pts}</b></td></tr>`;
       }).join('') + `</tbody></table></div>
