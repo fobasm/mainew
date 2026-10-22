@@ -4698,7 +4698,7 @@ function potGrowthHtml(p) {
 }
 
 /* ---------------- sound ---------------- */
-let audioCtx = null, soundOn = true, musicOn = true, musicVol = 1, sfxVol = 1, crowdVol = 1; try { const _ap = JSON.parse(localStorage.getItem('mm_audio') || 'null'); if (_ap) { soundOn = _ap.sfx !== false; musicOn = _ap.music !== false; if (_ap.mv != null) musicVol = _ap.mv; if (_ap.sv != null) sfxVol = _ap.sv; if (_ap.cv != null) crowdVol = _ap.cv; } } catch (e) { } function saveAudioPrefs() { try { localStorage.setItem('mm_audio', JSON.stringify({ sfx: soundOn, music: musicOn, mv: musicVol, sv: sfxVol, cv: crowdVol })); } catch (e) { } }
+let audioCtx = null, soundOn = true, musicOn = true, musicVol = 1, sfxVol = 1, crowdVol = 1, musicKeep = false; try { const _ap = JSON.parse(localStorage.getItem('mm_audio') || 'null'); if (_ap) { soundOn = _ap.sfx !== false; musicOn = _ap.music !== false; if (_ap.mv != null) musicVol = _ap.mv; if (_ap.sv != null) sfxVol = _ap.sv; if (_ap.cv != null) crowdVol = _ap.cv; if (_ap.kp != null) musicKeep = !!_ap.kp; } } catch (e) { } function saveAudioPrefs() { try { localStorage.setItem('mm_audio', JSON.stringify({ sfx: soundOn, music: musicOn, mv: musicVol, sv: sfxVol, cv: crowdVol, kp: musicKeep })); } catch (e) { } }
 function ac() {
   if (!soundOn || document.hidden) return null;
   try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; } catch (e) { return null; }
@@ -4791,11 +4791,11 @@ function startBgMusic() {
     bgMusic = new Audio(nextMusicTrack());
     bgMusic.volume = 0.25 * musicVol;
     const playNext = () => {
-      bgMusic.src = nextMusicTrack();
+      bgMusic.src = musicSrc(nextMusicTrack()); musicPrefetch(musicQueue[0]);
       bgMusic.play().catch(() => { });
     };
     bgMusic.addEventListener('ended', playNext);
-    bgMusic.addEventListener('playing', () => { musicFails = 0; });
+    bgMusic.addEventListener('playing', () => { musicFails = 0; musicPrefetch(musicQueue[0]); musicPrefetch(musicQueue[1]); });
     bgMusic.addEventListener('error', () => { if (++musicFails < MUSIC_TRACKS.length) playNext(); });
     bgMusic.play().catch(() => { });
   } catch (e) { }
@@ -4982,7 +4982,7 @@ function musicFade(target, ms) {
   let _musicWasPlaying = false;
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    if (bgMusic && !bgMusic.paused) { bgMusic.pause(); _musicWasPlaying = true; }
+    if (!musicKeep && bgMusic && !bgMusic.paused) { bgMusic.pause(); _musicWasPlaying = true; }
     try { if (audioCtx && audioCtx.state === 'running') audioCtx.suspend(); } catch (e) { }
   } else {
     if (_musicWasPlaying && musicOn && bgMusic) bgMusic.play().catch(() => { });
@@ -5429,17 +5429,35 @@ const musicName = f => MUSIC_NAMES[f] || ('Track ' + (MUSIC_TRACKS.indexOf(f) + 
 let musicHist = [];
 const _mdur = {};
 function fmtTime(sec) { if (!isFinite(sec) || sec < 0) return '–:––'; sec = Math.floor(sec); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
-function musicNext() { if (!bgMusic) return; bgMusic.src = nextMusicTrack(); bgMusic.play().catch(() => { }); }
+const _mblob = {}, _mfetch = {};
+function musicPrefetch(f) {
+  if (!f || _mblob[f] || _mfetch[f] || typeof fetch !== 'function') return;
+  _mfetch[f] = true;
+  fetch(f).then(r => r.ok ? r.blob() : Promise.reject()).then(b => {
+    _mblob[f] = URL.createObjectURL(b);
+    const keys = Object.keys(_mblob);
+    if (keys.length > 6) {
+      const old = keys.find(k => k !== musicLast && k !== f);
+      if (old) { URL.revokeObjectURL(_mblob[old]); delete _mblob[old]; }
+    }
+  }).catch(() => { }).then(() => { delete _mfetch[f]; });
+}
+const musicSrc = f => _mblob[f] || f;
+function musicNext() {
+  if (!bgMusic) return;
+  bgMusic.src = musicSrc(nextMusicTrack()); bgMusic.play().catch(() => { });
+  musicPrefetch(musicQueue[0]);
+}
 function musicPrev() {
   if (!bgMusic) return;
   if (bgMusic.currentTime > 3 || !musicHist.length) { bgMusic.currentTime = 0; return; }
-  musicLast = musicHist.pop(); bgMusic.src = musicLast; bgMusic.play().catch(() => { });
+  musicLast = musicHist.pop(); bgMusic.src = musicSrc(musicLast); bgMusic.play().catch(() => { });
 }
 function musicPick(f) {
   if (!bgMusic) return;
   if (f === musicLast) { bgMusic.currentTime = 0; bgMusic.play().catch(() => { }); return; }
   musicHist.push(musicLast); musicQueue = musicQueue.filter(t => t !== f); musicLast = f;
-  bgMusic.src = f; bgMusic.play().catch(() => { });
+  bgMusic.src = musicSrc(f); bgMusic.play().catch(() => { });
 }
 function loadMusicDurations(done) {
   MUSIC_TRACKS.forEach(f => {
@@ -5454,7 +5472,7 @@ function mpTick() {
   const nameEl = $('#mpName'); if (!nameEl) return false;
   const on = !!(musicOn && bgMusic);
   const d = on ? bgMusic.duration : NaN, t = on ? bgMusic.currentTime : 0;
-  nameEl.textContent = on ? musicName(musicLast) : 'Music is off';
+  nameEl.textContent = on ? ((!bgMusic.paused && bgMusic.readyState < 3 ? 'Loading… ' : '') + musicName(musicLast)) : 'Music is off';
   $('#mpTime').textContent = on ? fmtTime(t) + ' / ' + fmtTime(d) : '';
   $('#mpBar').style.width = (on && isFinite(d) && d > 0 ? Math.min(100, t / d * 100) : 0) + '%';
   $('#mpPlay').textContent = on && !bgMusic.paused ? 'Pause' : 'Play';
@@ -5472,7 +5490,7 @@ function openSoundModal() {
   const mpRows = MUSIC_TRACKS.map((f, i) => `<button class="prow" data-mf="${f}" style="grid-template-columns:22px 1fr auto;padding:5px 8px;text-align:left"><span class="hint">${i + 1}</span><span class="who"><b>${esc(musicName(f))}</b></span><span class="hint" data-md="${f}">…</span></button>`).join('');
   const body = `<div class="mb"><div class="pad" style="display:flex;flex-direction:column;gap:14px">
       <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="musicChk" ${musicOn ? 'checked' : ''}> Background music</label>
-      ${row('musicVolR', 'Music volume', musicVol)}
+       ${row('musicVolR', 'Music volume', musicVol)}       <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="keepChk" ${musicKeep ? 'checked' : ''}> Keep music playing when I leave the game</label>
       <div style="border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:8px">
         <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><b id="mpName" style="font-family:var(--head);font-size:16px"></b><span class="hint" id="mpTime"></span></div>
         <div id="mpBarWrap" style="cursor:pointer;padding:4px 0"><div class="bar"><i id="mpBar" style="width:0%"></i></div></div>
@@ -5490,7 +5508,7 @@ function openSoundModal() {
     else if (bgMusic) bgMusic.pause();
     mpTick();
   };
-  $('#sfxChk').onchange = e => { soundOn = e.target.checked; saveAudioPrefs(); if (soundOn) playSound('click'); };
+    $('#keepChk').onchange = e => { musicKeep = e.target.checked; saveAudioPrefs(); };   $('#sfxChk').onchange = e => { soundOn = e.target.checked; saveAudioPrefs(); if (soundOn) playSound('click'); };
   const bind = (id, apply) => {
     const r = $('#' + id), v = $('#' + id + 'Val');
     r.oninput = () => { const x = r.value / 100; v.textContent = r.value + '%'; apply(x); saveAudioPrefs(); };
@@ -5508,7 +5526,7 @@ function openSoundModal() {
     bgMusic.currentTime = bgMusic.duration * Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
     mpTick();
   };
-  document.querySelectorAll('#mpList [data-mf]').forEach(b => b.onclick = () => { musicPick(b.dataset.mf); mpTick(); });
+  document.querySelectorAll('#mpList [data-mf]').forEach(b => { b.onpointerdown = () => musicPrefetch(b.dataset.mf); b.onclick = () => { musicPick(b.dataset.mf); mpTick(); }; });
   const mpT = setInterval(() => { if (!mpTick()) clearInterval(mpT); }, 500);
   mpTick(); loadMusicDurations(mpTick);
 }
