@@ -4712,13 +4712,14 @@ function tone(ctx, freq, t0, dur, type, gain) {   if (sfxVol <= 0) return;
   o.connect(g); g.connect(ctx.destination);
   o.start(ctx.currentTime + t0); o.stop(ctx.currentTime + t0 + dur + 0.02);
 }
-    function pTone(ctx, f, t0, dur, vol, type) {
+function pTone(ctx, f, t0, dur, vol, type) {
+  if (sfxVol <= 0) return;
   const t = ctx.currentTime + t0;
   const o = ctx.createOscillator(), g = ctx.createGain(), lp = ctx.createBiquadFilter();
   o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
   lp.type = 'lowpass'; lp.frequency.value = 5200; lp.Q.value = 0.5;
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(vol * sfxVol, t + 0.012);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(lp); lp.connect(g); g.connect(ctx.destination);
   o.start(t); o.stop(t + dur + 0.03);
@@ -5515,7 +5516,7 @@ function afterRound() {
   updateOutgoingScouting(G);
   try { watchlistAlerts(G); } catch (e) { console.error('Watchlist error', e); }
 const bids = G.jobless ? [] : generateBids(G);  bids.forEach(b => {     const pl = me().squad.find(x => x.id === b.pid), buyer = G.teams[b.from]; if (!pl || !buyer) return;     mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Offer received', flag: true, subject: `Transfer Offer: ${b.name}`,       body: [`${buyer.n} have bid ${money(b.fee)} for ${b.name}.`, `His estimated value is ${money(pl.value)}. Respond to the offer when it appears, or turn it down.`],       rows: [['Bidder', buyer.n], ['Offer', money(b.fee)], ['Estimated value', money(pl.value)], ['Contract', `${pl.contract} year${pl.contract === 1 ? '' : 's'} left`]] });   });   const loanOffers = generateLoanOffers(G);  loanOffers.forEach(o => {     const pl = me().squad.find(x => x.id === o.pid), buyer = G.teams[o.from]; if (!pl || !buyer) return;     mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Loan offer received', flag: true, subject: `Loan Offer: ${o.name}`,       body: [`${buyer.n} would like to take ${o.name} on loan for ${o.seasons} season${o.seasons === 1 ? '' : 's'}.`, `They would cover ${Math.round(o.wageShare * 100)}% of his wages while he's there. Respond to the offer when it appears, or turn it down.`],       rows: [['Club', buyer.n], ['Length', `${o.seasons} season${o.seasons === 1 ? '' : 's'}`], ['Wage share paid by them', Math.round(o.wageShare * 100) + '%']] });   });   try {     const un = unreadCount(G), fresh = un - (G.lastUnread || 0);     if (fresh > 0) toast(`✉ ${fresh} new message${fresh === 1 ? '' : 's'} in your inbox`);     G.lastUnread = un;   } catch (e) { }
-G.pendingBids = (G.pendingBids || []).concat(bids).filter(b => b.round == null || G.round - b.round < OFFER_EXPIRE_ROUNDS).slice(-15);
+G.pendingBids = (G.pendingBids || []).concat(bids).filter(b => b.round == null || G.round - b.round < OFFER_EXPIRE_ROUNDS).slice(-15); if (bids.length) setTimeout(bidPing, 1600);
   G.pendingLoanOffers = (G.pendingLoanOffers || []).concat(loanOffers).filter(o => o.round == null || G.round - o.round < OFFER_EXPIRE_ROUNDS).slice(-15);
   fxRound = Math.max(0, G.round - 1);
 if (!G.finished && G.round >= 16 && rnd() < 0.025) {
