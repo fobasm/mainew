@@ -4781,6 +4781,7 @@ function nextMusicTrack() {
     }
     if (musicQueue.length > 1 && musicQueue[0] === musicLast) musicQueue.push(musicQueue.shift());
   }
+  if (musicLast) { musicHist.push(musicLast); if (musicHist.length > 30) musicHist.shift(); }
   musicLast = musicQueue.shift();
   return musicLast;
 }
@@ -5423,11 +5424,61 @@ function openCareerModal() {
     $('#switchYes2').onclick = () => { leavingApp = true; try { localStorage.removeItem(LAST_SLOT_KEY); } catch (e) { } location.reload(); };
   };
 }
+const MUSIC_NAMES = { 'menu.mp3': 'Beautiful Dream', 'menu2.mp3': 'Driving Ambition', 'menu3.mp3': 'Hazy After Hours', 'menu4.mp3': 'Serene View', 'menu5.mp3': 'Tech House Vibes' };
+const musicName = f => MUSIC_NAMES[f] || ('Track ' + (MUSIC_TRACKS.indexOf(f) + 1));
+let musicHist = [];
+const _mdur = {};
+function fmtTime(sec) { if (!isFinite(sec) || sec < 0) return '–:––'; sec = Math.floor(sec); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
+function musicNext() { if (!bgMusic) return; bgMusic.src = nextMusicTrack(); bgMusic.play().catch(() => { }); }
+function musicPrev() {
+  if (!bgMusic) return;
+  if (bgMusic.currentTime > 3 || !musicHist.length) { bgMusic.currentTime = 0; return; }
+  musicLast = musicHist.pop(); bgMusic.src = musicLast; bgMusic.play().catch(() => { });
+}
+function musicPick(f) {
+  if (!bgMusic) return;
+  if (f === musicLast) { bgMusic.currentTime = 0; bgMusic.play().catch(() => { }); return; }
+  musicHist.push(musicLast); musicQueue = musicQueue.filter(t => t !== f); musicLast = f;
+  bgMusic.src = f; bgMusic.play().catch(() => { });
+}
+function loadMusicDurations(done) {
+  MUSIC_TRACKS.forEach(f => {
+    if (_mdur[f] != null) return;
+    _mdur[f] = 0;
+    const a = new Audio(); a.preload = 'metadata';
+    a.addEventListener('loadedmetadata', () => { _mdur[f] = a.duration; done(); });
+    a.src = f;
+  });
+}
+function mpTick() {
+  const nameEl = $('#mpName'); if (!nameEl) return false;
+  const on = !!(musicOn && bgMusic);
+  const d = on ? bgMusic.duration : NaN, t = on ? bgMusic.currentTime : 0;
+  nameEl.textContent = on ? musicName(musicLast) : 'Music is off';
+  $('#mpTime').textContent = on ? fmtTime(t) + ' / ' + fmtTime(d) : '';
+  $('#mpBar').style.width = (on && isFinite(d) && d > 0 ? Math.min(100, t / d * 100) : 0) + '%';
+  $('#mpPlay').textContent = on && !bgMusic.paused ? 'Pause' : 'Play';
+  ['mpPrev', 'mpPlay', 'mpNext'].forEach(id => { $('#' + id).disabled = !on; });
+  document.querySelectorAll('#mpList [data-mf]').forEach(b => {
+    const cur = on && b.dataset.mf === musicLast;
+    b.style.background = cur ? 'var(--panel2)' : '';
+    b.style.boxShadow = cur ? 'inset 0 0 0 1px var(--gold)' : '';
+  });
+  document.querySelectorAll('#mpList [data-md]').forEach(sp => { const x = _mdur[sp.dataset.md]; sp.textContent = x ? fmtTime(x) : '…'; });
+  return true;
+}
 function openSoundModal() {
   const row = (id, label, val) => `<div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${label}</span><span class="hint" id="${id}Val">${Math.round(val * 100)}%</span></div><input type="range" id="${id}" min="0" max="100" value="${Math.round(val * 100)}" style="width:100%;accent-color:var(--gold)"></div>`;
+  const mpRows = MUSIC_TRACKS.map((f, i) => `<button class="prow" data-mf="${f}" style="grid-template-columns:22px 1fr auto;padding:5px 8px;text-align:left"><span class="hint">${i + 1}</span><span class="who"><b>${esc(musicName(f))}</b></span><span class="hint" data-md="${f}">…</span></button>`).join('');
   const body = `<div class="mb"><div class="pad" style="display:flex;flex-direction:column;gap:14px">
       <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="musicChk" ${musicOn ? 'checked' : ''}> Background music</label>
       ${row('musicVolR', 'Music volume', musicVol)}
+      <div style="border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><b id="mpName" style="font-family:var(--head);font-size:16px"></b><span class="hint" id="mpTime"></span></div>
+        <div id="mpBarWrap" style="cursor:pointer;padding:4px 0"><div class="bar"><i id="mpBar" style="width:0%"></i></div></div>
+        <div style="display:flex;gap:8px;justify-content:center"><button class="btn ghost sm" id="mpPrev">⏮ Previous</button><button class="btn ghost sm" id="mpPlay">Pause</button><button class="btn ghost sm" id="mpNext">Next ⏭</button></div>
+        <div id="mpList" style="max-height:190px;overflow:auto;display:flex;flex-direction:column;gap:2px">${mpRows}</div>
+      </div>
       <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="sfxChk" ${soundOn ? 'checked' : ''}> Sound effects</label>
       ${row('sfxVolR', 'Effects volume', sfxVol)}
       ${row('crowdVolR', 'Crowd volume', crowdVol)}
@@ -5437,6 +5488,7 @@ function openSoundModal() {
     musicOn = e.target.checked; saveAudioPrefs();
     if (musicOn) { startBgMusic(); if (bgMusic) bgMusic.play().catch(() => { }); }
     else if (bgMusic) bgMusic.pause();
+    mpTick();
   };
   $('#sfxChk').onchange = e => { soundOn = e.target.checked; saveAudioPrefs(); if (soundOn) playSound('click'); };
   const bind = (id, apply) => {
@@ -5447,6 +5499,18 @@ function openSoundModal() {
   bind('sfxVolR', x => { sfxVol = x; });
   bind('crowdVolR', x => { crowdVol = x; if (liveState && liveState.crowd && liveState.crowd.cm) liveState.crowd.cm.gain.value = crowdVol; });
   $('#sfxVolR').onchange = () => playSound('coin');
+  $('#mpPrev').onclick = () => { musicPrev(); mpTick(); };
+  $('#mpNext').onclick = () => { musicNext(); mpTick(); };
+  $('#mpPlay').onclick = () => { if (!bgMusic) return; if (bgMusic.paused) bgMusic.play().catch(() => { }); else bgMusic.pause(); mpTick(); };
+  $('#mpBarWrap').onclick = e => {
+    if (!bgMusic || !isFinite(bgMusic.duration)) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    bgMusic.currentTime = bgMusic.duration * Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    mpTick();
+  };
+  document.querySelectorAll('#mpList [data-mf]').forEach(b => b.onclick = () => { musicPick(b.dataset.mf); mpTick(); });
+  const mpT = setInterval(() => { if (!mpTick()) clearInterval(mpT); }, 500);
+  mpTick(); loadMusicDurations(mpTick);
 }
 let autoSimTimer = null; function autoSimBody() {   const d = new Date(currentDateISO() + 'T12:00:00Z');   return `<div style="text-align:center;padding:20px 0">     <div style="font-family:var(--head);font-size:12px;letter-spacing:.5px;color:var(--faint);text-transform:uppercase">Simulating</div>     <div style="font-family:var(--head);font-size:30px;margin:6px 0">${DOW_NAMES[d.getUTCDay()]} ${d.getUTCDate()} ${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCFullYear()}</div>     <div class="hint">${isMatchdayToday() ? 'Matchday reached' : 'No match today'}</div>   </div>`; }  function startAutoSim() {   if (autoSimTimer || isMatchdayToday() || isCupDayToday()) return;   const d0 = new Date(currentDateISO() + 'T12:00:00Z');   calY = d0.getUTCFullYear(); calM = d0.getUTCMonth();   autoSimTimer = setInterval(() => {      if (isMatchdayToday() || isCupDayToday() || G.finished) { const md = isMatchdayToday() || isCupDayToday(); stopAutoSim(); if (md) { toast('Matchday today.'); matchdayChime(); } return; }     advanceOneDay();     const d = new Date(currentDateISO() + 'T12:00:00Z');     calY = d.getUTCFullYear(); calM = d.getUTCMonth();     render();   }, 250);   goTo('calendar'); } function stopAutoSim() { if (autoSimTimer) { clearInterval(autoSimTimer); autoSimTimer = null; } render(); } function stepDayOnCalendar() {   if (autoSimTimer || isMatchdayToday() || G.finished) return;   const d0 = new Date(currentDateISO() + 'T12:00:00Z');   calY = d0.getUTCFullYear(); calM = d0.getUTCMonth();   goTo('calendar');   setTimeout(() => {     advanceOneDay();     const d = new Date(currentDateISO() + 'T12:00:00Z');     calY = d.getUTCFullYear(); calM = d.getUTCMonth();     render();     toast(isMatchdayToday() ? 'Matchday today.' : 'No match today.'); if (isMatchdayToday()) matchdayChime();   }, 300); } function renderActions() {
   const a = $('#actions'); a.innerHTML = '';
