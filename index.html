@@ -590,7 +590,7 @@ header.top .tmgr{border-left:0!important;margin-left:10px}
 .homebtn.bthlogo .bthb{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#e5322d;color:#fff;font:700 11px/17px var(--body);text-align:center}
 @keyframes bthglow{0%,100%{box-shadow:0 0 6px rgba(59,130,255,.55),0 0 14px rgba(59,130,255,.25)}50%{box-shadow:0 0 11px rgba(90,160,255,.95),0 0 24px rgba(59,130,255,.5)}}
 @media(prefers-reduced-motion:reduce){.homebtn.bthlogo{animation:none}} /* team selection: lighter cards so crests stand out */ #start .club{background:#2b333e;border-color:#3d4856;padding:12px 14px;gap:14px} #start .club:hover{background:#343e4b;border-color:#566376} #start .club[aria-pressed="true"]{background:#37424f;border-color:#f2b928} #start .club small{color:#b4bcc6}  #start .club{gap:12px} #start .club b,#start .club small{overflow-wrap:anywhere} /* no white box on shirt badges and league tables */ .kitBigBadge .cbx,.gtable .cbx{background:none!important;box-shadow:none!important;padding:0!important;border-radius:0!important;width:auto!important;height:auto!important} /* contract negotiation: always keep the buttons on screen */ .jnScrim,.jnScrim *{touch-action:manipulation} .jnFoot .btn{min-height:44px;min-width:44px;position:relative;z-index:1} .jnScrim{display:flex;align-items:center;justify-content:center;padding:8px} .jnCard{display:flex;flex-direction:column;max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px)} .jnBody{overflow-y:auto;min-height:0;flex:1 1 auto;-webkit-overflow-scrolling:touch} .jnHead,.jnFoot{flex:0 0 auto} @media (max-height:520px){.jnHead{padding:8px 12px}.jnBody{padding:8px 12px}.jnBody p{margin:0 0 6px;font-size:13px}.jnBody label{margin:6px 0 0}.jnBar{margin-top:6px}.jnFoot{padding:8px 12px}} </style>
-</head>
+<script src="crests_extra.js"></script> </head>
 <!-- built and developed in South Africa (panar.co.za) -->
 <body>
 
@@ -4407,7 +4407,7 @@ function crestHTML(t, size) {
 }
 function crestBaseHTML(t, size) {   const _S = Math.round((size || 22) * 1.5), _p = Math.max(1, Math.round(_S * 0.03));   const _plain = !t.icon && t.badge !== 'bright' && !CREST_IMGS[t.n + '|' + t.s];   const _in = Math.round((_S - 2 * _p) / (_plain ? 1.15 : 1));   return `<span class="cbx" style="display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;box-sizing:border-box;width:${_S}px;height:${_S}px;padding:${_p}px;background:#fff;border-radius:${Math.max(4, Math.round(_S * 0.2))}px;box-shadow:0 1px 4px rgba(0,0,0,.4);vertical-align:middle">${crestRawHTML(t, _in)}</span>`; } function crestRawHTML(t, size) {
   const s = size || 22;
-  const _ci = CREST_IMGS[t.n + '|' + t.s];   if (_ci && t.badge !== 'bright' && !t.icon) {     return `<span class="crest img" style="width:${s}px;height:${s}px;border-radius:0;background-image:url('${_ci}')"></span>`;   }   if (t.badge === 'bright') {
+  const _k = t.n + '|' + t.s, _ci = (window.CREST_EXTRA || {})[_k] || CREST_IMGS[_k];   if (_ci && t.badge !== 'bright' && !t.icon) {     return `<span class="crest img" style="width:${s}px;height:${s}px;border-radius:0;background-image:url('${_ci}')"></span>`;   }   if (t.badge === 'bright') {
     return `<span class="crest img" style="width:${s}px;height:${s}px;background-image:url('${IMG_BRIGHT}')"></span>`;
   }
   if (t.icon) return crestCustomHTML(t, s);
