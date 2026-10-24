@@ -29,11 +29,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Big+Shoulders+Display:wght@700;800;900&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
-<!-- Google Sign-In: replace YOUR_GOOGLE_CLIENT_ID below with a real OAuth client ID from
-     Google Cloud Console (with this page's own domain added as an authorized origin) once
-     this file is hosted on your own site. accounts.google.com is not reachable from inside
-     this preview, so the button below appears but cannot complete sign-in here. Sign-in only
-     personalises the manager name shown in this browser — it does not sync saves anywhere. -->
 <script src="https://accounts.google.com/gsi/client" async defer></script> <style>/*
 <>
 */:root{
@@ -3466,7 +3461,7 @@ function loanInterestRanking(p, ownerId) {
   }
   return out.filter(x => x.s >= 1).sort((a, b) => b.s - a.s);
 }
-function makeLoanOffer(club, p) {
+function dedupOffers(list) { const seen = new Set(); return list.filter(o => { const k = o.pid + '|' + o.from; if (seen.has(k)) return false; seen.add(k); return true; }); } function makeLoanOffer(club, p) {
   const seasons = rnd() < 0.25 ? 2 : 1;
   const need = p.rating - starterRatingAt(club, p.pos);
   let wageShare = 0.4 + Math.min(0.35, Math.max(0, need) * 0.03) + (rnd() - 0.5) * 0.1;
@@ -3484,7 +3479,7 @@ function generateLoanOffers(G) {
     if (!p.ll && xi.includes(p)) return;   /* regular starters don't get unsolicited loan requests */     const fit = p.age >= 30 ? 0.12 : p.age >= 27 ? 0.45 : (p.age <= 23 || p.reserve) ? 1.6 : 1;   /* mostly young and fringe players */     const chance = p.ll ? Math.min(0.6, 0.25 + interested.length * 0.05) : Math.min(0.08, (0.02 + interested.length * 0.01) * fit);
     if (rnd() < chance) {
       const club = wpick(interested, t => 1 + Math.max(0, clubLevel(t) - clubLevel(me) + 10));
-      offers.push(makeLoanOffer(club, p));
+      if ((G.pendingLoanOffers || []).some(o => o.pid === p.id && o.from === club.id)) return;       offers.push(makeLoanOffer(club, p));
     }
   });
   return offers.slice(0, 4);
@@ -5639,8 +5634,8 @@ function afterRound() {
   updateOutgoingScouting(G);
   try { watchlistAlerts(G); } catch (e) { console.error('Watchlist error', e); }
 const bids = G.jobless ? [] : generateBids(G);  bids.forEach(b => {     const pl = me().squad.find(x => x.id === b.pid), buyer = G.teams[b.from]; if (!pl || !buyer) return;     mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Offer received', flag: true, subject: `Transfer Offer: ${b.name}`,       body: [`${buyer.n} have bid ${money(b.fee)} for ${b.name}.`, `His estimated value is ${money(pl.value)}. Respond to the offer when it appears, or turn it down.`],       rows: [['Bidder', buyer.n], ['Offer', money(b.fee)], ['Estimated value', money(pl.value)], ['Contract', `${pl.contract} year${pl.contract === 1 ? '' : 's'} left`]] });   });   const loanOffers = generateLoanOffers(G);  loanOffers.forEach(o => {     const pl = me().squad.find(x => x.id === o.pid), buyer = G.teams[o.from]; if (!pl || !buyer) return;     mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Loan offer received', flag: true, subject: `Loan Offer: ${o.name}`,       body: [`${buyer.n} would like to take ${o.name} on loan for ${o.seasons} season${o.seasons === 1 ? '' : 's'}.`, `They would cover ${Math.round(o.wageShare * 100)}% of his wages while he's there. Respond to the offer when it appears, or turn it down.`],       rows: [['Club', buyer.n], ['Length', `${o.seasons} season${o.seasons === 1 ? '' : 's'}`], ['Wage share paid by them', Math.round(o.wageShare * 100) + '%']] });   });   try {     const un = unreadCount(G), fresh = un - (G.lastUnread || 0);     if (fresh > 0) toast(`✉ ${fresh} new message${fresh === 1 ? '' : 's'} in your inbox`);     G.lastUnread = un;   } catch (e) { }
-G.pendingBids = (G.pendingBids || []).concat(bids).filter(b => b.round == null || G.round - b.round < OFFER_EXPIRE_ROUNDS).slice(-15); if (bids.length) setTimeout(bidPing, 1600);
-  G.pendingLoanOffers = (G.pendingLoanOffers || []).concat(loanOffers).filter(o => o.round == null || G.round - o.round < OFFER_EXPIRE_ROUNDS).slice(-15);
+G.pendingBids = dedupOffers((G.pendingBids || []).concat(bids)).filter(b => b.round == null || G.round - b.round < OFFER_EXPIRE_ROUNDS).slice(-15); if (bids.length) setTimeout(bidPing, 1600);
+  G.pendingLoanOffers = dedupOffers((G.pendingLoanOffers || []).concat(loanOffers)).filter(o => o.round == null || G.round - o.round < OFFER_EXPIRE_ROUNDS).slice(-15);
   fxRound = Math.max(0, G.round - 1);
 if (!G.finished && G.round >= 16 && rnd() < 0.025) {
     const offers = jobOffers(G);
@@ -7306,7 +7301,7 @@ function viewTransfers() {
   };
   const winOpen = inTransferWindow(G);
   const foreignN = t.squad.filter(p => p.nat !== 'ZA').length;
-  G.pendingBids = (G.pendingBids || []).filter(b => t.squad.some(p => p.id === b.pid) && (b.round == null || G.round - b.round < OFFER_EXPIRE_ROUNDS));   const bids = G.pendingBids;   G.pendingLoanOffers = (G.pendingLoanOffers || []).filter(o => { const pl = t.squad.find(p => p.id === o.pid); return pl && !pl.loan && (o.round == null || G.round - o.round < OFFER_EXPIRE_ROUNDS); });   const loanOffers = G.pendingLoanOffers;
+  G.pendingBids = dedupOffers(G.pendingBids || []).filter(b => t.squad.some(p => p.id === b.pid) && (b.round == null || G.round - b.round < OFFER_EXPIRE_ROUNDS));   const bids = G.pendingBids;   G.pendingLoanOffers = (G.pendingLoanOffers || []).filter(o => { const pl = t.squad.find(p => p.id === o.pid); return pl && !pl.loan && (o.round == null || G.round - o.round < OFFER_EXPIRE_ROUNDS); });   const loanOffers = G.pendingLoanOffers;
 
   let html = `<div class="rbox">
     <div><b>${money(t.budget)}</b><span>Transfer budget</span></div>
