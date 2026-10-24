@@ -3411,7 +3411,7 @@ function generateBids(G) {
   if (!inTransferWindow(G)) return []; // clubs don't submit formal bids outside the window — scouting continues, offers don't
   const me = G.teams[G.myTeam], bids = [];
   me.squad.forEach(p => {
-    if (signLockLeft(p) > 0) return;     const suitors = p.tl ?    interestRanking(p, me.id).filter(x => x.s >= 3 && (p.rating - starterRatingAt(x.t, p.pos)) >= -1) : genuineBuyers(p, me.id);
+    if (p.notForSale || signLockLeft(p) > 0) return;     const suitors = p.tl ?    interestRanking(p, me.id).filter(x => x.s >= 3 && (p.rating - starterRatingAt(x.t, p.pos)) >= -1) : genuineBuyers(p, me.id);
     const interest = suitors.length;
     if (!interest) return; // nobody seriously in for him this week — no offer, full stop
     const base = p.tl ? 0.55 : (p.wantsOut ? 0.16 : 0.035);
@@ -3473,7 +3473,7 @@ function generateLoanOffers(G) {
   if (!inTransferWindow(G)) return offers;
   const xi = lineupOf(me);
   me.squad.forEach(p => {
-    if (!loanEligible(me, p)) return;
+    if (p.notForSale || !loanEligible(me, p)) return;
     const interested = loanInterestRanking(p, me.id).slice(0, 6).map(x => x.t);
     if (!interested.length) return;
     if (!p.ll && xi.includes(p)) return;   /* regular starters don't get unsolicited loan requests */     const fit = p.age >= 30 ? 0.12 : p.age >= 27 ? 0.45 : (p.age <= 23 || p.reserve) ? 1.6 : 1;   /* mostly young and fringe players */     const chance = p.ll ? Math.min(0.6, 0.25 + interested.length * 0.05) : Math.min(0.08, (0.02 + interested.length * 0.01) * fit);
