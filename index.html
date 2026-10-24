@@ -428,7 +428,7 @@ tr.zone-down td:first-child{box-shadow:inset 3px 0 var(--down)}
 
 /* ---------- modal ---------- */
 .scrim{position:fixed;inset:0;z-index:700;background:rgba(3,8,5,.74);display:grid;place-items:center;padding:14px;overflow:auto}
-.scrim[hidden]{display:none}
+.scrim[hidden]{display:none} @keyframes mmIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}} #modal.mmIn{animation:mmIn .38s cubic-bezier(.2,.8,.2,1)} #modal.mmOut{opacity:0;transform:translateY(-6px) scale(.985);transition:opacity .25s ease,transform .25s ease}
 .modal{background:var(--panel);border:1px solid var(--line2);border-radius:14px;width:min(600px,100%);max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.55)}
 .modal header{padding:12px 15px;border-bottom:1px solid var(--line);background:var(--panel2);display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:2}
 .modal header h3{font-size:19px}
@@ -5895,7 +5895,7 @@ function seasonStoryHTML(st, last) {
   const mineRetired = s.retired.filter(r => r.club === G.myTeam);
   if (mineRetired.length) body += `<p style="color:var(--dim);font-size:13.5px">Hanging up the boots: ` +
     mineRetired.map(r => `${esc(r.name)} (${r.age}, ${r.apps} apps)`).join(', ') + `.</p>`;
-  body = (last.pos === 1 ? `<div class="rvBanner">🏆 ${esc(my.n)} are champions</div>` : '') +
+  body = (last.pos === 1 ? `<div class="rvBanner" style="display:flex;align-items:center;justify-content:center;gap:10px">🏆 ${esc(my.n)} are champions ${crestHTML(my, 26)}</div>` : '') +
     `<div class="rvHero"><div><small>Finished</small><b>${ordinal(last.pos)}</b></div><div><small>Points</small><b>${last.pts}</b></div>
       <div><small>Season result</small><b style="color:${fin.net >= 0 ? '#3ddc84' : '#ff6b6b'}">${money(fin.net)}</b></div><div><small>Reputation</small><b>${G.manager.rep}</b></div></div>` + (story ? seasonStoryHTML(story, last) : '') + body;
   const showReview = () => {     const mineBreak = s.breakout.filter(b => b.club === G.myTeam);     if (mineBreak.length) setTimeout(() => { breakoutNote(); toast(`${mineBreak[0].name}${mineBreak.length > 1 ? ' and ' + (mineBreak.length - 1) + ' more' : ''} broke through this season.`); }, 2600);
@@ -5903,13 +5903,13 @@ function seasonStoryHTML(st, last) {
     openLockedModal(`${seasonLabel(s.season)} review`, body,
       `<button class="btn sm" id="revNext">Continue</button>`);
     $('#modal').classList.add('mmx');
-    $('#revNext').onclick = () => { closeModal(); postSeasonFlow(s); };
+    $('#revNext').onclick = () => modalSwap(() => postSeasonFlow(s));
   };
   if (totsXI.length) {
     openLockedModal(`Team of the Season — ${TIER_SHORT[totsTier]}`, xiCardsHTML(totsXI),
       `<button class="btn sm" id="totsNext">Continue to season review</button>`);
     $('#modal').classList.add('mmx');
-    const totsBtn = $('#totsNext'); if (totsBtn) totsBtn.onclick = () => { closeModal(); showReview(); };
+    const totsBtn = $('#totsNext'); if (totsBtn) totsBtn.onclick = () => modalSwap(showReview);
   } else {
     showReview();
   }
