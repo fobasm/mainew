@@ -5198,7 +5198,7 @@ $('#startBtn').onclick = () => {
     defaultKey: 'accept',
     onChoice: (k) => {
       if (k !== 'accept') return;
-      G = newGame(pickClub, { name: nm, avatar: pickAvatar, nat, dob });
+      G = newGame(pickClub, { name: nm, avatar: pickAvatar, nat, dob }); setTimeout(() => { try { showSponsors(); } catch (e) { } }, 1500);
       enterApp(); save();
     }
   });
@@ -7267,7 +7267,7 @@ function tacticsPitchSpots(t, xi, slots, coords) {   return xi.map((p, i) => {  
 }
 
 /* ---------------- transfers ---------------- */
-let txSection = 'search', txAge = 'ALL', txSort = 'rating', txHistFilter = 'all', txNat = 'ALL', txAgeX = 'ALL', txLg = 'ALL'; const REGION_NAMES = { AFR: 'Africa', EUR: 'Europe', SAM: 'South America', NAM: 'North America', ASI: 'Asia & Oceania' }; function regionOf(c) {   if (NATIONS[c] && NATIONS[c].caf) return 'AFR';   if (LATIN_NATIONS.includes(c)) return 'SAM';   if (['US', 'CA', 'MX', 'CR', 'JM'].includes(c)) return 'NAM';   if (EURO_NATIONS.includes(c) || ['GB', 'TR'].includes(c)) return 'EUR';   return 'ASI'; } function natMatch(p, f) {   if (!f || f === 'ALL') return true;   if (f === 'FOREIGN') return p.nat !== 'ZA';   if (f.indexOf('R:') === 0) return regionOf(p.nat) === f.slice(2);   return p.nat === f; } function natSelectHTML(id, cur) {   const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`;   const grp = r => Object.keys(NATIONS).filter(c => c !== 'ZA' && regionOf(c) === r).sort((a, b) => natName(a).localeCompare(natName(b)));   return `<select id="${id}">${opt('ALL', 'Any nationality')}${opt('ZA', 'South Africa')}${opt('FOREIGN', 'All foreign players')}` +     Object.keys(REGION_NAMES).map(r => `<optgroup label="${REGION_NAMES[r]}">${opt('R:' + r, 'All of ' + REGION_NAMES[r])}${grp(r).map(c => opt(c, natName(c))).join('')}</optgroup>`).join('') + '</select>'; }
+let txSection = 'search', txAge = 'ALL', txSort = 'rating', txHistFilter = 'all', txNat = 'ALL', txAgeX = 'ALL', txLg = 'ALL', txMinR = 0, txMinP = 0; const REGION_NAMES = { AFR: 'Africa', EUR: 'Europe', SAM: 'South America', NAM: 'North America', ASI: 'Asia & Oceania' }; function regionOf(c) {   if (NATIONS[c] && NATIONS[c].caf) return 'AFR';   if (LATIN_NATIONS.includes(c)) return 'SAM';   if (['US', 'CA', 'MX', 'CR', 'JM'].includes(c)) return 'NAM';   if (EURO_NATIONS.includes(c) || ['GB', 'TR'].includes(c)) return 'EUR';   return 'ASI'; } function natMatch(p, f) {   if (!f || f === 'ALL') return true;   if (f === 'FOREIGN') return p.nat !== 'ZA';   if (f.indexOf('R:') === 0) return regionOf(p.nat) === f.slice(2);   return p.nat === f; } function natSelectHTML(id, cur) {   const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`;   const grp = r => Object.keys(NATIONS).filter(c => c !== 'ZA' && regionOf(c) === r).sort((a, b) => natName(a).localeCompare(natName(b)));   return `<select id="${id}">${opt('ALL', 'Any nationality')}${opt('ZA', 'South Africa')}${opt('FOREIGN', 'All foreign players')}` +     Object.keys(REGION_NAMES).map(r => `<optgroup label="${REGION_NAMES[r]}">${opt('R:' + r, 'All of ' + REGION_NAMES[r])}${grp(r).map(c => opt(c, natName(c))).join('')}</optgroup>`).join('') + '</select>'; }
 function txRow(p, club, opts) {
   opts = opts || {};
   const listing = G.market.find(m => m.pid === p.id);
@@ -7290,7 +7290,7 @@ function txRow(p, club, opts) {
 function viewTransfers() {
   const v = $('#v-transfers'), t = me(); v.classList.add('mmx', 'sqv');
   const ageOk = p => (txAgeX === 'ALL' || p.age === +txAgeX) && (txAge === 'ALL' || (txAge === 'U21' ? p.age <= 21 : txAge === '22-28' ? (p.age >= 22 && p.age <= 28) : p.age >= 29));
-  const posOk = p => txFilter === 'ALL' || p.pos === txFilter || POS_GROUP[p.pos] === txFilter;
+  const posOk = p => (txFilter === 'ALL' || p.pos === txFilter || POS_GROUP[p.pos] === txFilter) && p.rating >= txMinR && p.pot >= txMinP;
   const searchOk = p => natMatch(p, txNat) && (!txSearch || p.name.toLowerCase().includes(txSearch.toLowerCase()) || natName(p.nat).toLowerCase().includes(txSearch.toLowerCase()));
   const sorter = (a, b) => {
     if (txSort === 'age') return a.age - b.age;
@@ -7325,7 +7325,7 @@ function viewTransfers() {
       ${['ALL', 'U21', '22-28', '29+'].map(a => `<button class="chip" data-txage="${a}" aria-pressed="${txAge === a}">${a === 'ALL' ? 'Any age' : a}</button>`).join('')}
       <select id="txSortSel">${[['rating', 'Highest rated'], ['potential', 'Highest potential'], ['value', 'Most valuable'], ['age', 'Youngest'], ['fit', 'Most likely to join you']]
         .map(([k, l]) => `<option value="${k}" ${txSort === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
-      ${natSelectHTML('txNatSel', txNat)}<select id="txAgeSel"><option value="ALL">Any exact age</option>${Array.from({ length: 26 }, (_, i) => 15 + i).map(a => `<option value="${a}" ${String(txAgeX) === String(a) ? 'selected' : ''}>${a} years old</option>`).join('')}</select>${txSection === 'search' ? `<select id="txLgSel"><option value="ALL">Any league</option>${TIER_NAMES.map((n, i) => `<option value="${i}" ${String(txLg) === String(i) ? 'selected' : ''}>${n}</option>`).join('')}</select>` : ''}<input type="search" id="txs" placeholder="Search name or country" value="${esc(txSearch)}" style="margin-left:auto;min-width:160px"></div>`;
+      <select id="txPosSel"><option value="ALL">Exact position</option>${[['Goalkeeper', ['GK']], ['Defenders', ['CB', 'RB', 'LB', 'RWB', 'LWB']], ['Midfielders', ['CDM', 'CM', 'CAM', 'RM', 'LM']], ['Attackers', ['RW', 'LW', 'CF', 'ST']]].map(([g, ps]) => `<optgroup label="${g}">${ps.map(p => `<option value="${p}" ${txFilter === p ? 'selected' : ''}>${p}</option>`).join('')}</optgroup>`).join('')}</select><select id="txMinRSel"><option value="0">Any rating</option>${[55, 60, 65, 70, 75, 80].map(r => `<option value="${r}" ${txMinR === r ? 'selected' : ''}>${r}+ rating</option>`).join('')}</select><select id="txMinPSel"><option value="0">Any potential</option>${[60, 65, 70, 75, 80, 85].map(r => `<option value="${r}" ${txMinP === r ? 'selected' : ''}>${r}+ potential</option>`).join('')}</select><select id="txPosSel"><option value="ALL">Exact position</option>${[['Goalkeeper', ['GK']], ['Defenders', ['CB', 'RB', 'LB', 'RWB', 'LWB']], ['Midfielders', ['CDM', 'CM', 'CAM', 'RM', 'LM']], ['Attackers', ['RW', 'LW', 'CF', 'ST']]].map(([g, ps]) => `<optgroup label="${g}">${ps.map(p => `<option value="${p}" ${txFilter === p ? 'selected' : ''}>${p}</option>`).join('')}</optgroup>`).join('')}</select><select id="txMinRSel"><option value="0">Any rating</option>${[55, 60, 65, 70, 75, 80].map(r => `<option value="${r}" ${txMinR === r ? 'selected' : ''}>${r}+ rating</option>`).join('')}</select><select id="txMinPSel"><option value="0">Any potential</option>${[60, 65, 70, 75, 80, 85].map(r => `<option value="${r}" ${txMinP === r ? 'selected' : ''}>${r}+ potential</option>`).join('')}</select>${natSelectHTML('txNatSel', txNat)}<select id="txAgeSel"><option value="ALL">Any exact age</option>${Array.from({ length: 26 }, (_, i) => 15 + i).map(a => `<option value="${a}" ${String(txAgeX) === String(a) ? 'selected' : ''}>${a} years old</option>`).join('')}</select>${txSection === 'search' ? `<select id="txLgSel"><option value="ALL">Any league</option>${TIER_NAMES.map((n, i) => `<option value="${i}" ${String(txLg) === String(i) ? 'selected' : ''}>${n}</option>`).join('')}</select>` : ''}<input type="search" id="txs" placeholder="Search name or country" value="${esc(txSearch)}" style="margin-left:auto;min-width:160px"></div>`;
 
     if (txSection === 'search') {
       const all = [];
@@ -9546,7 +9546,7 @@ G = newGame(pickClub != null ? pickClub : Math.max(0, CLUBS.findIndex(c => c.t =
     options: [{ key: 'accept', label: 'Accept Offer' }, { key: 'reject', label: 'Reject Offer' }],
     defaultKey: 'accept',
     onChoice: (k) => {
-      if (k !== 'accept') { G = null; return; }
+      if (k !== 'accept') { G = null; return; } setTimeout(() => { try { showSponsors(); } catch (e) { } }, 1500);
       enterApp(); save();
       toast(`Welcome to ${G.teams[idx].n}.`);
     }
