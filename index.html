@@ -4801,17 +4801,17 @@ document.addEventListener('click', e => {
   if (!b || b.disabled) return;
   uiSound('tap');
 });
-function playSound(name) {
+try { ['goal.mp3', 'goal2.mp3'].forEach(f => { const a = new Audio(f); a.preload = 'auto'; }); } catch (e) { } function playGoalClip() {   if (sfxVol <= 0) return true;   try { const a = new Audio(Math.random() < 0.2 ? 'goal2.mp3' : 'goal.mp3'); a.volume = Math.min(1, 0.85 * sfxVol); const p = a.play(); if (p && p.catch) p.catch(() => { }); return true; } catch (e) { return false; } } function playSound(name) {
   const ctx = ac(); if (!ctx) return;
   try {
-    if (name === 'goal') { tone(ctx, 523, 0, .12, 'triangle'); tone(ctx, 659, .1, .12, 'triangle'); tone(ctx, 784, .2, .22, 'triangle'); }
+    if (name === 'goal') { if (!playGoalClip()) { tone(ctx, 523, 0, .12, 'triangle'); tone(ctx, 659, .1, .12, 'triangle'); tone(ctx, 784, .2, .22, 'triangle'); } }
     else if (name === 'whistle') { tone(ctx, 1800, 0, .18, 'square', .07); tone(ctx, 1800, .22, .18, 'square', .07); }
     else if (name === 'click') { uiSound('tap'); }
     else if (name === 'coin') { uiSound('moneyIn'); }
     else if (name === 'card') { tone(ctx, 220, 0, .18, 'sawtooth', .06); }
   } catch (e) { }
 }
-const MUSIC_TRACKS = ['menu.mp3', 'menu2.mp3', 'menu3.mp3', 'menu4.mp3', 'menu5.mp3', 'menu6.mp3', 'menu7.mp3', 'menu8.mp3', 'menu9.mp3', 'menu10.mp3', 'menu11.mp3', 'menu12.mp3', 'menu13.mp3', 'menu14.mp3', 'menu15.mp3'];
+const MUSIC_TRACKS = ['menu.mp3', 'menu2.mp3', 'menu3.mp3', 'menu4.mp3', 'menu5.mp3', 'menu6.mp3', 'menu7.mp3', 'menu8.mp3', 'menu9.mp3', 'menu10.mp3', 'menu11.mp3', 'menu12.mp3', 'menu13.mp3', 'menu14.mp3', 'menu15.mp3', 'menu16.mp3', 'menu17.mp3'];
 let bgMusic = null, musicQueue = [], musicLast = null, musicFails = 0;
 function nextMusicTrack() {
   if (!musicQueue.length) {
@@ -4846,7 +4846,7 @@ document.addEventListener('click', function initBgMusicOnce() {
   document.removeEventListener('click', initBgMusicOnce);
 }, { once: true });
 
-function startCrowd() {
+function startCrowdClip() {   const ctx = ac(); if (!ctx || !liveState) return false;   try {     const a = new Audio('crowd.mp3'); a.loop = true; a.preload = 'auto';     a.addEventListener('loadedmetadata', () => { try { a.currentTime = Math.random() * Math.max(0, a.duration - 30); } catch (e) { } });     const src = ctx.createMediaElementSource(a);     const g = ctx.createGain(); g.gain.value = 0.028;     const k = ctx.createGain(); k.gain.value = 6;     const cm = ctx.createGain(); cm.gain.value = crowdVol;     src.connect(g); g.connect(k); k.connect(cm); cm.connect(ctx.destination);     a.play().catch(() => { });     liveState.crowd = { src: { stop() { try { a.pause(); } catch (e) { } try { src.disconnect(); } catch (e) { } } }, g, cm, clip: true };     return true;   } catch (e) { return false; } } function startCrowd() {   if (startCrowdClip()) return;
   const ctx = ac(); if (!ctx || !liveState) return;
   try {
     const dur = 4, n = dur * ctx.sampleRate;
@@ -5056,7 +5056,7 @@ function crowdRoar() {
   const g = liveState.crowd.g, now = ctx.currentTime;
   g.gain.cancelScheduledValues(now);
   g.gain.setValueAtTime(g.gain.value, now);
-  g.gain.linearRampToValueAtTime(0.32, now + 0.12);
+  g.gain.linearRampToValueAtTime(liveState.crowd.clip ? 0.17 : 0.32, now + 0.12);
    g.gain.linearRampToValueAtTime(liveState.crowdBase || 0.028, now + 2.6);   liveState.crowdBusyUntil = performance.now() + 2800;
 }
 let goalVoice = null;
@@ -5465,7 +5465,7 @@ function openCareerModal() {
     $('#switchYes2').onclick = () => { leavingApp = true; try { localStorage.removeItem(LAST_SLOT_KEY); } catch (e) { } location.reload(); };
   };
 }
-const MUSIC_NAMES = { 'menu.mp3': 'Beautiful Dream', 'menu2.mp3': 'Driving Ambition', 'menu3.mp3': 'Hazy After Hours', 'menu4.mp3': 'Serene View', 'menu5.mp3': 'Tech House Vibes', 'menu15.mp3': 'In Dreamland' };
+const MUSIC_NAMES = { 'menu.mp3': 'Beautiful Dream', 'menu2.mp3': 'Driving Ambition', 'menu3.mp3': 'Hazy After Hours', 'menu4.mp3': 'Serene View', 'menu5.mp3': 'Tech House Vibes', 'menu15.mp3': 'In Dreamland', 'menu16.mp3': 'A Quiet Courtyard' };
 const musicName = f => MUSIC_NAMES[f] || ('Track ' + (MUSIC_TRACKS.indexOf(f) + 1));
 let musicHist = [];
 const _mdur = {};
@@ -6331,7 +6331,7 @@ function commShot(ls, k, onTarget) {
     : [`${n} drags his shot wide`, `${n} fires over the bar`, `${n} hits the side netting`, `A half chance for ${n}, but it goes wide`, `${n} blazes it over`]));
 }
   function pushTick(e) {
-  if (e.type === 'goal' && (!liveState || e.side === liveState.mySide)) playSound('goal');
+  if (e.type === 'goal') playSound('goal');
   else if (e.type !== 'goal') evSound(e.type);
   const t = $('#liveTicker'); if (!t) return;
  const icon = e.type === 'goal' ? evIcon('goal') : e.type === 'card' ? evIcon(e.card === 'red' ? 'red' : 'yellow') : e.type === 'injury' ? evIcon('injury') : evIcon('sub');
