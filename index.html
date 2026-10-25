@@ -6183,7 +6183,7 @@ function seasonStoryHTML(st, last) {
     <dt>Most assists</dt><dd>${pl(st.assist, 'assists', 'assists')}</dd>
     <dt>Ever-present</dt><dd>${pl(st.mostUsed, 'apps', 'apps')}</dd>
     ${st.bestAvg ? `<dt>Best average rating</dt><dd>${esc(st.bestAvg.p.name)} · ${st.bestAvg.avg.toFixed(2)}</dd>` : ''}</dl></div>`;
-  /* ---- player awards on profiles: Golden Boot, Player and Young Player of the Season, Team of the Season ---- */
+  } /* ---- player awards on profiles: Golden Boot, Player and Young Player of the Season, Team of the Season ---- */
 function playerAwards(p) {
   const out = [];
   ((G.records && G.records.seasons) || []).forEach(s => {
@@ -6203,7 +6203,7 @@ function playerAwardsHTML(p) {
 function recordTots(xi, tier) {
   xi.forEach(x => { const p = x.p; p.tots = p.tots || []; if (!p.tots.some(t => t.season === G.season)) p.tots.push({ season: G.season, tier, club: x.club ? x.club.n : '' }); });
 }
-} function doEndSeason2() { 
+function doEndSeason2() { 
   const totsTier = me().tier;
   const totsXI = pickFormationXI(ratingPool(G, totsTier, null));   try { recSweep(true); } catch (e) { console.error('records', e); }   try { recordTots(totsXI, totsTier); } catch (e) { console.error('tots', e); }
   recapCapture();
