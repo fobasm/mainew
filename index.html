@@ -674,7 +674,7 @@ header.top .tmgr{border-left:0!important;margin-left:10px}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
       </button>
 <button class="homebtn bthlogo" id="homeBtn" title="Open Bathini" aria-label="Open Bathini"><img src="bathini.png" alt="Bathini"></button>
-      <button class="navbtn" id="inboxBtn" title="Inbox" aria-label="Inbox">         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6.5L20.5 7"/></svg>         <span class="ibadge" id="inboxBadge"></span>       </button>       <button class="navbtn" id="careerBtn" title="Save & Load" aria-label="Save & Load">
+      <button class="navbtn" id="inboxBtn" title="Inbox" aria-label="Inbox">         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6.5L20.5 7"/></svg>         <span class="ibadge" id="inboxBadge"></span>       </button>       <button class="navbtn" id="searchBtn" title="Search" aria-label="Search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>       <button class="navbtn" id="careerBtn" title="Save & Load" aria-label="Save & Load">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
       <div class="myclub">
@@ -4400,7 +4400,7 @@ function crestHTML(t, size) {
   const star = `<svg viewBox="0 0 24 24" width="${st}" height="${st}" style="margin:0 -${ov}px;flex:0 0 auto"><path d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.5 5.6 21.1 7 14l-5.3-5 7.2-.9z" fill="#f5c518" stroke="#8a5f10" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
   return `<span class="cstars" style="position:relative;display:inline-block;flex:0 0 auto;line-height:0;vertical-align:middle">${base}<span title="${cafStars(t)}x ${CAF_NAME} winners" style="position:absolute;left:50%;top:-${Math.round(st * 0.7)}px;transform:translateX(-50%);display:flex;pointer-events:none;z-index:2;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))">${star.repeat(n)}</span></span>`;
 }
-function crestBaseHTML(t, size) {   const _S = Math.round((size || 22) * 1.5), _p = Math.max(2, Math.round(_S * 0.1));   const _plain = !t.icon && t.badge !== 'bright' && !CREST_IMGS[t.n + '|' + t.s];   const _in = Math.round((_S - 2 * _p) / (_plain ? 1.15 : 1));   return `<span class="cbx" style="display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;box-sizing:border-box;width:${_S}px;height:${_S}px;padding:${_p}px;background:#fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4);vertical-align:middle">${crestRawHTML(t, _in)}</span>`; } function crestRawHTML(t, size) {
+function crestBaseHTML(t, size) {   const _S = Math.round((size || 22) * 1.5), _p = Math.max(1, Math.round(_S * 0.04));   const _plain = !t.icon && t.badge !== 'bright' && !CREST_IMGS[t.n + '|' + t.s];   const _in = Math.round((_S - 2 * _p) / (_plain ? 1.15 : 1));   return `<span class="cbx" style="display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;box-sizing:border-box;width:${_S}px;height:${_S}px;padding:${_p}px;background:#fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4);vertical-align:middle">${crestRawHTML(t, _in)}</span>`; } function crestRawHTML(t, size) {
   const s = size || 22;
   const _k = t.n + '|' + t.s, _ci = (window.CREST_EXTRA || {})[_k] || CREST_IMGS[_k];   if (_ci && t.badge !== 'bright' && !t.icon) {     return `<span class="crest img" style="width:${s}px;height:${s}px;border-radius:0;background-image:url('${_ci}')"></span>`;   }   if (t.badge === 'bright') {
     return `<span class="crest img" style="width:${s}px;height:${s}px;background-image:url('${IMG_BRIGHT}')"></span>`;
@@ -5090,6 +5090,82 @@ function toast(msg) { toastSpawn(msg, '', 3200); }
 function toastWarn(msg) { toastSpawn(msg, 'warn', 3800); }
 function toastBig(msg) { toastSpawn(msg, 'big', 5000); }
 function toastGood(msg) { toastSpawn(msg, 'good', 3800); }
+  /* ---- global search: players, teams and any page or tab, even ones inside other tabs ---- */
+let _gsStyle = false;
+function gsInjectStyle() {
+  if (_gsStyle) return; _gsStyle = true;
+  const st = document.createElement('style');
+  st.textContent = `
+  .gsScrim{position:fixed;inset:0;z-index:2100;background:rgba(2,4,8,.9);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;justify-content:center;align-items:flex-start;padding:calc(env(safe-area-inset-top,0px) + 14px) 12px 12px;animation:sgFade .2s ease}
+  .gsBox{width:min(620px,100%);max-height:100%;display:flex;flex-direction:column;background:linear-gradient(180deg,#27303c,#1a2029);border:2px solid #f2b928;border-radius:10px;box-shadow:0 0 0 6px rgba(242,185,40,.12),0 0 40px rgba(242,185,40,.25),0 24px 60px rgba(0,0,0,.8);overflow:hidden}
+  .gsTop{display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid #3a444f}
+  .gsTop input{flex:1;min-width:0;background:#11161c;border:1px solid #3a444f;border-radius:6px;color:#fff;padding:11px 12px;font-size:16px;outline:none}
+  .gsTop input:focus{border-color:#f2b928}
+  .gsRes{overflow:auto;padding:4px 0 10px}
+  .gsHd{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#9aa3ad;padding:10px 14px 4px}
+  .gsRow{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid rgba(255,255,255,.05);color:#eef1f4;padding:9px 14px;cursor:pointer;font:inherit}
+  .gsRow:hover,.gsRow:focus{background:rgba(242,185,40,.12);outline:none}
+  .gsRow b{display:block;font-weight:700}
+  .gsRow small{color:#9aa3ad}
+  .gsRow .gsR{margin-left:auto;font:700 16px var(--head);color:#f2b928}
+  .gsEmpty{padding:18px 14px;color:#9aa3ad}`;
+  document.head.appendChild(st);
+}
+function gsNorm(x) { return String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+/* every page the menu can reach, including the tabs inside other tabs */
+function gsPages() {
+  const out = [];
+  MENU_SECTIONS.forEach(sec => sec[1].forEach(it => {
+    out.push({ id: it[0], key: null, label: it[1], path: sec[0] });
+    (NAV_SUBS[it[0]] || []).forEach(sb => out.push({ id: it[0], key: sb[0], label: sb[1], path: it[1] }));
+    if (it[0] === 'cups') [['cup', 'Thatbank Cup'], ['s8', 'Mzansi8'], ['ko', 'Bayakhala Knockout'], ['caf', 'CAF Champions League'], ['confed', 'CAF Confederation Cup']].forEach(c => [['bracket', 'Bracket'], ['results', 'Results'], ['history', 'History']].forEach(x => out.push({ id: 'cups', key: c[0] + '|' + x[0], label: c[1] + ' · ' + x[1], path: it[1] })));
+  }));
+  return out;
+}
+function gsPlayers(q) {
+  const res = [];
+  G.teams.forEach(t => t.squad.forEach(p => { if (gsNorm(p.name).includes(q)) res.push({ p, t }); }));
+  (G.freeAgents || []).forEach(p => { if (gsNorm(p.name).includes(q)) res.push({ p, t: null }); });
+  return res.sort((a, b) => b.p.rating - a.p.rating).slice(0, 10);
+}
+function openGlobalSearch() {
+  if (typeof G === 'undefined' || !G) return;
+  gsInjectStyle();
+  const old = document.querySelector('.gsScrim'); if (old) { old.remove(); return; }
+  const tt = s => (typeof tr === 'function' ? tr(s) : s);
+  const sc = document.createElement('div'); sc.className = 'gsScrim';
+  sc.innerHTML = `<div class="gsBox"><div class="gsTop"><input id="gsQ" type="search" placeholder="${esc(tt('Search players, teams and pages'))}" autocomplete="off"><button class="btn ghost sm" id="gsX">${esc(tt('Close'))}</button></div><div class="gsRes" id="gsRes"></div></div>`;
+  document.body.appendChild(sc);
+  const close = () => sc.remove();
+  const pages = gsPages(), res = sc.querySelector('#gsRes'), inp = sc.querySelector('#gsQ');
+  const go = {
+    page: pg => { close(); if (pg.id === 'soundsettings') { openSoundModal(); return; } if (pg.id === 'regional' && typeof openRegionalModal === 'function') { openRegionalModal(); return; } if (pg.key) goSub(pg.id, pg.key); else goTo(pg.id); },
+    team: t => { close(); if (t.id === G.myTeam) { goTo('club'); return; } ocTier = t.tier; ocPick = t.id; goTo('otherclubs'); },
+    player: id => { close(); playerModal(id); }
+  };
+  const draw = () => {
+    const q = gsNorm(inp.value.trim()); let html = '', n = 0; const acts = [];
+    const add = (cls, inner, fn) => { acts.push(fn); html += `<button class="gsRow" data-i="${acts.length - 1}">${inner}</button>`; n++; };
+    const hd = t => { html += `<div class="gsHd">${esc(tt(t))}</div>`; };
+    if (q.length >= 2) {
+      const pl = gsPlayers(q);
+      if (pl.length) { hd('Players'); pl.forEach(x => add('p', `${x.t ? crestHTML(x.t, 22) : '<span style="width:22px"></span>'}<span><b>${esc(x.p.name)}</b><small>${esc(x.t ? x.t.s : tt('Free agents'))} · ${esc(x.p.pos)} · ${x.p.age}</small></span><span class="gsR">${x.p.rating}</span>`, () => go.player(x.p.id))); }
+      const tm = G.teams.filter(t => gsNorm(t.n).includes(q) || gsNorm(t.s).includes(q) || gsNorm(t.city).includes(q)).sort((a, b) => a.tier - b.tier).slice(0, 6);
+      if (tm.length) { hd('Teams'); tm.forEach(t => add('t', `${crestHTML(t, 22)}<span><b>${esc(t.n)}</b><small>${esc(TIER_SHORT[t.tier])}${t.city ? ' · ' + esc(t.city) : ''}</small></span>`, () => go.team(t))); }
+    }
+    const pg = (q ? pages.filter(x => gsNorm(x.label).includes(q) || gsNorm(tt(x.label)).includes(q) || gsNorm(x.path).includes(q)) : pages.filter(x => !x.key)).slice(0, q ? 12 : 30);
+    if (pg.length) { hd('Pages'); pg.forEach(x => add('g', `<span><b>${esc(tt(x.label))}</b><small>${esc(x.key ? tt(x.path) + ' › ' + tt(x.label) : tt(x.path))}</small></span>`, () => go.page(x))); }
+    res.innerHTML = n ? html : `<div class="gsEmpty">${esc(tt('No results.'))}</div>`;
+    res.querySelectorAll('.gsRow').forEach(b => b.onclick = () => acts[+b.dataset.i]());
+    res._first = acts[0];
+  };
+  inp.oninput = draw;
+  inp.onkeydown = e => { if (e.key === 'Enter' && res._first) res._first(); if (e.key === 'Escape') close(); };
+  sc.querySelector('#gsX').onclick = close;
+  sc.onclick = e => { if (e.target === sc) close(); };
+  draw(); setTimeout(() => inp.focus(), 60);
+}
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#searchBtn')) openGlobalSearch(); });
 function openModal(title, body, footer) { modalLock = false; $('#modal').style.pointerEvents = '';   $('#modal').className = 'modal';   $('#modal').classList.add('mmx');   if (/^(Negotiate|Loan terms|Cash only|Your contract|You have been sacked|Contract)/.test(String(title).replace(/<[^>]*>/g, ''))) $('#modal').classList.add('ctrNeg');
   $('#modal').innerHTML = `<header><h3>${title}</h3><button class="x" aria-label="Close">&times;</button></header>
     <div class="body">${body}</div>` + (footer ? `<footer>${footer}</footer>` : '');
