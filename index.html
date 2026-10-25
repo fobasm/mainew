@@ -6181,7 +6181,7 @@ function seasonStoryHTML(st, last) {
     <dt>Longest unbeaten run</dt><dd>${st.unbeaten} match${st.unbeaten === 1 ? '' : 'es'}${st.wins >= 3 ? ` · ${st.wins} wins in a row` : ''}</dd>
     <dt>Top scorer</dt><dd>${pl(st.scorer, 'goals', 'goals')}</dd>
     <dt>Most assists</dt><dd>${pl(st.assist, 'assists', 'assists')}</dd>
-    <dt>Ever-present</dt><dd>${pl(st.mostUsed, 'apps', 'apps')}</dd>
+    <dt>Ever-present</dt><dd>${pl(st.mostUsed, 'apps', 'apps')}</dd><dt>Debug</dt><dd>${st.dbg || ''}</dd>
     ${st.bestAvg ? `<dt>Best average rating</dt><dd>${esc(st.bestAvg.p.name)} · ${st.bestAvg.avg.toFixed(2)}</dd>` : ''}</dl></div>`;
   } /* ---- player awards on profiles: Golden Boot, Player and Young Player of the Season, Team of the Season ---- */
 function playerAwards(p) {
@@ -9611,7 +9611,7 @@ function seasonStory() {
   if (!(scorer && scorer.goals > 0)) scorer = fromEv(evG, 'goals') || scorer;
   if (!(assist && assist.assists > 0)) assist = fromEv(evA, 'assists') || assist;
   if (!(used && used.apps > 0)) { const u = sq.slice().sort((a, b) => (b.ratingApps || 0) - (a.ratingApps || 0))[0]; if (u && u.ratingApps) used = Object.assign({}, u, { apps: u.ratingApps }); }
-  return { w, d, l, gf: res.reduce((a, r) => a + r.gf, 0), ga: res.reduce((a, r) => a + r.ga, 0), unbeaten: best, wins: bestW, bw, bl, scorer, assist, mostUsed: used, bestAvg };
+  return { w, d, l, gf: res.reduce((a, r) => a + r.gf, 0), ga: res.reduce((a, r) => a + r.ga, 0), unbeaten: best, wins: bestW, bw, bl, scorer, assist, mostUsed: used, bestAvg, dbg: sq.length + ' players, goals ' + sq.reduce((a, p) => a + (p.goals || 0), 0) + ', apps ' + sq.reduce((a, p) => a + (p.apps || 0), 0) + ', events ' + Object.keys(evG).length + ', matches ' + res.length };
 } 
 /* ---------------- boot ---------------- */
 buildAvatars();
