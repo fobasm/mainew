@@ -2163,7 +2163,22 @@ function dateForRound(round, season) {
 const DOW_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function currentDateISO() { return new Date(seasonStartUTC(G.season) + (G.curDay || 0) * 86400000).toISOString().slice(0, 10); }
 function isMatchdayToday() { return !G.finished && currentDateISO() === dateForRound(G.round, G.season); }
-function cupDayIdx(G) { const c = G.cup; if (!c || c.done || c.stage >= CUP_AT.length) return null; const d = new Date(dateForRound(CUP_AT[c.stage] - 1, G.season) + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 3); return Math.round((d.getTime() - seasonStartUTC(G.season)) / 86400000); } function isCupDayToday() { if (G.finished || !cupDueNow(G)) return false; const i = cupDayIdx(G); return i != null && (G.curDay || 0) >= i; } function advanceOneDay() { if (G.finished) return;  G.curDay = (G.curDay || 0) + 1; saveSoon(); }
+function cupDayIdx(G) { const c = G.cup; if (!c || c.done || c.stage >= CUP_AT.length) return null; const d = new Date(dateForRound(CUP_AT[c.stage] - 1, G.season) + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 3); return Math.round((d.getTime() - seasonStartUTC(G.season)) / 86400000); } function isCupDayToday() { if (G.finished || !cupDueNow(G)) return false; const i = cupDayIdx(G); return i != null && (G.curDay || 0) >= i; } /* ---- transfer desk: clubs can also come in between matchdays while a window is open ---- */
+function dailyTransferDesk() {
+  if (G.finished || G.jobless || !inTransferWindow(G) || (G.curDay || 0) % 3) return;
+  const have = new Set((G.pendingBids || []).map(b => b.pid + ':' + b.from));
+  const bids = generateBids(G, 0.2).filter(b => !have.has(b.pid + ':' + b.from)).slice(0, 2);
+  if (!bids.length) return;
+  bids.forEach(b => {
+    const pl = me().squad.find(x => x.id === b.pid), buyer = G.teams[b.from]; if (!pl || !buyer) return;
+    mail(G, { cat: 'offer', from: buyer.n, p: pl, club: me(), status: 'Offer received', flag: true, subject: `Transfer Offer: ${b.name}`,
+      body: [`${buyer.n} have bid ${money(b.fee)} for ${b.name}.`, `His estimated value is ${money(pl.value)}. Respond to the offer when it appears, or turn it down.`],
+      rows: [['Bidder', buyer.n], ['Offer', money(b.fee)], ['Estimated value', money(pl.value)], ['Contract', `${pl.contract} year${pl.contract === 1 ? '' : 's'} left`]] });
+  });
+  G.pendingBids = (G.pendingBids || []).concat(bids).slice(-15);
+  setTimeout(bidPing, 1200);
+  try { const un = unreadCount(G), fresh = un - (G.lastUnread || 0); if (fresh > 0) toast(`✉ ${fresh} new message${fresh === 1 ? '' : 's'} in your inbox`); G.lastUnread = un; } catch (e) { }
+} function advanceOneDay() { if (G.finished) return;  G.curDay = (G.curDay || 0) + 1; try { dailyTransferDesk(); } catch (e) { console.error('desk', e); } saveSoon(); }
 function windowRangeFor(iso) {
   const d = new Date(iso + 'T00:00:00Z'), y = d.getUTCFullYear(), m = d.getUTCMonth();
   if (m === 6 || m === 7) return [Date.UTC(y, 6, 1), Date.UTC(y, 8, 1) - 1];
@@ -3638,7 +3653,7 @@ const OFFER_EXPIRE_ROUNDS = 5; // a club waiting this many matchdays with no ans
 function genuineBuyers(p, ownerId) {
   return interestRanking(p, ownerId).filter(x => x.s >= 6.5 && (p.rating - starterRatingAt(x.t, p.pos)) >= 3);
 }
-function generateBids(G) {
+function generateBids(G, scale) {
   if (!inTransferWindow(G)) return []; // clubs don't submit formal bids outside the window — scouting continues, offers don't
   const me = G.teams[G.myTeam], bids = [];
   me.squad.forEach(p => {
@@ -3647,7 +3662,7 @@ function generateBids(G) {
     if (!interest) return; // nobody seriously in for him this week — no offer, full stop
     const base = p.tl ? 0.55 : (p.wantsOut ? 0.16 : 0.035);
     const interestBoost = Math.min(0.12, interest * 0.03);
-    const chance = base + interestBoost + (p.rating > 78 ? 0.04 : 0);
+    const chance = (base + interestBoost + (p.rating > 78 ? 0.04 : 0)) * (scale || 1);
     if (rnd() < chance) {
       const buyerId = wpick(suitors, x => Math.max(0.5, x.s)).t.id, buyer = G.teams[buyerId];
       bids.push(makeBid(buyer, p));
