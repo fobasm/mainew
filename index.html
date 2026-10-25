@@ -1482,12 +1482,242 @@ function wpick(list, w) {
   for (const x of list) { r -= w(x); if (r <= 0) return x; }
   return list[list.length - 1];
 }
+/* ---- language and currency: device settings kept in localStorage, not in a save ---- */
+const CURRENCIES = {
+  ZAR: { sym: 'R', rate: 1, name: 'South African Rand' },
+  USD: { sym: '$', rate: 0.055, name: 'US Dollar' },
+  EUR: { sym: '€', rate: 0.05, name: 'Euro' },
+  GBP: { sym: '£', rate: 0.043, name: 'British Pound' },
+  NGN: { sym: '₦', rate: 85, name: 'Nigerian Naira' },
+  KES: { sym: 'KSh ', rate: 7.1, name: 'Kenyan Shilling' }
+};
+const LANGS = { en: 'English', af: 'Afrikaans', zu: 'isiZulu', fr: 'Français', pt: 'Português', es: 'Español' };
+let curCode = 'ZAR', langCode = 'en';
+try { curCode = localStorage.getItem('mm_cur') || 'ZAR'; langCode = localStorage.getItem('mm_lang') || 'en'; } catch (e) { }
+if (!CURRENCIES[curCode]) curCode = 'ZAR';
+if (!LANGS[langCode]) langCode = 'en';
+function tix(p) { const c = CURRENCIES[curCode], v = p * c.rate; return c.sym + (c.rate < 0.1 ? v.toFixed(1) : Math.round(v)); }
 
+/* English | Afrikaans | isiZulu | Français | Português | Español */
+const I18N_ROWS = `
+Career|Loopbaan|Umsebenzi|Carrière|Carreira|Carrera
+Squad|Span|Iqembu|Effectif|Plantel|Plantilla
+Competitions|Kompetisies|Imiqhudelwano|Compétitions|Competições|Competiciones
+Club|Klub|Iklabhu|Club|Clube|Club
+More|Meer|Okunye|Plus|Mais|Más
+Inbox|Inkassie|Ibhokisi lemiyalezo|Boîte de réception|Caixa de entrada|Bandeja de entrada
+Calendar|Kalender|Ikhalenda|Calendrier|Calendário|Calendario
+Matchday|Wedstrydag|Usuku lomdlalo|Jour de match|Dia de jogo|Jornada
+League tables & fixtures|Ranglyste en wedstryde|Amathebula namafikisha|Classements et calendrier|Classificações e jogos|Clasificaciones y partidos
+Squad & Tactics|Span en taktiek|Iqembu namacebo|Effectif et tactique|Plantel e táticas|Plantilla y tácticas
+Academy & Training|Akademie en afrigting|I-akhademi nokuqeqeshwa|Académie et entraînement|Academia e treino|Academia y entrenamiento
+Transfers|Oorplasings|Ukudayiselana|Transferts|Transferências|Fichajes
+Other Clubs|Ander klubs|Amanye amaklabhu|Autres clubs|Outros clubes|Otros clubes
+Shortlist|Kortlys|Uhlu olufushane|Présélection|Lista de observação|Lista de seguimiento
+Cups|Beker|Izinkomishi|Coupes|Taças|Copas
+Continental football|Kontinentale sokker|Ibhola lezwekazi|Football continental|Futebol continental|Fútbol continental
+Nations|Lande|Amazwe|Nations|Nações|Naciones
+World players|Wêreldspelers|Abadlali emhlabeni|Joueurs du monde|Jogadores do mundo|Jugadores del mundo
+Club rankings|Klubranglys|Izikhundla zamaklabhu|Classement des clubs|Ranking de clubes|Ranking de clubes
+Player Stats|Spelerstatistiek|Izibalo zabadlali|Stats des joueurs|Estatísticas|Estadísticas de jugadores
+Club & Finances|Klub en finansies|Iklabhu nezimali|Club et finances|Clube e finanças|Club y finanzas
+Commercial|Kommersieel|Ezentengiselwano|Commercial|Comercial|Comercial
+Stadium & tickets|Stadion en kaartjies|Inkundla namathikithi|Stade et billets|Estádio e bilhetes|Estadio y entradas
+Board & objectives|Raad en doelwitte|Ibhodi nezinjongo|Direction et objectifs|Diretoria e objetivos|Directiva y objetivos
+Trophy room|Trofeekamer|Igumbi lezikhumbuzo|Salle des trophées|Sala de troféus|Sala de trofeos
+Manager|Afrigter|Umqeqeshi|Entraîneur|Treinador|Entrenador
+News|Nuus|Izindaba|Actualités|Notícias|Noticias
+Save & Load|Stoor en laai|Gcina ulayishe|Sauvegarder et charger|Guardar e carregar|Guardar y cargar
+Music & sound effects|Musiek en klankeffekte|Umculo nemisindo|Musique et effets sonores|Música e efeitos sonoros|Música y efectos de sonido
+How to play|Hoe om te speel|Indlela yokudlala|Comment jouer|Como jogar|Cómo jugar
+Language & currency|Taal en geldeenheid|Ulimi nemali|Langue et devise|Idioma e moeda|Idioma y moneda
+Get added to the game|Kry jouself in die speletjie|Faka igama lakho emdlalweni|Entrez dans le jeu|Entre no jogo|Entra en el juego
+Continue|Gaan voort|Qhubeka|Continuer|Continuar|Continuar
+Cancel|Kanselleer|Khansela|Annuler|Cancelar|Cancelar
+Close|Maak toe|Vala|Fermer|Fechar|Cerrar
+Done|Klaar|Kuphelile|Terminé|Concluído|Hecho
+Back|Terug|Emuva|Retour|Voltar|Atrás
+Accept|Aanvaar|Yamukela|Accepter|Aceitar|Aceptar
+Reject|Verwerp|Yenqaba|Refuser|Recusar|Rechazar
+Negotiate|Onderhandel|Xoxa|Négocier|Negociar|Negociar
+Walk away|Stap weg|Hamba|Se retirer|Desistir|Retirarse
+Offer terms|Bied voorwaardes aan|Nikeza izinhlinzeko|Proposer des conditions|Oferecer termos|Ofrecer condiciones
+Save|Stoor|Gcina|Enregistrer|Guardar|Guardar
+Save now|Stoor nou|Gcina manje|Enregistrer maintenant|Guardar agora|Guardar ahora
+Load|Laai|Layisha|Charger|Carregar|Cargar
+Delete|Skrap|Susa|Supprimer|Apagar|Eliminar
+Rename|Hernoem|Qamba kabusha|Renommer|Renomear|Renombrar
+Skip|Slaan oor|Weqa|Passer|Saltar|Omitir
+View|Kyk|Buka|Voir|Ver|Ver
+Swap|Ruil|Shintsha|Échanger|Trocar|Intercambiar
+Release|Stel vry|Khulula|Libérer|Libertar|Liberar
+Play Now|Speel nou|Dlala manje|Jouer maintenant|Jogar agora|Jugar ahora
+Start career|Begin loopbaan|Qala umsebenzi|Commencer la carrière|Iniciar carreira|Iniciar carrera
+Start a new career|Begin 'n nuwe loopbaan|Qala umsebenzi omusha|Commencer une nouvelle carrière|Iniciar uma nova carreira|Iniciar una nueva carrera
+Choose your club|Kies jou klub|Khetha iklabhu yakho|Choisissez votre club|Escolha o seu clube|Elige tu club
+Saved careers|Gestoorde loopbane|Imisebenzi egciniwe|Carrières sauvegardées|Carreiras guardadas|Carreras guardadas
+Select a club to begin.|Kies 'n klub om te begin.|Khetha iklabhu ukuze uqale.|Sélectionnez un club pour commencer.|Selecione um clube para começar.|Selecciona un club para empezar.
+Quit to main menu|Gaan na hoofkieslys|Phuma uye kumenyu eyinhloko|Quitter vers le menu principal|Sair para o menu principal|Salir al menú principal
+Next day|Volgende dag|Usuku olulandelayo|Jour suivant|Dia seguinte|Día siguiente
+Quick sim|Vinnige simulasie|Ukulingisa okusheshayo|Simulation rapide|Simulação rápida|Simulación rápida
+team rating|spangradering|isilinganiso seqembu|note d'équipe|nota da equipa|valoración del equipo
+position|posisie|indawo|position|posição|posición
+squad|span|iqembu|effectif|plantel|plantilla
+transfer budget|oorplasingsbegroting|isabelomali sokudayiselana|budget transferts|orçamento de transferências|presupuesto de fichajes
+date|datum|usuku|date|data|fecha
+Age|Ouderdom|Iminyaka|Âge|Idade|Edad
+Value|Waarde|Inani|Valeur|Valor|Valor
+Rating|Gradering|Isilinganiso|Note|Avaliação|Valoración
+Wage|Salaris|Iholo|Salaire|Salário|Salario
+Contract|Kontrak|Inkontileka|Contrat|Contrato|Contrato
+Player|Speler|Umdlali|Joueur|Jogador|Jugador
+Goals|Doele|Amagoli|Buts|Golos|Goles
+Assists|Aangee|Ama-assist|Passes décisives|Assistências|Asistencias
+Pts|Ptn|Amaphuzu|Pts|Pts|Pts
+Home|Tuis|Ekhaya|Domicile|Casa|Local
+Away|Uit|Kwabanye|Extérieur|Fora|Visitante
+Season|Seisoen|Isizini|Saison|Época|Temporada
+Form|Vorm|Isimo|Forme|Forma|Forma
+Fee|Fooi|Imali|Indemnité|Valor|Traspaso
+First team|Eerstespan|Iqembu lokuqala|Équipe première|Equipa principal|Primer equipo
+Reserves|Reserwes|Abagciniwe|Réserves|Reservas|Reservas
+Substitutes|Plaasvervangers|Abasebenzi abangenele|Remplaçants|Suplentes|Suplentes
+Bench|Bank|Ibhentshi|Banc|Banco|Banquillo
+Starting XI|Beginspan|Abaqala umdlalo|Onze de départ|Onze inicial|Once inicial
+Formation|Formasie|Ukubunjwa|Formation|Formação|Formación
+Fitness|Fiksheid|Impilo|Condition physique|Condição física|Forma física
+Mood|Gemoed|Isimo senhliziyo|Moral|Moral|Estado de ánimo
+Search your squad|Soek in jou span|Sesha iqembu lakho|Rechercher dans l'effectif|Pesquisar no plantel|Buscar en tu plantilla
+Unavailable|Nie beskikbaar|Awutholakali|Indisponible|Indisponível|No disponible
+Contract ending|Kontrak verstryk|Inkontileka iyaphela|Contrat bientôt terminé|Contrato a terminar|Contrato por vencer
+Listed|Gelys|Kudwetshiwe|En vente|Listado|En venta
+Under 23|Onder 23|Ngaphansi kuka-23|Moins de 23 ans|Sub-23|Sub-23
+Everyone|Almal|Wonke umuntu|Tous|Todos|Todos
+All|Almal|Konke|Tous|Todos|Todos
+Pick strongest XI|Kies sterkste XI|Khetha i-XI eqinile|Choisir le meilleur onze|Escolher o melhor onze|Elegir el mejor once
+Rotation advice|Rotasieadvies|Iseluleko sokushintsha|Conseil de rotation|Conselho de rotação|Consejo de rotación
+Scouting report|Verkenningsverslag|Umbiko wokuhlola|Rapport d'observation|Relatório de observação|Informe de ojeo
+Match preview|Wedstrydvoorskou|Ukubuka kuqala komdlalo|Avant-match|Antevisão do jogo|Previa del partido
+Players to watch|Spelers om dop te hou|Abadlali okufanele ubabuke|Joueurs à suivre|Jogadores a seguir|Jugadores a vigilar
+Post-match press conference|Na-wedstryd-perskonferensie|Ingqungquthela yabezindaba ngemva komdlalo|Conférence de presse d'après-match|Conferência de imprensa pós-jogo|Rueda de prensa posterior
+Player comparison|Spelervergelyking|Ukuqhathanisa abadlali|Comparaison des joueurs|Comparação de jogadores|Comparación de jugadores
+Compare|Vergelyk|Qhathanisa|Comparer|Comparar|Comparar
+Pick another|Kies 'n ander|Khetha omunye|En choisir un autre|Escolher outro|Elegir otro
+Transfer list|Oordraglys|Uhlu lokudayiselana|Liste des transferts|Lista de transferências|Lista de traspasos
+Loan list|Leningslys|Uhlu lokuboleka|Liste des prêts|Lista de empréstimos|Lista de cesiones
+Make captain|Maak kaptein|Yenza ukaputeni|Nommer capitaine|Fazer capitão|Hacer capitán
+Move to reserves|Skuif na reserwes|Yisa kubagciniwe|Passer en réserve|Mover para reservas|Mover a reservas
+Release clause|Vrystellingsklousule|Isigaba sokukhululwa|Clause libératoire|Cláusula de rescisão|Cláusula de rescisión
+Shop around|Kyk rond|Hlola ezinye izindawo|Sonder le marché|Consultar o mercado|Explorar el mercado
+Free agents|Vrye agente|Abadlali abakhululekile|Joueurs libres|Agentes livres|Agentes libres
+Negotiate contract|Onderhandel kontrak|Xoxa inkontileka|Négocier le contrat|Negociar contrato|Negociar contrato
+Transfer budget|Oorplasingsbegroting|Isabelomali sokudayiselana|Budget transferts|Orçamento de transferências|Presupuesto de fichajes
+Budget|Begroting|Isabelomali|Budget|Orçamento|Presupuesto
+Wage bill|Salarisrekening|Imali yamaholo|Masse salariale|Massa salarial|Masa salarial
+Money in|Geld in|Imali engenayo|Entrées d'argent|Entradas|Ingresos
+Money out|Geld uit|Imali ephumayo|Sorties d'argent|Saídas|Gastos
+Net|Netto|Inzuzo|Net|Líquido|Neto
+Finances|Finansies|Ezezimali|Finances|Finanças|Finanzas
+Income|Inkomste|Imali engenayo|Revenus|Receitas|Ingresos
+Ticket pricing|Kaartjieprys|Intengo yamathikithi|Prix des billets|Preço dos bilhetes|Precio de entradas
+Fan-friendly|Aanhangervriendelik|Ethandwa ngabalandeli|Pour les fans|Amigo dos adeptos|Para los aficionados
+Premium|Premie|Ebizayo|Premium|Premium|Premium
+Stadium expansion|Stadionuitbreiding|Ukwandiswa kwenkundla|Agrandissement du stade|Ampliação do estádio|Ampliación del estadio
+Trophies|Trofees|Izikhumbuzo|Trophées|Troféus|Trofeos
+Honours|Eerbewyse|Izinhlonipho|Palmarès|Honras|Honores
+Promoted|Bevorder|Kwenyuselwe|Promu|Promovido|Ascendido
+Relegated|Gedegradeer|Kwehliswe|Relégué|Despromovido|Descendido
+Champions|Kampioene|Amakhosi|Champions|Campeões|Campeones
+Division|Afdeling|Isigaba|Division|Divisão|División
+League|Liga|Ligi|Championnat|Liga|Liga
+Overview|Oorsig|Uhlolojikelele|Aperçu|Visão geral|Resumen
+History|Geskiedenis|Umlando|Historique|Histórico|Historial
+Training|Afrigting|Ukuqeqeshwa|Entraînement|Treino|Entrenamiento
+Youth|Jeug|Intsha|Jeunes|Juventude|Cantera
+Academy|Akademie|I-akhademi|Académie|Academia|Academia
+Board confidence|Raadsvertroue|Ukuthembela kwebhodi|Confiance de la direction|Confiança da diretoria|Confianza de la directiva
+Vacancies|Vakatures|Amathuba emisebenzi|Postes vacants|Vagas|Vacantes
+Job offers|Werksaanbiedinge|Iziphakamiso zomsebenzi|Offres d'emploi|Ofertas de emprego|Ofertas de trabajo
+Take the job|Neem die werk|Thatha umsebenzi|Accepter le poste|Aceitar o cargo|Aceptar el puesto
+Resign and look for work|Bedank en soek werk|Yeka umsebenzi ufune omunye|Démissionner et chercher du travail|Demitir-se e procurar trabalho|Dimitir y buscar trabajo
+Leave and look for work|Verlaat en soek werk|Hamba ufune umsebenzi|Partir et chercher du travail|Sair e procurar trabalho|Marcharse y buscar trabajo
+Language|Taal|Ulimi|Langue|Idioma|Idioma
+Currency|Geldeenheid|Imali|Devise|Moeda|Moneda
+Preview|Voorskou|Ukubuka kuqala|Aperçu|Pré-visualização|Vista previa
+Currencies use fixed in-game rates, not live exchange rates. Translation covers menus, buttons and headings. News, mail and match text stay in English for now.|Geldeenhede gebruik vaste speletjiekoerse, nie lewendige wisselkoerse nie. Die vertaling dek kieslyste, knoppies en opskrifte. Nuus, pos en wedstrydteks bly vir eers in Engels.|Izimali zisebenzisa amazinga amisiwe emdlalweni, hhayi amazinga aphilayo. Ukuhumusha kuhlanganisa amamenyu, izinkinobho nezihloko. Izindaba, amameyili nombhalo wemidlalo kuhlala ngesiNgisi okwamanje.|Les devises utilisent des taux fixes propres au jeu, pas des taux de change en direct. La traduction couvre les menus, boutons et titres. Actualités, messages et textes de match restent en anglais pour l'instant.|As moedas usam taxas fixas do jogo, não câmbios em tempo real. A tradução cobre menus, botões e títulos. Notícias, mensagens e textos de jogos continuam em inglês por agora.|Las monedas usan tasas fijas del juego, no tipos de cambio en vivo. La traducción cubre menús, botones y títulos. Noticias, correos y textos de partido siguen en inglés por ahora.
+`;
+const I18N = {};
+I18N_ROWS.trim().split('\n').forEach(r => { const a = r.split('|'); if (a.length === 6) I18N[a[0].trim()] = { af: a[1].trim(), zu: a[2].trim(), fr: a[3].trim(), pt: a[4].trim(), es: a[5].trim() }; });
+function tr(s) { if (langCode === 'en') return s; const e = I18N[s]; return (e && e[langCode]) || s; }
+
+/* live translation of whatever is on screen: text nodes plus placeholder and title attributes */
+const _trRec = new WeakMap();
+function trText(n) {
+  const v = n.nodeValue; if (!v) return;
+  const core = v.trim(), rec = _trRec.get(n);
+  const src = rec && rec.out === core ? rec.src : core;
+  if (!rec && (langCode === 'en' || !I18N[src])) return;
+  const out = langCode === 'en' ? src : ((I18N[src] && I18N[src][langCode]) || src);
+  if (out !== core) n.nodeValue = v.replace(core, out);
+  _trRec.set(n, { src, out });
+}
+function trAttrs(el) {
+  ['placeholder', 'title'].forEach(a => {
+    const v = el.getAttribute(a); if (!v) return;
+    const sk = 'en' + a, ok = 'out' + a;
+    const src = el.dataset[sk] != null && el.dataset[ok] === v ? el.dataset[sk] : v;
+    if (el.dataset[sk] == null && (langCode === 'en' || !I18N[src])) return;
+    const out = langCode === 'en' ? src : ((I18N[src] && I18N[src][langCode]) || src);
+    if (out !== v) el.setAttribute(a, out);
+    el.dataset[sk] = src; el.dataset[ok] = out;
+  });
+}
+function trApply(root) {
+  if (!root) return;
+  if (root.nodeType === 3) { trText(root); return; }
+  if (root.nodeType !== 1) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => /^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode.nodeName) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  let n; while ((n = w.nextNode())) trText(n);
+  if (root.matches && root.matches('[placeholder],[title]')) trAttrs(root);
+  root.querySelectorAll('[placeholder],[title]').forEach(trAttrs);
+}
+let _trObs = null;
+function trInit() {
+  document.documentElement.lang = langCode;
+  if (_trObs || !document.body) return;
+  _trObs = new MutationObserver(recs => {
+    if (langCode === 'en') return;
+    recs.forEach(r => { if (r.type === 'characterData') trText(r.target); else r.addedNodes.forEach(trApply); });
+    _trObs.takeRecords();
+  });
+  _trObs.observe(document.body, { childList: true, subtree: true, characterData: true });
+  if (langCode !== 'en') trApply(document.body);
+}
+function setLang(c) {
+  if (!LANGS[c]) return; langCode = c;
+  try { localStorage.setItem('mm_lang', c); } catch (e) { }
+  document.documentElement.lang = c; trInit(); trApply(document.body); if (_trObs) _trObs.takeRecords();
+}
+function setCur(c) { if (!CURRENCIES[c]) return; curCode = c; try { localStorage.setItem('mm_cur', c); } catch (e) { } render(); }
+function openRegionalModal() {
+  const opt = (o, cur) => Object.keys(o).map(k => `<option value="${k}" ${k === cur ? 'selected' : ''}>${esc(typeof o[k] === 'string' ? o[k] : k + ' · ' + o[k].name + ' (' + o[k].sym.trim() + ')')}</option>`).join('');
+  const sel = 'width:100%;margin:4px 0 12px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:inherit;padding:10px;font-size:15px';
+  openModal('Language & currency', `<label class="hint">Language</label><select id="rgLang" style="${sel}">${opt(LANGS, langCode)}</select>
+    <label class="hint">Currency</label><select id="rgCur" style="${sel}">${opt(CURRENCIES, curCode)}</select>
+    <p class="hint" id="rgPrev" style="margin:0 0 8px"></p>
+    <p class="hint" style="margin:0">Currencies use fixed in-game rates, not live exchange rates. Translation covers menus, buttons and headings. News, mail and match text stay in English for now.</p>`,
+    `<button class="btn sm" onclick="closeModal()">Done</button>`);
+  const prev = () => { $('#rgPrev').textContent = `R1.5m = ${money(1.5)}  ·  R250k = ${money(0.25)}`; };
+  $('#rgLang').onchange = e => setLang(e.target.value);
+  $('#rgCur').onchange = e => { setCur(e.target.value); prev(); };
+  prev();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', trInit); else trInit();
 function money(m) {
-  const sg = m < 0 ? '-R' : 'R'; m = Math.abs(m);
-  if (m >= 1000) return sg + (m / 1000).toFixed(2) + 'bn';
-  if (m >= 1) return sg + (m < 10 ? m.toFixed(2) : m.toFixed(1)) + 'm';
-  return sg + Math.round(m * 1000) + 'k';
+  const c = CURRENCIES[curCode] || CURRENCIES.ZAR, sg = (m < 0 ? '-' : '') + c.sym, v = Math.abs(m) * c.rate;
+  if (v >= 1000) return sg + (v / 1000).toFixed(2) + 'bn';
+  if (v >= 1) return sg + (v < 10 ? v.toFixed(2) : v.toFixed(1)) + 'm';
+  return sg + Math.round(v * 1000) + 'k';
 }
 function seasonLabel(y) { return y + '/' + String(y + 1).slice(2); }
 
@@ -5429,7 +5659,7 @@ const MENU_SECTIONS = [
   ['Squad', [['squad','Squad & Tactics'], ['youth','Academy & Training'],['transfers','Transfers'],['otherclubs','Other Clubs'],['watchlist','Shortlist'],['scouting','Scouting']]],
   ['Competitions', [['cups','Cups'],['africa','Continental football'],['nations','Nations'],['world','World players'],['clubrank','Club rankings'],['cities','Club Cities'],['stats','Player Stats']]],
   ['Club', [['club','Club & Finances'],['mmcoins','MM Coins'],['commercial','Sponsors & Commercial'],['stadium','Stadium & tickets'],['board','Board & objectives'], ['trophies','Trophy room'],['legends','MM Legends'],['manager','Manager'],['news','News']]],
-  ['More', [['careerfile','Save & Load'],['soundsettings','Music & sound effects'],['info','How to play'],['getadded','Get added to the game']]]
+  ['More', [['careerfile','Save & Load'],['soundsettings','Music & sound effects'],['regional','Language & currency'],['info','How to play'],['getadded','Get added to the game']]]
 ];
 function navLabel() { for (const sec of MENU_SECTIONS) for (const it of sec[1]) if (it[0] === tab) return it[1]; return 'Menu'; } function updateNavToggle() { const t = document.querySelector('#sideNav .navToggle'); if (t) t.innerHTML = '<span>☰ Menu</span><b>' + esc(navLabel()) + '</b>'; } function closeNavMenu() { const c = document.querySelector('#sideNav'); if (c) c.classList.remove('open'); } function navLabel() { for (const sec of MENU_SECTIONS) for (const it of sec[1]) if (it[0] === tab) return it[1]; return 'Menu'; } function updateNavToggle() { const t = document.querySelector('#sideNav .navToggle'); if (t) t.innerHTML = '<span>☰ Menu</span><b>' + esc(navLabel()) + '</b>'; } function closeNavMenu() { const c = document.querySelector('#sideNav'); if (c) c.classList.remove('open'); } const NAV_SUBS = {   inbox: [['emails', 'Emails'], ['players', 'Player conversations'], ['archive', 'Message archive']],   squad: [['squad', 'Squad'], ['tactics', 'Tactics']],   youth: [['academy', 'Academy'], ['training', 'Training']],   transfers: [['search', 'Player search'], ['fa', 'Free agents'], ['bids', 'Offers'], ['sell', 'Sell players'], ['watch', 'Shortlist'], ['loans', 'Loans'], ['hist', 'Transfer history'], ['top', 'Leaderboards']],   africa: [['rank', 'Rankings'], ['tables', 'League tables'], ['caf', 'Champions League'], ['confed', 'Confederation Cup']],   cups: [['cup', 'Thatbank Cup'], ['s8', 'Mzansi8'], ['ko', 'Bayakhala Knockout'], ['caf', 'CAF Champions League'], ['confed', 'CAF Confederation Cup']],   stats: [['goals', 'Goals'], ['assists', 'Assists'], ['cs', 'Clean sheets'], ['yellow', 'Yellow cards'], ['red', 'Red cards']],   club: [['overview', 'Overview'], ['finances', 'Finances'], ['history', 'History'], ['records', 'Club records'], ['save', 'Save & Load']],   manager: [['profile', 'Profile'], ['contract', 'Contract'], ['career', 'Career'], ['offers', 'Job offers'], ['vacancies', 'Vacancies']] }; const NAV_SET = {   inbox: k => { inboxTab = k; inboxSel = null; inboxOpen = false; },   squad: k => { squadTab = k; selSpot = null; }, youth: k => { youthTab = k; }, transfers: k => { txSection = k; },   africa: k => { afrTab = k; }, cups: k => { const q = String(k).split('|'); cupSel = q[0]; cupSub = q[1] || 'bracket'; }, stats: k => { statTab = k; statLimit = 20; }, club: k => { clubTab = k; }, manager: k => { mgrTab = k; } }; const NAV_GET = { inbox: () => inboxTab, squad: () => squadTab, youth: () => youthTab, transfers: () => txSection,   africa: () => afrTab, cups: () => cupSel, stats: () => statTab, club: () => clubTab, manager: () => mgrTab }; let navOpen = {}; function navSubCount(id, k) {   if (typeof G === 'undefined' || !G) return 0;   if (id === 'transfers' && k === 'bids') return (G.pendingBids || []).length;   if (id === 'transfers' && k === 'watch') return (G.watchlist || []).length;   if (id === 'inbox' && k === 'emails') return unreadCount(G);   if (id === 'manager' && k === 'offers') return (G.pendingJobOffers || []).length + (G.vacOffers || []).length;   return 0; } function syncNav() {   document.querySelectorAll('.navgrp').forEach(g => {     const id = g.dataset.grp, open = navOpen[id] === true || (navOpen[id] === undefined && tab === id);     g.classList.toggle('open', open);     const cb = g.querySelector('.navchev'); if (cb) cb.setAttribute('aria-expanded', open ? 'true' : 'false');     const cur = tab === id && NAV_GET[id] ? NAV_GET[id]() : null;     g.querySelectorAll('.navsublink').forEach(b => {       const k = b.dataset.sub.split(':')[1];       b.classList.toggle('on', cur != null && cur === k);       const n = navSubCount(id, k);       let bd = b.querySelector('.nsb');       if (n) { if (!bd) { bd = document.createElement('i'); bd.className = 'nsb'; b.appendChild(bd); } bd.textContent = n; }       else if (bd) bd.remove();     });   }); } function goSub(id, key) {   if (liveState && id !== 'match') { toast('The match is still running — skip to the result first.'); return; }   if (NAV_SET[id]) NAV_SET[id](key);   if (id !== tab) { navStack = navStack.slice(0, navIdx + 1); navStack.push(id); navIdx = navStack.length - 1; }   tab = id; render(); window.scrollTo({ top: 0 }); } document.addEventListener('click', () => setTimeout(() => { try { syncNav(); } catch (e) { } }, 0)); function buildSideNav() {   const c = $('#sideNav'); if (!c) return;   try { navOpen = JSON.parse(localStorage.getItem('mm_navopen') || '{}') || {}; } catch (e) { navOpen = {}; }   const chev = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';   c.innerHTML = MENU_SECTIONS.map(([label, items]) =>     `<h4>${label}</h4>` + items.map(([id, name]) => {       const row = `<button class="navlink" data-tab="${id}"><span>${esc(name)}</span></button>`;       const subs = NAV_SUBS[id];       if (!subs) return row;       return `<div class="navgrp" data-grp="${id}"><div class="navrow">${row}<button class="navchev" data-chev="${id}" aria-expanded="false" aria-label="Show sections of ${esc(name)}">${chev}</button></div>         <div class="navsub">${subs.map(([k, l]) => `<button class="navsublink" data-sub="${id}:${k}"><span>${esc(l)}</span></button>`).join('')}</div></div>`;     }).join('')   ).join('');   c.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => {     if (b.dataset.tab === 'careerfile') { openCareerModal(); return; }     if (b.dataset.tab === 'soundsettings') { openSoundModal(); return; }     goTo(b.dataset.tab);   });   c.querySelectorAll('[data-chev]').forEach(b => b.onclick = e => {     e.stopPropagation();     const id = b.dataset.chev, g = b.closest('.navgrp'), isOpen = g.classList.contains('open');     navOpen[id] = !isOpen;     try { localStorage.setItem('mm_navopen', JSON.stringify(navOpen)); } catch (er) { }     syncNav();   });   c.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => { const p = b.dataset.sub.split(':'); goSub(p[0], p[1]); });   const hd = document.querySelector('header.top');   if (hd) document.documentElement.style.setProperty('--hdrH', hd.offsetHeight + 'px'); } function buildSideNavOld() {
   const c = $('#sideNav'); if (!c) return;
