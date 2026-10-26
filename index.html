@@ -6082,9 +6082,9 @@ function showMatchdayModal(res) {
   const mine = m.h === G.myTeam ? m.hg : m.ag, theirs = m.h === G.myTeam ? m.ag : m.hg;
   const verdict = mine > theirs ? 'Three points.' : mine === theirs ? 'A point shared.' : 'Beaten.';
   let body = `<div class="fixture" style="padding:4px 0">
-      <div class="side">${kitSVG(H, false, 26)}${crestHTML(H, 30)}<div><b>${esc(H.s)}</b><small>${esc(H.city)}</small></div></div>
+      <div class="side">${bigKitSVG(H, false, 26)}${crestHTML(H, 30)}<div><b>${esc(H.s)}</b><small>${esc(H.city)}</small></div></div>
       <div class="score num">${m.hg}–${m.ag}</div>
-      <div class="side away">${crestHTML(A, 30)}${kitSVG(A, true, 26)}<div><b>${esc(A.s)}</b><small>${esc(A.city)}</small></div></div>
+      <div class="side away">${crestHTML(A, 30)}${bigKitSVG(A, true, 26)}<div><b>${esc(A.s)}</b><small>${esc(A.city)}</small></div></div>
     </div>
     <p style="text-align:center;color:var(--dim);margin:0">${verdict} ${ordinal(posOfTeam(G, G.myTeam))} after ${G.round} ${G.round === 1 ? 'game' : 'games'}.</p>
    ${m.forfeit ? forfeitNoteHTML(m) : goalList(m.allEv || m.ev) + potmCardHTML(m) + tacStatsHTML(m) + matchSummaryHTML(m)}`;
@@ -6513,9 +6513,9 @@ function showMatchPreview(opp, mySide, kind, next) {
   const homeCoords = FORM_COORDS[homeT.formation] || FORM_COORDS['4-4-2'];
   const awayCoords = FORM_COORDS[awayT.formation] || FORM_COORDS['4-4-2'];
   const lineupsHTML = `<div class="mpVs">
-      <div class="mpTeam"><div class="mpKit">${kitSVG(homeT, false, 46)}</div><div class="mpCrest">${crestHTML(homeT, 36)}</div><b>${esc(homeT.s)}</b></div>
+      <div class="mpTeam"><div class="mpKit">${bigKitSVG(homeT, false, 46)}</div><div class="mpCrest">${crestHTML(homeT, 36)}</div><b>${esc(homeT.s)}</b></div>
       <div class="mpVsBadge">VS</div>
-      <div class="mpTeam"><div class="mpKit">${kitSVG(awayT, true, 46)}</div><div class="mpCrest">${crestHTML(awayT, 36)}</div><b>${esc(awayT.s)}</b></div>
+      <div class="mpTeam"><div class="mpKit">${bigKitSVG(awayT, true, 46)}</div><div class="mpCrest">${crestHTML(awayT, 36)}</div><b>${esc(awayT.s)}</b></div>
     </div>
     <div class="mpPitches">
       <div class="mpPitchCol">
