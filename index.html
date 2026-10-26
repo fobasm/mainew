@@ -4680,7 +4680,24 @@ function colorsForClub(name) {
   const pair = CLUB_COLOR_PAIRS[h % CLUB_COLOR_PAIRS.length];
   return { c1: pair[0], c2: pair[1] };
 }
+const KIT_STYLE_OVERRIDE = {
+  'Botshabelo United|Botshabelo': 1,
+  'Graaff-Reinet City|Graaff-Reinet': 1,
+  'Lephalale City|Lephalale': 1,
+  'Sebokeng United|Sebokeng': 1,
+  'Secunda United|Secunda': 1,
+  "Sing About Me I'm Dying Of Thirst FC|SAMIDOT FC": 1,
+  'Zola FC|Zola FC': 1,
+  'Zwelitsha FC|Zwelitsha': 2,
+  'FC Venda|Venda': 3,
+  'Giyani FC|Giyani FC': 3,
+  'Tembisa FC|Tembisa': 3,
+  'Greytown United|Greytown': 4,
+  'Mandela United|Mandela Utd': 4
+};
 function kitStyleOf(t) {
+  const key = (t.n || '') + '|' + (t.s || '');
+  if (KIT_STYLE_OVERRIDE.hasOwnProperty(key)) return KIT_STYLE_OVERRIDE[key];
   const str = t.id || t.s || '';
   let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
   return h % 5;
