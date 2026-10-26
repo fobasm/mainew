@@ -6521,11 +6521,12 @@ function showMatchPreview(opp, mySide, kind, next) {
       <div class="mpPitchCol">
         <div class="mpLabel">${esc(homeT.s)} · ${esc(homeT.formation)}</div>
         <div class="fifa"><i class="hl"></i><i class="cc"></i><i class="bx1"></i><i class="bx2"></i>${matchdayLineupPitchHTML(homeT, homeS.xi, homeS.slots, homeCoords)}</div>
-    </div>`;
+      </div>
+      <div class="mpPitchCol">
+        <div class="mpLabel">${esc(awayT.s)} · ${esc(awayT.formation)}</div>
+        <div class="fifa"><i class="hl"></i><i class="cc"></i><i class="bx1"></i><i class="bx2"></i>${matchdayLineupPitchHTML(awayT, awayS.xi, awayS.slots, awayCoords)}</div>
       </div>
     </div>`;
-    <div class="mpLabel" style="margin-top:14px">${esc(awayT.s)} · ${esc(awayT.formation)}</div>
-    <div class="fifa"><i class="hl"></i><i class="cc"></i><i class="bx1"></i><i class="bx2"></i>${matchdayLineupPitchHTML(awayT, awayS.xi, awayS.slots, awayCoords)}</div>`;
   const body = `${lineupsHTML}
     <div class="ofh" style="grid-template-columns:auto 1fr;padding:16px 0 10px">${crestHTML(opp, 34)}<span class="who"><b>${esc(opp.n)}</b><small>${mySide === 'h' ? 'You are at home' : 'You are away'}${posTxt}</small></span></div>
     <div class="kv" style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:center;margin:0 0 10px"><span class="hint">Form</span><span>${formHTML}</span><span class="hint">Shape</span><b>${esc(opp.formation || '4-4-2')}</b><span class="hint">Strength</span><b>${Math.round(teamOverall(opp))} v ${Math.round(teamOverall(me0))} (you)</b></div>
