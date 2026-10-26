@@ -6082,10 +6082,10 @@ function showMatchdayModal(res) {
   const mine = m.h === G.myTeam ? m.hg : m.ag, theirs = m.h === G.myTeam ? m.ag : m.hg;
   const verdict = mine > theirs ? 'Three points.' : mine === theirs ? 'A point shared.' : 'Beaten.';
   let body = `<div class="fixture" style="padding:4px 0">
-      <div class="side">${crestHTML(H, 30)}<div><b>${esc(H.s)}</b><small>${esc(H.city)}</small></div></div>
+      <div class="side">${kitSVG(H, false, 26)}${crestHTML(H, 30)}<div><b>${esc(H.s)}</b><small>${esc(H.city)}</small></div></div>
       <div class="score num">${m.hg}–${m.ag}</div>
-      <div class="side away">${crestHTML(A, 30)}<div><b>${esc(A.s)}</b><small>${esc(A.city)}</small></div></div>
-    </div>
+      <div class="side away">${crestHTML(A, 30)}${kitSVG(A, true, 26)}<div><b>${esc(A.s)}</b><small>${esc(A.city)}</small></div></div>
+    </div>`;
     <p style="text-align:center;color:var(--dim);margin:0">${verdict} ${ordinal(posOfTeam(G, G.myTeam))} after ${G.round} ${G.round === 1 ? 'game' : 'games'}.</p>
    ${m.forfeit ? forfeitNoteHTML(m) : goalList(m.allEv || m.ev) + potmCardHTML(m) + tacStatsHTML(m) + matchSummaryHTML(m)}`;
   body += myCupResultsHTML(res);   body += continentalRoundHTML(res);   if (res.cup) body += cupRoundHTML(res.cup);
