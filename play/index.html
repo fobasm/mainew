@@ -4728,10 +4728,11 @@ const KIT_STYLE_OVERRIDE = {
   'Zola FC|Zola FC': 1,
   'Zwelitsha FC|Zwelitsha': 2,
   'FC Venda|Venda': 3,
-  'Giyani FC|Giyani FC': 3,
   'Tembisa FC|Tembisa': 3,
-  'Greytown United|Greytown': 4,
-  'Mandela United|Mandela Utd': 4
+  'Beaufort West FC|Beaufort West': 5,
+  'Greytown United|Greytown': 6,
+  'Mandela United|Mandela Utd': 6,
+  'Giyani FC|Giyani FC': 7
 };
 function kitStyleOf(t) {
   const key = (t.n || '') + '|' + (t.s || '');
@@ -4793,6 +4794,26 @@ function bigKitSVG(t, away, size) {
     pattern = `
       <path d="M110 20 H230 V215 H110 Z"
         fill="${trim}" opacity=".88"/>`;
+  } else if (styleIdx === 5) {
+    let cells = '';
+    const cs = 22;
+    for (let y = 20, row = 0; y < 216; y += cs, row++) {
+      for (let x = 0, col = 0; x < 220; x += cs, col++) {
+        if ((row + col) % 2 === 0) cells += `<rect x="${x}" y="${y}" width="${cs}" height="${cs}" fill="${trim}" opacity=".85"/>`;
+      }
+    }
+    pattern = cells;
+  } else if (styleIdx === 6) {
+    pattern = `
+      <rect x="0" y="20" width="110" height="97" fill="${trim}" opacity=".88"/>
+      <rect x="110" y="117" width="110" height="98" fill="${trim}" opacity=".88"/>`;
+  } else if (styleIdx === 7) {
+    let bands = '';
+    for (let k = -1; k < 5; k++) {
+      const xt = -10 + k * 46, xb = xt - 95;
+      bands += `<path d="M${xt} 15 L${xt + 22} 15 L${xb + 22} 215 L${xb} 215 Z" fill="${trim}" opacity=".85"/>`;
+    }
+    pattern = bands;
   }
 
   return `<svg xmlns="http://www.w3.org/2000/svg"
