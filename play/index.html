@@ -1202,51 +1202,51 @@ const AFRICAN_LEAGUES = [
 
 /* ---------------- Tier 3 (index 3) — Mzansi 4th Division ---------------- */
 /* ---- remaining real club names become game names (runs once when the game loads) ---- */ (function renameRealClubs() {   const DONE = ['EG', 'MA', 'TN', 'DZ'];   const FIX = { 'FC Simba': 'Simba Kinshasa FC', 'AS Dauphins Noirs': 'FC Dauphins Noirs', 'FC Renaissance': 'Renaissance FC', 'JS Groupe Bazano': 'FC Groupe Bazano', 'US Panda': 'Panda United', 'OC Bukavu Dawa': 'FC Bukavu Dawa',     'Orlando Pirates Windhoek': 'FC Windhoek Pirates', 'Chicken Inn': 'FC Chicken Roost', 'AFC Leopards': 'Leopards FC Nairobi', 'Dynamos FC': 'FC Harare Dynamos', 'ZPC Kariba': 'FC Kariba Power', 'Police FC': 'FC Police Uganda', 'Kenya Police FC': 'Police FC Kenya', 'AS Police': 'Police FC Bamako', 'FC 105 Libreville': '105 Libreville FC',     'UMS de Loum': 'Loum United', 'Simba SC': 'FC Simba Dar', 'AS Kaloum Star': 'Kaloum Star FC', 'Sebha Club': 'FC Sebha', 'Mbarara City': 'Mbarara United' };   const TAILS = [' FC', ' SC', ' AC', ' United', ' Utd'];   const HEADS = ['FC ', 'AS ', 'US ', 'CS ', 'ES ', 'MC ', 'JS ', 'RS ', 'CR ', 'IR ', 'CA ', 'CI ', 'NC ', 'OC ', 'DC ', 'TP ', 'UD ', 'CF ', 'AO ', 'EFO ', 'RC ', 'ASFA ', 'USFA ', 'ASO ', 'USM ', 'UMS ', 'COB ', 'USFAS ', 'FAR ', 'PWD ', 'SC ', 'AC '];   const auto = n => {     const tail = TAILS.find(t => n.toLowerCase().endsWith(t.toLowerCase()));     const head = HEADS.find(h => n.startsWith(h));     let b = n;     if (tail) b = b.slice(0, b.length - tail.length);     if (head) b = b.slice(head.length);     if (head === 'FC ') return b + ' FC';     if (tail === ' United' || tail === ' Utd') return b + ' FC';     if (head && !tail) return b + ' United';     return 'FC ' + b;   };   AFRICAN_LEAGUES.forEach(L => {     if (DONE.includes(L.code)) return;     L.clubs.forEach(c => {       const f = FIX[c[0]];       if (L.code === 'CD') { if (f) c[0] = f; } else c[0] = f || auto(c[0]);     });   });   const SA2 = {     'Platinum City Rovers': ['Platinum Rovers FC', null, 'The Roamers'],     'Uthongathi FC': ['FC Uthongathi', null, 'The Cane Boys'],     'Mangaung United': ['Mangaung FC', null, 'The Roses'],     'Bizana Pondo Chiefs': ['Bizana Pondo FC', 'Pondo', 'Amapondo Boys'],     'Vaal United': ['Vaal FC', 'Vaal', 'The Vaal Boys'],     'Nkowankowa Stars': ['Nkowankowa FC', null, 'Tinyeleti Boys'],     'Gqeberha City': ['Gqeberha United', 'Gqeberha', 'The Bay Lads'],     'Klerksdorp City': ['Klerksdorp United', null, null],     'Soweto Kings': ['Soweto United', 'Soweto', 'Amakhosi Asekasi'],     'FC Bayview': ['Bayview FC', null, 'The Gulls'],     'Komani FC': ['FC Komani', null, 'The Frontier Lads'],     'Paarl Rangers': ['Paarl United', 'Paarl', 'The Wine Boys'],     'Empangeni FC': ['FC Empangeni', null, null]   };   CLUBS.forEach(c => { const r = SA2[c.n]; if (r) { c.n = r[0]; if (r[1]) c.s = r[1]; if (r[2]) c.nick = r[2]; } }); })(); const CLUBS_T3 = [
-  { n:'Joburg United', s:'Joburg Utd', nick:'The City Boys', city:'Johannesburg', t:3, base:3.3, fin:1.4, youth:2, c1:'#1f2937', c2:'#facc15' },
-  { n:'Sandton FC', s:'Sandton', nick:'The Sandton Set', city:'Sandton', t:3, base:4.3, fin:1.5, youth:3, c1:'#0f172a', c2:'#38bdf8' },
+  { n:'Joburg United', s:'Joburg Utd', nick:'The City Boys', city:'Johannesburg', t:3, base:3.3, fin:1.4, youth:2, c1:'#caa23a', c2:'#15110a' },
+  { n:'Sandton FC', s:'Sandton', nick:'The Sandton Set', city:'Sandton', t:3, base:4.3, fin:1.5, youth:3, c1:'#15284a', c2:'#8fc0e8' },
   { n:'Ladysmith FC', s:'Ladysmith', nick:'The Smithies', city:'Ladysmith', t:3, base:3.1, fin:1.2, youth:1, c1:'#7c2d12', c2:'#fde68a' },
-  { n:'Greytown United', s:'Greytown', nick:'The Midlanders', city:'Greytown', t:3, base:3.0, fin:1.1, youth:1, c1:'#374151', c2:'#a3e635' },
-  { n:'Emsinga FC', s:'Emsinga', nick:'Abafana baGogo', city:'Emsinga', t:3, base:3.0, fin:1.1, youth:1, c1:'#065f46', c2:'#fde047' },
-  { n:'Alexandra United', s:'Alex Utd', nick:'The Alex Boys', city:'Alexandra', t:3, base:3.2, fin:1.3, youth:2, c1:'#b91c1c', c2:'#111827' },
-  { n:'Khayelitsha FC', s:'Khayelitsha', nick:'The Big Place', city:'Khayelitsha', t:3, base:3.2, fin:1.3, youth:2, c1:'#0369a1', c2:'#fbbf24' },
-  { n:'Umlazi United', s:'Umlazi Utd', nick:'The Township Kings', city:'Umlazi', t:3, base:3.1, fin:1.2, youth:1, c1:'#166534', c2:'#f8fafc' },
-  { n:'Tembisa FC', s:'Tembisa', nick:'T-Town', city:'Tembisa', t:3, base:3.1, fin:1.2, youth:1, c1:'#1d4ed8', c2:'#fde047' },
-  { n:'Mandela United', s:'Mandela Utd', nick:'Madiba\'s XI', city:'Mvezo', t:3, base:3.3, fin:1.4, youth:2, c1:'#000000', c2:'#fbbf24' },
-  { n:'Broke Boyz United', s:'Broke Boyz', nick:'The Skint XI', city:'Diepsloot', t:3, base:2.9, fin:0.8, youth:1, c1:'#78350f', c2:'#e5e7eb' },
-  { n:'Germiston FC', s:'Germiston', nick:'The Outlawz', city:'Johannesburg', t:3, base:3.0, fin:1.1, youth:1, c1:'#111111', c2:'#dc2626' },
-  { n:'Giyani FC', s:'Giyani FC', nick:'The Notorious', city:'Giyani', t:3, base:3.0, fin:1.1, youth:1, c1:'#1e3a8a', c2:'#f8fafc' },
-  { n:'Amapiano United', s:'Amapiano Utd', nick:'The Log Drummers', city:'Katlehong', t:3, base:3.1, fin:1.2, youth:1, c1:'#7e22ce', c2:'#fde047' },
-  { n:'Pinetown United', s:'Pinetown', nick:'The Winners', city:'Pinetown', t:3, base:2.9, fin:0.9, youth:1, c1:'#78350f', c2:'#fbbf24' },
-  { n:'Seshego FC', s:'Seshego', nick:'The Water Boys', city:'Seshego', t:3, base:3.0, fin:1.1, youth:2, c1:'#0ea5e9', c2:'#f8fafc' },
-  { n:'Worcester FC', s:'Worcester', nick:'The Breede Valley Boys', city:'Worcester', t:3, base:2.9, fin:1.0, youth:1, c1:'#1e3a8a', c2:'#f8fafc' },
-  { n:'Secunda United', s:'Secunda', nick:'The Petrochem Boys', city:'Secunda', t:3, base:2.8, fin:0.9, youth:1, c1:'#b45309', c2:'#111111' },
-  { n:'Kathu FC', s:'Kathu', nick:'The Diamond Fields', city:'Kathu', t:3, base:2.8, fin:0.85, youth:1, c1:'#0369a1', c2:'#fde047' },
-  { n:'Graaff-Reinet City', s:'Graaff-Reinet', nick:'The Gem of the Karoo', city:'Graaff-Reinet', t:3, base:2.7, fin:0.8, youth:1, c1:'#065f46', c2:'#f8fafc' }
-];
+  { n:'Greytown United', s:'Greytown', nick:'The Midlanders', city:'Greytown', t:3, base:3.0, fin:1.1, youth:1, c1:'#3a3d40', c2:'#7a1620' },
+  { n:'Emsinga FC', s:'Emsinga', nick:'Abafana baGogo', city:'Emsinga', t:3, base:3.0, fin:1.1, youth:1, c1:'#1f4d2e', c2:'#ead9b0' },
+  { n:'Alexandra United', s:'Alex Utd', nick:'The Alex Boys', city:'Alexandra', t:3, base:3.2, fin:1.3, youth:2, c1:'#6b7280', c2:'#b91c1c' },
+  { n:'Khayelitsha FC', s:'Khayelitsha', nick:'The Big Place', city:'Khayelitsha', t:3, base:3.2, fin:1.3, youth:2, c1:'#33363a', c2:'#e8b54a' },
+  { n:'Umlazi United', s:'Umlazi Utd', nick:'The Township Kings', city:'Umlazi', t:3, base:3.1, fin:1.2, youth:1, c1:'#6b3a18', c2:'#d8b67a' },
+  { n:'Tembisa FC', s:'Tembisa', nick:'T-Town', city:'Tembisa', t:3, base:3.1, fin:1.2, youth:1, c1:'#5c1420', c2:'#c0392b' },
+  { n:'Mandela United', s:'Mandela Utd', nick:'Madiba\'s XI', city:'Mvezo', t:3, base:3.3, fin:1.4, youth:2, c1:'#121212', c2:'#caa23a' },
+  { n:'Broke Boyz United', s:'Broke Boyz', nick:'The Skint XI', city:'Diepsloot', t:3, base:2.9, fin:0.8, youth:1, c1:'#6b4a2f', c2:'#e8dcc8' },
+  { n:'Germiston FC', s:'Germiston', nick:'The Outlawz', city:'Johannesburg', t:3, base:3.0, fin:1.1, youth:1, c1:'#9c1b23', c2:'#153a7a' },
+  { n:'Giyani FC', s:'Giyani FC', nick:'The Notorious', city:'Giyani', t:3, base:3.0, fin:1.1, youth:1, c1:'#15348c', c2:'#f2f4f8' },
+  { n:'Amapiano United', s:'Amapiano Utd', nick:'The Log Drummers', city:'Katlehong', t:3, base:3.1, fin:1.2, youth:1, c1:'#8f1d1d', c2:'#f0d2a8' },
+  { n:'Pinetown United', s:'Pinetown', nick:'The Winners', city:'Pinetown', t:3, base:2.9, fin:0.9, youth:1, c1:'#3fa0d8', c2:'#15284a' },
+  { n:'Seshego FC', s:'Seshego', nick:'The Water Boys', city:'Seshego', t:3, base:3.0, fin:1.1, youth:2, c1:'#0b2a56', c2:'#9aa0a3' },
+  { n:'Worcester FC', s:'Worcester', nick:'The Breede Valley Boys', city:'Worcester', t:3, base:2.9, fin:1.0, youth:1, c1:'#caa23a', c2:'#15110a' },
+  { n:'Secunda United', s:'Secunda', nick:'The Petrochem Boys', city:'Secunda', t:3, base:2.8, fin:0.9, youth:1, c1:'#6e041a', c2:'#8fd0ef' },
+  { n:'Kathu FC', s:'Kathu', nick:'The Diamond Fields', city:'Kathu', t:3, base:2.8, fin:0.85, youth:1, c1:'#15306b', c2:'#caa23a' },
+  { n:'Graaff-Reinet City', s:'Graaff-Reinet', nick:'The Gem of the Karoo', city:'Graaff-Reinet', t:3, base:2.7, fin:0.8, youth:1, c1:'#7a1620', c2:'#f0b429' }
+]
 
 /* ---------------- Tier 4 (index 4) — Mzansi 5th Division (semi-pro) ---------------- */
 const CLUBS_T4 = [
-  { n:'Soshanguve City', s:'Soshanguve', nick:'The City', city:'Soshanguve', t:4, base:2.5, fin:0.5, youth:1, c1:'#166534', c2:'#fde68a' },
-  { n:'Mamelodi City', s:'Mamelodi City', nick:'The Eastenders', city:'Mamelodi', t:4, base:2.9, fin:0.9, youth:3, c1:'#7c2d12', c2:'#f8fafc' },
-  { n:'Katlehong FC', s:'Katlehong', nick:'The Golden City', city:'Katlehong', t:4, base:2.4, fin:0.45, youth:1, c1:'#a16207', c2:'#111827' },
-  { n:'Sebokeng United', s:'Sebokeng', nick:'The Vaal Boys', city:'Sebokeng', t:4, base:2.4, fin:0.45, youth:1, c1:'#1e3a8a', c2:'#facc15' },
-  { n:'Zola FC', s:'Zola FC', nick:'The Sowetans', city:'Soweto', t:4, base:2.5, fin:0.5, youth:1, c1:'#111827', c2:'#f97316' },
-  { n:'Duduza United', s:'Duduza', nick:'The Comforters', city:'Duduza', t:4, base:2.3, fin:0.4, youth:1, c1:'#0f766e', c2:'#fde047' },
-  { n:'Sing About Me I\'m Dying Of Thirst FC', s:'SAMIDOT FC', nick:'Simply GOATED', city:'Pietermaritzburg', t:4, base:2.7, fin:0.95, youth:4, c1:'#0369a1', c2:'#fef08a' },
-  { n:'Nah We Cousins FC', s:'We Cousins', nick:'The Family', city:'Joburg', t:4, base:2.3, fin:0.35, youth:1, c1:'#9333ea', c2:'#fde047' },
-  { n:'Mmabatho United', s:'Mmabatho', nick:'The Hive', city:'Mmabatho', t:4, base:2.4, fin:0.45, youth:1, c1:'#eab308', c2:'#111111' },
-  { n:'Kimberley FC', s:'Kimberley FC', nick:'The Kings of the City', city:'Kimberley', t:4, base:2.4, fin:0.45, youth:1, c1:'#7f1d1d', c2:'#fde047' },
-  { n:'Hopefield FC', s:'Hopefield', nick:'The Land of Hope', city:'Pretoria', t:4, base:2.3, fin:0.35, youth:1, c1:'#111111', c2:'#dc2626' },
-  { n:'Izinqa United', s:'Izinqa Utd', nick:'The Shakers', city:'Richards Bay', t:4, base:2.3, fin:0.35, youth:1, c1:'#be185d', c2:'#fde047' },
-  { n:'Bethlehem FC', s:'Bethlehem FC', nick:'The gate', city:'Bethlehem', t:4, base:2.3, fin:0.35, youth:1, c1:'#1e40af', c2:'#e2e8f0' },
-  { n:'Botshabelo United', s:'Botshabelo', nick:'The Free Staters', city:'Botshabelo', t:4, base:2.3, fin:0.35, youth:1, c1:'#166534', c2:'#f8fafc' },
-  { n:'Galeshewe FC', s:'Galeshewe', nick:'The Diamond Boys', city:'Kimberley', t:4, base:2.3, fin:0.35, youth:1, c1:'#0284c7', c2:'#f8fafc' },
-  { n:'Zwelitsha FC', s:'Zwelitsha', nick:'The Eastern Cape Boys', city:'Zwelitsha', t:4, base:2.2, fin:0.3, youth:1, c1:'#166534', c2:'#fbbf24' },
-  { n:'Beaufort West FC', s:'Beaufort West', nick:'The Karoo Crossing', city:'Beaufort West', t:4, base:2.2, fin:0.35, youth:1, c1:'#7c2d12', c2:'#fde68a' },
-  { n:'Standerton United', s:'Standerton', nick:'The Highveld Boys', city:'Standerton', t:4, base:2.1, fin:0.3, youth:1, c1:'#1e40af', c2:'#e2e8f0' },
-  { n:'Lephalale City', s:'Lephalale', nick:'The Coalfields', city:'Lephalale', t:4, base:2.1, fin:0.3, youth:1, c1:'#166534', c2:'#fbbf24' },
-  { n:'De Aar FC', s:'De Aar', nick:'The Karoo Junction', city:'De Aar', t:4, base:2.0, fin:0.25, youth:1, c1:'#475569', c2:'#f1f5f9' }
-];
+  { n:'Soshanguve City', s:'Soshanguve', nick:'The City', city:'Soshanguve', t:4, base:2.5, fin:0.5, youth:1, c1:'#6b5a2e', c2:'#c2703f' },
+  { n:'Mamelodi City', s:'Mamelodi City', nick:'The Eastenders', city:'Mamelodi', t:4, base:2.9, fin:0.9, youth:3, c1:'#d7a86b', c2:'#2f6fa8' },
+  { n:'Katlehong FC', s:'Katlehong', nick:'The Golden City', city:'Katlehong', t:4, base:2.4, fin:0.45, youth:1, c1:'#121212', c2:'#f0b429' },
+  { n:'Sebokeng United', s:'Sebokeng', nick:'The Vaal Boys', city:'Sebokeng', t:4, base:2.4, fin:0.45, youth:1, c1:'#5c0f23', c2:'#8fd0ef' },
+  { n:'Zola FC', s:'Zola FC', nick:'The Sowetans', city:'Soweto', t:4, base:2.5, fin:0.5, youth:1, c1:'#141414', c2:'#ea6518' },
+  { n:'Duduza United', s:'Duduza', nick:'The Comforters', city:'Duduza', t:4, base:2.3, fin:0.4, youth:1, c1:'#15224a', c2:'#d9c48a' },
+  { n:'Sing About Me I\'m Dying Of Thirst FC', s:'SAMIDOT FC', nick:'Simply GOATED', city:'Pietermaritzburg', t:4, base:2.7, fin:0.95, youth:4, c1:'#141414', c2:'#f0f0f0' },
+  { n:'Nah We Cousins FC', s:'We Cousins', nick:'The Family', city:'Joburg', t:4, base:2.3, fin:0.35, youth:1, c1:'#6e1420', c2:'#c9a24a' },
+  { n:'Mmabatho United', s:'Mmabatho', nick:'The Hive', city:'Mmabatho', t:4, base:2.4, fin:0.45, youth:1, c1:'#15306b', c2:'#eef2f7' },
+  { n:'Kimberley FC', s:'Kimberley FC', nick:'The Kings of the City', city:'Kimberley', t:4, base:2.4, fin:0.45, youth:1, c1:'#7a1620', c2:'#8fd0ef' },
+  { n:'Hopefield FC', s:'Hopefield', nick:'The Land of Hope', city:'Pretoria', t:4, base:2.3, fin:0.35, youth:1, c1:'#0b4a9e', c2:'#eef3fb' },
+  { n:'Izinqa United', s:'Izinqa Utd', nick:'The Shakers', city:'Richards Bay', t:4, base:2.3, fin:0.35, youth:1, c1:'#a8141c', c2:'#15100f' },
+  { n:'Bethlehem FC', s:'Bethlehem FC', nick:'The gate', city:'Bethlehem', t:4, base:2.3, fin:0.35, youth:1, c1:'#0b4fa8', c2:'#f2c511' },
+  { n:'Botshabelo United', s:'Botshabelo', nick:'The Free Staters', city:'Botshabelo', t:4, base:2.3, fin:0.35, youth:1, c1:'#b91c2c', c2:'#f8fafc' },
+  { n:'Galeshewe FC', s:'Galeshewe', nick:'The Diamond Boys', city:'Kimberley', t:4, base:2.3, fin:0.35, youth:1, c1:'#7a1620', c2:'#f2c511' },
+  { n:'Zwelitsha FC', s:'Zwelitsha', nick:'The Eastern Cape Boys', city:'Zwelitsha', t:4, base:2.2, fin:0.3, youth:1, c1:'#15509e', c2:'#eef3f8' },
+  { n:'Beaufort West FC', s:'Beaufort West', nick:'The Karoo Crossing', city:'Beaufort West', t:4, base:2.2, fin:0.35, youth:1, c1:'#111111', c2:'#d4af37' },
+  { n:'Standerton United', s:'Standerton', nick:'The Highveld Boys', city:'Standerton', t:4, base:2.1, fin:0.3, youth:1, c1:'#7a1620', c2:'#15284a' },
+  { n:'Lephalale City', s:'Lephalale', nick:'The Coalfields', city:'Lephalale', t:4, base:2.1, fin:0.3, youth:1, c1:'#8c1a1a', c2:'#f7f3ee' },
+  { n:'De Aar FC', s:'De Aar', nick:'The Karoo Junction', city:'De Aar', t:4, base:2.0, fin:0.25, youth:1, c1:'#14532d', c2:'#c9a227' }
+]
 CLUBS.push(...CLUBS_T3, ...CLUBS_T4);
 
 /* ============================================================
