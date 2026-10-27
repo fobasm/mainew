@@ -6013,11 +6013,10 @@ const ndBtn = el('button', 'btn ghost', 'Next day'); ndBtn.disabled = isMatchday
     return;
   }
   const nx = myFixture(G.round);
-  const b1Label = G.liveMode ? `Play matchday ${G.round + 1}` : `Sim matchday ${G.round + 1}`;
-  const b1 = el('button', 'btn', b1Label);
-  b1.onclick = () => G.liveMode ? startLive() : simRounds(1);
-  a.appendChild(b1);
-  const b2 = el('button', 'btn ghost', 'Quick sim'); b2.onclick = () => simRounds(1); a.appendChild(b2);
+  const b2 = el('button', 'btn ghost', 'Quick sim');
+  if (isMatchdayToday()) { b2.onclick = () => simRounds(1); }
+  else { b2.disabled = true; b2.title = 'Only on matchday'; }
+  a.appendChild(b2);
   const b3 = null;
   if (nx) {
     const opp = G.teams[nx.h === G.myTeam ? nx.a : nx.h];
@@ -6134,10 +6133,10 @@ function showMatchdayModal(res) {
   const mine = m.h === G.myTeam ? m.hg : m.ag, theirs = m.h === G.myTeam ? m.ag : m.hg;
   const verdict = mine > theirs ? 'Three points.' : mine === theirs ? 'A point shared.' : 'Beaten.';
   let body = `<div class="fixture" style="padding:4px 0">
-      <div class="side">${bigKitSVG(H, false, 26)}${crestHTML(H, 30)}<div><b>${esc(H.s)}</b><small>${esc(H.city)}</small></div></div>
+      <div class="side">${crestHTML(H, 30)}<div><b>${esc(H.s)}</b><small>${esc(H.city)}</small></div></div>
       <div class="score num">${m.hg}–${m.ag}</div>
-      <div class="side away">${crestHTML(A, 30)}${bigKitSVG(A, true, 26)}<div><b>${esc(A.s)}</b><small>${esc(A.city)}</small></div></div>
-    </div>
+      <div class="side away">${crestHTML(A, 30)}<div><b>${esc(A.s)}</b><small>${esc(A.city)}</small></div></div>
+    </div>`;
     <p style="text-align:center;color:var(--dim);margin:0">${verdict} ${ordinal(posOfTeam(G, G.myTeam))} after ${G.round} ${G.round === 1 ? 'game' : 'games'}.</p>
    ${m.forfeit ? forfeitNoteHTML(m) : goalList(m.allEv || m.ev) + potmCardHTML(m) + tacStatsHTML(m) + matchSummaryHTML(m)}`;
   body += myCupResultsHTML(res);   body += continentalRoundHTML(res);   if (res.cup) body += cupRoundHTML(res.cup);
