@@ -6137,6 +6137,7 @@ function showMatchdayModal(res) {
       <div class="score num">${m.hg}–${m.ag}</div>
       <div class="side away">${crestHTML(A, 30)}<div><b>${esc(A.s)}</b><small>${esc(A.city)}</small></div></div>
     </div>`;
+  body += `
     <p style="text-align:center;color:var(--dim);margin:0">${verdict} ${ordinal(posOfTeam(G, G.myTeam))} after ${G.round} ${G.round === 1 ? 'game' : 'games'}.</p>
    ${m.forfeit ? forfeitNoteHTML(m) : goalList(m.allEv || m.ev) + potmCardHTML(m) + tacStatsHTML(m) + matchSummaryHTML(m)}`;
   body += myCupResultsHTML(res);   body += continentalRoundHTML(res);   if (res.cup) body += cupRoundHTML(res.cup);
