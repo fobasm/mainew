@@ -5864,6 +5864,7 @@ function render() { try { checkManagerBirthday(); } catch (e) { } try { updateNa
   }
   try { renderActions(); } catch (e) { if (typeof console !== 'undefined') console.error(e); }
   try { renderHistoryBtns(); } catch (e) {}
+  if (tab === 'calendar' && autoSimTimer) { const vc = $('#v-calendar'); if (vc) vc.scrollIntoView({ block: 'center' }); }
 }
 
 function myFixture(round) {
@@ -6078,13 +6079,44 @@ function simRounds(n) {
   let cupPlayed = false;
   withPrizeSummary(() => {
     for (let i = 0; i < n && !G.finished; i++) {
-      for (let g = 0; (cupDueNow(G) || contPending()) && g < 12; g++) { if (cupLikeNext() === 'cont') contQuickSim(true); else playCupRound(G, false); cupPlayed = true; }
+      while (cupDueNow(G)) { playCupRound(G, false); cupPlayed = true; }
       const r = playRound(G); if (r) played.push(r);
     }
   });
   if (!played.length) { if (cupPlayed) { afterRound(); toast(`${CUP_NAME} results are in — check the cup tab.`); } return; }
   afterRound();
   if (played.length === 1) showMatchdayModal(played[0]); else showRunModal(played);
+}
+function simToRoundAnimated(targetRound) {
+  if (autoSimTimer || liveState || G.finished) return;
+  if (targetRound <= G.round) return;
+  const playedAll = [];
+  let cupPlayed = false;
+  const ownBatch = !PRIZE_BATCH;
+  if (ownBatch) PRIZE_BATCH = { total: 0, n: 0, last: '', lastAmt: 0 };
+  const d0 = new Date(currentDateISO() + 'T12:00:00Z');
+  calY = d0.getUTCFullYear(); calM = d0.getUTCMonth();
+  goTo('calendar');
+  autoSimTimer = setInterval(() => {
+    if (G.finished || G.round >= targetRound) {
+      autoSimTimer && clearInterval(autoSimTimer); autoSimTimer = null;
+      if (ownBatch) {
+        const b = PRIZE_BATCH; PRIZE_BATCH = null;
+        if (b.n === 1) toastGood('+' + money(b.lastAmt) + ' ' + b.last);
+        else if (b.n > 1) toastGood('+' + money(b.total) + ' in bonuses and prize money (' + b.n + ' payments)');
+      }
+      render();
+      if (playedAll.length) { afterRound(); if (playedAll.length === 1) showMatchdayModal(playedAll[0]); else showRunModal(playedAll); }
+      else if (cupPlayed) { afterRound(); toast(`${CUP_NAME} results are in — check the cup tab.`); }
+      return;
+    }
+    if (cupDueNow(G)) { playCupRound(G, false); cupPlayed = true; }
+    else if (isMatchdayToday()) { const r = playRound(G); if (r) playedAll.push(r); }
+    else { advanceOneDay(); }
+    const d = new Date(currentDateISO() + 'T12:00:00Z');
+    calY = d.getUTCFullYear(); calM = d.getUTCMonth();
+    render();
+  }, 60);
 }
 function afterRound() {
   const tl = G.trainTally;
@@ -9939,7 +9971,7 @@ const pv = $('#calPrev'); if (pv) pv.onclick = () => { calM--; if (calM < 0) { c
   const nx = $('#calNext'); if (nx) nx.onclick = () => { calM++; if (calM > 11) { calM = 0; calY++; } viewCalendar(); };
   const td = $('#calToday'); if (td) td.onclick = () => { calY = todayD.getUTCFullYear(); calM = todayD.getUTCMonth(); viewCalendar(); };
   v.querySelectorAll('[data-round]').forEach(c => c.onclick = () => { const r = +c.dataset.round; calSelRound = calSelRound === r ? null : r; viewCalendar(); });
-  const st = $('#calSimTo'); if (st) st.onclick = () => { const diff = calSelRound - G.round; calSelRound = null; if (diff > 0) simRounds(diff); else viewCalendar(); };
+  const st = $('#calSimTo'); if (st) st.onclick = () => { const target = calSelRound; calSelRound = null; if (target > G.round) simToRoundAnimated(target); else viewCalendar(); };
 }
 
 /* ---------------- how to play ---------------- */
