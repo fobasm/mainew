@@ -4782,8 +4782,8 @@ function kitStyleOf(t) {
 function bigKitSVG(t, away, size) {
   const w = size || 200;
   const id = ++KIT_UID;
-  const body = away ? t.c2 : t.c1;
-  const trim = away ? t.c1 : t.c2;
+  const _kc = kitColors(t, away), body = _kc.body;
+  const trim = _kc.trim;
   const clipId = 'kitClip' + id;
   const styleIdx = kitStyleOf(t);
 
@@ -4967,7 +4967,7 @@ function bigKitSVG(t, away, size) {
 function kitSVG(t, away, size) {
   const s = size || 76, id = ++KIT_UID;
   const body = away ? t.c2 : t.c1;
-  const trim = away ? t.c1 : t.c2;
+  const trim = _kc.trim;
   let stripes = '';
   for (let x = 13; x < 47; x += 4) stripes += `<rect x="${x}" y="13" width="1.8" height="42" fill="#000" opacity=".08"/>`;
   return `<svg width="${s}" height="${s}" viewBox="0 0 60 60" aria-hidden="true">
@@ -5726,7 +5726,7 @@ function load(n) {
       } catch (eb) { }
     }
     if (!d) return false;
-    G = d.G; SEED = d.seed; PID = d.pid; slot = want; try { ensureMM(G); } catch (e) { }
+    G = d.G; SEED = d.seed; PID = d.pid; slot = want; try { kitFixAll(G); } catch (e) { } try { ensureMM(G); } catch (e) { }
     G.teams.forEach(t => { t.fin = t.fin || newFin(); t.youth = t.youth || []; t.squad.forEach(p => { p.value = valueOf(p); if (p.portrait) PORTRAIT_USE[p.portrait] = (PORTRAIT_USE[p.portrait] || 0) + 1; }); ensureLineup(t); });     G.watchlist = G.watchlist || []; G.pendingBids = G.pendingBids || []; G.pendingLoanOffers = G.pendingLoanOffers || []; seedAiClauses(G); try { updateOutgoingScouting(G); } catch (e) { }
     if (!G.africa) { initAfrica(G); initAfcon(G); buildCAF(G); }
     if (!G.super8) buildExtraCups(G);     if (!G.watchlist) G.watchlist = [];
