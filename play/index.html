@@ -3123,15 +3123,15 @@ function announceSeasonAwards(G, awards) {
   const { tier, goldenBoot, playerOfSeason, youngPlayerOfSeason, manager } = awards;
   const tierName = TIER_SHORT[tier];
   if (goldenBoot) {
-    news(G, 'season', `${goldenBoot.name} wins the ${tierName} Golden Boot with ${goldenBoot.goals} goals for ${goldenBoot.clubName}.`);
+    news(G, 'season', `${goldenBoot.name} wins the ${tierName} Golden Boot with ${goldenBoot.goals} goals for ${goldenBoot.clubName}.`, { pid: goldenBoot.pid });
     if (goldenBoot.clubId === G.myTeam) { const f = findPlayer(G, goldenBoot.pid); if (f) mail(G, { cat: 'award', from: 'Chief Executive', p: f.p, club: f.t, status: 'Golden Boot', flag: true, subject: `Golden Boot: ${goldenBoot.name}`, body: [`${goldenBoot.name} finished the season as the ${tierName}'s top scorer with ${goldenBoot.goals} goals.`, `A brilliant season in front of goal.`] }); }
   }
   if (playerOfSeason) {
-    news(G, 'season', `${playerOfSeason.name} (${playerOfSeason.clubName}) is named ${tierName} Player of the Season, averaging ${playerOfSeason.avg.toFixed(2)} per match.`);
+     news(G, 'season', `${playerOfSeason.name} (${playerOfSeason.clubName}) is named ${tierName} Player of the Season, averaging ${playerOfSeason.avg.toFixed(2)} per match.`, { pid: playerOfSeason.pid });
     if (playerOfSeason.clubId === G.myTeam) { const f = findPlayer(G, playerOfSeason.pid); if (f) mail(G, { cat: 'award', from: 'Chief Executive', p: f.p, club: f.t, status: 'Player of the Season', flag: true, subject: `Player of the Season: ${playerOfSeason.name}`, body: [`${playerOfSeason.name} has been named ${tierName} Player of the Season, averaging ${playerOfSeason.avg.toFixed(2)} a match.`, `A season to remember.`] }); }
   }
   if (youngPlayerOfSeason) {
-    news(G, 'season', `${youngPlayerOfSeason.name} (${youngPlayerOfSeason.clubName}, ${youngPlayerOfSeason.age}) is named ${tierName} Young Player of the Season.`);
+     news(G, 'season', `${youngPlayerOfSeason.name} (${youngPlayerOfSeason.clubName}, ${youngPlayerOfSeason.age}) is named ${tierName} Young Player of the Season.`, { pid: youngPlayerOfSeason.pid });
     if (youngPlayerOfSeason.clubId === G.myTeam) { const f = findPlayer(G, youngPlayerOfSeason.pid); if (f) mail(G, { cat: 'award', from: 'Chief Executive', p: f.p, club: f.t, status: 'Young Player of the Season', flag: true, subject: `Young Player of the Season: ${youngPlayerOfSeason.name}`, body: [`${youngPlayerOfSeason.name} (${youngPlayerOfSeason.age}) has been named ${tierName} Young Player of the Season.`, `The future looks bright.`] }); }
   }
   if (manager && manager.delta > 0) {
@@ -9185,9 +9185,9 @@ function bthOnNews(g, kind, text, meta) {
   const B = g.bth, me = g.teams[g.myTeam], T = n => g.teams.find(t => t.n === n || t.s === n); let m;
   const pl = meta && meta.pid != null ? findPlayer(g, meta.pid) : null;
   if (kind === 'career') {
-    if ((m = text.match(/^(.+) appoint (.+) as their new manager\.$/))) return bthHire(g, T(m[1]), m[2]);
-    if ((m = text.match(/^(.+) are looking for a new manager\. (.*)$/))) return bthSack(g, T(m[1]), m[2]);
-    if ((m = text.match(/^(.+) leaves (.+) to take charge of (.+)\.$/)) && m[1] === g.manager.name) return bthMyHire(g, T(m[3]), T(m[2]));
+    if ((m = text.match(/^(.+) wins the (.+) Golden Boot with (\d+) goals for (.+)\.$/))) return bthAward(g, m[1], 'Golden Boot (' + m[3] + ' goals)', m[2], meta && meta.pid);
+    if ((m = text.match(/^(.+) \((.+)\) is named (.+) Player of the Season/))) return bthAward(g, m[1], 'Player of the Season', m[3], meta && meta.pid);
+    if ((m = text.match(/^(.+) \((.+), \d+\) is named (.+) Young Player of the Season/))) return bthAward(g, m[1], 'Young Player of the Season', m[3], meta && meta.pid);
     return;
   }
   if (kind === 'transfer') {
@@ -9257,8 +9257,8 @@ function bthAiMove(g, p, from, to, fee) {
 }
 function bthRequest(g, p) { const me = g.teams[g.myTeam], ctx = Object.assign(bthBase(g), bthPC(p), bthTC(me)), o = { pid: p.id, tid: me.id, me: 1 }; bthSay(g, bthFan(g, me.id), 'req', { rage: 2, pity: 2 }, ctx, o); bthSay(g, bthNeutral(g), 'req', { rage: 1, pity: 2 }, ctx, o); }
 function bthWatch(g, p, t) { if (!t || !bthOk(g.bth, 0)) return; const ctx = Object.assign(bthBase(g), bthPC(p), bthTC(t)); bthSay(g, bthFan(g, t.id), 'watch', { fan: 1 }, ctx, { pid: p.id, tid: t.id, me: t.id === g.myTeam ? 1 : null }); }
-function bthAward(g, name, aw, lg) {
-  const f = bthFindByName(g, name); if (!f || !f.t) return; const t = f.t, ctx = Object.assign(bthBase(g), bthPC(f.p), bthTC(t), { aw, lg }), o = { pid: f.p.id, tid: t.id, me: t.id === g.myTeam ? 1 : null };
+function bthAward(g, name, aw, lg, pid) {
+  const f = (pid != null ? findPlayer(g, pid) : null) || bthFindByName(g, name); if (!f || !f.t) return; const t = f.t, ctx = Object.assign(bthBase(g), bthPC(f.p), bthTC(t), { aw, lg }), o = { pid: f.p.id, tid: t.id, me: t.id === g.myTeam ? 1 : null };
   bthAdd(g, bthLeagueAcct(g, t.tier), bthFill(bthPick(BTH_B.award.official), ctx), o); bthSay(g, bthFan(g, t.id), 'award', { hype: 3 }, ctx, o); bthSay(g, bthNeutral(g), 'award', { hype: 1, hate: 2 }, ctx, o);
 }
 function bthPromo(g, t, vb, lg2, up) {
