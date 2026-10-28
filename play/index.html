@@ -611,7 +611,7 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
   .winpill{flex:1;min-width:0;margin-left:0;justify-content:center;white-space:normal}
   #contBtn{flex:0 0 auto;width:auto;min-width:110px}
   main,.panel,.tabsin,.actionin{max-width:100%;min-width:0}
-  .modal,#modal .box,#modal>div{max-width:96vw}
+  .modal{max-width:96vw}
 }
 @media (max-height:520px) and (orientation:landscape){
   main{padding:8px 10px 84px}
@@ -620,8 +620,14 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
   .ticker{display:none}
   .winwrap{flex-basis:auto;order:0;margin-left:auto}
   .topstats{flex-basis:auto}
-  #modal .box,#modal>div{max-height:94vh}
+  .modal footer{padding:6px 10px;gap:6px}
+  .modal footer .btn{padding:6px 10px;font-size:13px}
+  .modal header{padding:6px 12px}
 }
+/* pop-ups: fixed title bar and button bar, only the middle scrolls (no sticky, which misplaces buttons in Android WebView) */
+.modal{display:flex;flex-direction:column;overflow:hidden;max-height:88vh;max-height:min(88vh,calc(100dvh - 24px))}
+.modal header,.modal footer{position:static;flex:0 0 auto}
+.modal .body{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 </style>
 </head>
 <!-- built and developed by Amagemu (panar.co.za) -->
@@ -9159,7 +9165,7 @@ function bthSignMine(g, p, from, fee) {
   const me = g.teams[g.myTeam], free = fee === 'free', ctx = Object.assign(bthBase(g), bthPC(p), bthTC(me), from ? bthTC(from, '2') : {}, { fee }), o = { pid: p.id, tid: me.id, me: 1 }, q = p.rating - bthTop11(me);
   bthAdd(g, bthClubAcct(g, me), free ? `OFFICIAL | ${me.n} sign free agent ${p.name} (${p.pos}, ${p.rating}).` : bthFill(bthPick(BTH_B.signMine.official), ctx), o);
   const w = free ? { free: 3, hype: q >= 2 ? 2 : 0, doubt: q < -3 ? 2 : 0 } : { hype: bthClamp(1 + q / 2, 0.2, 5), doubt: bthClamp(1.5 - q / 2, 0.2, 5), joke: 1 };
-  bthSay(g, bthFan(g, me.id), 'signMine', w, ctx, o); bthSay(g, bthFan(g, me.id), 'signMine', w, ctx, o); bthSay(g, bthR() < 0.5 ? bthCast(g, 'troll') : bthNeutral(g), 'signMine', w, ctx, o);
+  bthSay(g, bthFan(g, me.id), 'signMine', w, ctx, o); bthSay(g, bthR() < 0.5 ? bthCast(g, 'troll') : bthNeutral(g), 'signMine', w, ctx, o);
 }
 function bthSellMine(g, p, buyer, fee, clause) {
   if (!buyer) return; const me = g.teams[g.myTeam], ctx = Object.assign(bthBase(g), bthPC(p), bthTC(me), bthTC(buyer, '2'), { fee }), o = { pid: p.id, tid: me.id, me: 1 };
@@ -9216,7 +9222,7 @@ function bthRumours(g) {
 }
   /* ---- every matchday ---- */
 function bthTick(g) {
-  const B = bthEnsure(g); if (!B) return; B.bud = 14; B.cut = null;
+  const B = bthEnsure(g); if (!B) return; B.bud = 8; B.cut = null;
   if (g.jobless && !B.wasJobless) bthSacked(g); B.wasJobless = !!g.jobless;
   bthLife(g); bthDates(g); bthLeagueTalk(g); bthRumours(g);
   if (!g.jobless) bthMyMatch(g);
@@ -9263,7 +9269,7 @@ function bthLeagueTalk(g) {
   });
 }
 function bthLife(g) {
-  const n = bthI(1, 3), ctx = Object.assign(bthBase(g)); for (let i = 0; i < n; i++) { if (g.bth.bud <= 0) return; const t = bthR() < 0.5 ? g.teams[g.myTeam] : bthP(g.teams); const u = bthR() < 0.5 ? bthFan(g, t.id) : bthNeutral(g); bthAdd(g, u, bthFill(bthPick(BTH_B.life), Object.assign({}, ctx, bthTC(t))), { tid: t.id }); }
+  const n = bthI(0, 2), ctx = Object.assign(bthBase(g)); for (let i = 0; i < n; i++) { if (g.bth.bud <= 0) return; const t = bthR() < 0.5 ? g.teams[g.myTeam] : bthP(g.teams); const u = bthR() < 0.5 ? bthFan(g, t.id) : bthNeutral(g); bthAdd(g, u, bthFill(bthPick(BTH_B.life), Object.assign({}, ctx, bthTC(t))), { tid: t.id }); }
 }
 function bthDates(g) {
   const B = g.bth, now = bthDate(g), prev = B.last.dt || now; B.last.dt = now; const a = Date.parse(prev), b = Date.parse(now); if (!(b > a)) return;
@@ -9565,7 +9571,7 @@ function bthLvl(g, t) {
 }
 function bthAdd(g, u, text, o) {
   o = o || {}; const B = g.bth; if (B.posts.slice(0, 60).some(x => x.t === text)) return null;
-  const base = (BTH_KB[u.k] || 70) * (u.k === 'fan' ? 0.4 + (u.f || 100) / 800 : 1), spicy = /#Plumber|Out\b|sack|fake|hayibo|worst|lamthuthu/i.test(text) ? 1.5 : 1, hb = o.me ? 1 + Math.abs(B.heat) / 120 : 1;
+  if (B.posts.slice(0, 150).some(x => x.t === text)) return null;   if (o.pid != null) { const same = B.posts.slice(0, 60).filter(x => x.pid === o.pid && x.r >= g.round - 2), chat = x => { const q = B.users[x.h]; return q && q.k !== 'news' && q.k !== 'club' && q.k !== 'league'; }; if (same.length >= 4 || (u.k !== 'news' && u.k !== 'club' && u.k !== 'league' && same.filter(chat).length >= 2)) return null; }   const base = (BTH_KB[u.k] || 70) * (u.k === 'fan' ? 0.4 + (u.f || 100) / 800 : 1), spicy = /#Plumber|Out\b|sack|fake|hayibo|worst|lamthuthu/i.test(text) ? 1.5 : 1, hb = o.me ? 1 + Math.abs(B.heat) / 120 : 1;
   let lk = Math.round(base * (0.15 + bthR() * 1.1) * spicy * hb) + bthI(0, 12); const viral = bthR() < 0.04; if (viral) lk *= 9;
   const post = { id: B.seq++, d: bthDate(g), r: g.round, h: u.h, t: text, lk, rt: Math.round(lk * (0.05 + bthR() * 0.3)), rn: 0, rp: [] };
   ['pid', 'tid', 'me', 'mg', 'fl'].forEach(k => { if (o[k] != null) post[k] = o[k]; }); if (viral) post.vi = 1;
@@ -9592,7 +9598,7 @@ function bthMyMatch(g) {
   let dh = ({ bigWin: 10, win: 7, narrow: 5, draw: -1, loss: -7, heavy: -13 })[key]; dh += ({ upset: 8, lam: -7, lamDraw: -5, giantLoss: 5, giantFall: -4, meh: -3 })[sp] || 0;
   B.heat = bthClamp(B.heat + dh, -100, 100);
   const ctx = Object.assign(bthBase(g), bthTC(opp, 'o'), { o: opp.s, sc, OT: bthSlug(opp.s) }), o = { tid: me.id, me: 1, mg: 1 }, win = d > 0;
-  const std = sp ? 1 : (key === 'bigWin' || key === 'heavy' ? 4 : 3);
+  const std = sp ? 1 : (key === 'bigWin' || key === 'heavy' ? 3 : 2);
   for (let i = 0; i < std; i++) bthSay(g, bthFan(g, me.id), 'match', { [key]: 1 }, ctx, Object.assign({ mood: win ? 'pos' : 'neg' }, o));
   const R = (tone, who, n, mood) => { for (let i = 0; i < (n || 1); i++) bthSay(g, who(), 'rel', { [tone]: 1 }, ctx, Object.assign({ mood }, o)); };
   const myFan = () => bthFan(g, me.id), opFan = () => bthFan(g, opp.id), neu = () => bthNeutral(g);
