@@ -629,7 +629,38 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
 .modal header,.modal footer{position:static;flex:0 0 auto}
 .modal .body{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 </style>
-<style>.appDl{display:inline-block;margin:6px 0 0;padding:10px 18px;border:2px solid #f2b928;border-radius:8px;color:#f2b928;font-weight:700;text-decoration:none}.inapp .appDl{display:none!important}</style> <script>try{var ua=navigator.userAgent;if(/; wv\)/.test(ua)||matchMedia('(display-mode: standalone)').matches||/iPhone|iPad|iPod/.test(ua))document.documentElement.className+=' inapp'}catch(e){}</script> </head>
+<style>.appDl{display:inline-block;margin:6px 0 0;padding:10px 18px;border:2px solid #f2b928;border-radius:8px;color:#f2b928;font-weight:700;text-decoration:none}.inapp .appDl{display:none!important}</style> <script>try{var ua=navigator.userAgent;if(/; wv\)/.test(ua)||matchMedia('(display-mode: standalone)').matches||/iPhone|iPad|iPod/.test(ua))document.documentElement.className+=' inapp'}catch(e){}</script> <style>
+.mpTeam{max-width:none;min-width:150px}
+.mpRow{display:flex;align-items:center;justify-content:center;gap:2px}
+.mpTeam .mpCrest{margin-top:0}
+.mpTeam .kitBigWrap{width:92px;flex:0 0 92px}
+.mpTeam .kitBigWrap>svg{width:92px;height:92px}
+.mpTeam .kitBigBadge{width:16px;height:16px}
+.mpTeam .kitBigBadge .crest{width:16px!important;height:16px!important}
+.mpTeam .kitBigSponsor{font-size:6.5px;max-width:56px}
+</style>
+<style id="liveFit">
+/* LIVE MATCH FIT: on short landscape screens keep the score line, pitch and buttons all on screen */
+@media (orientation:landscape) and (max-height:520px){
+  #app.live-full .livemain{justify-content:flex-start!important;overflow:hidden!important;padding:4px 8px!important;gap:3px!important}
+  #app.live-full .livebar{padding:0!important;gap:10px!important}
+  #app.live-full .livebar .nm{font-size:14px!important;gap:6px!important}
+  #app.live-full .livebar .nm .crest,#app.live-full .livebar .nm svg,#app.live-full .livebar .nm img{width:20px!important;height:20px!important}
+  #app.live-full .livebar #liveScore{font-size:22px!important;padding:0 10px!important;line-height:1.25;white-space:nowrap}
+  #app.live-full .livebar .clock{padding:1px 8px!important;font-size:10.5px!important}
+  #app.live-full .livemain>.hint,#app.live-full .liveMgrBar{display:none!important}
+  #app.live-full .livepitch{flex:1 1 0!important;min-height:0!important;width:auto!important;height:auto!important;max-width:100%!important;align-self:center!important;margin:0!important}
+  #app.live-full .livebar .sc{display:flex!important;align-items:center;gap:8px;min-width:0!important}
+  #app.live-full .livebar .clock{margin:0!important}
+  #app.live-full .chipbar{flex-wrap:wrap!important;gap:5px!important;justify-content:center!important;padding:0!important}
+  #app.live-full .chipbar .chip,#app.live-full .chipbar button{padding:4px 10px!important;font-size:12px!important;min-height:0!important}
+  #app.live-full .livewrap{position:fixed!important;inset:0!important;height:auto!important;border-radius:0!important;border:0!important;min-height:0!important;flex-direction:row!important;z-index:5}
+  #app.live-full .livemain{flex:1 1 62%!important;min-width:0!important;min-height:0!important;height:100%!important;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))!important}
+  #app.live-full .liveside{flex:0 0 36%!important;max-width:36%!important;min-width:0!important;min-height:0!important;max-height:100%!important;border-left:1px solid var(--line)!important;border-top:0!important}
+  #app.live-full #liveBanner{position:absolute!important;left:8px;right:8px;top:44px;z-index:8;pointer-events:none}
+}
+</style>
+</head>
 <!-- built and developed by Amagemu (panar.co.za) -->
 <body>
 
@@ -6570,10 +6601,10 @@ function showMatchPreview(opp, mySide, kind, next) {
   const homeS = mySide === 'h' ? sm : so, awayS = mySide === 'h' ? so : sm;
   const homeCoords = FORM_COORDS[homeT.formation] || FORM_COORDS['4-4-2'];
   const awayCoords = FORM_COORDS[awayT.formation] || FORM_COORDS['4-4-2'];
-  const lineupsHTML = `<div class="mpVs">
-      <div class="mpTeam"><div class="mpKit">${bigKitSVG(homeT, false, 46)}</div><div class="mpCrest">${crestHTML(homeT, 36)}</div><b>${esc(homeT.s)}</b></div>
+  const mpKit = (t, away) => { const sp = t.currentSponsor; return `<div class="kitBigWrap">${bigKitSVG(t, away, 92)}<div class="kitBigBadge">${crestHTML(t, 26)}</div><div class="kitBigSponsor">${sp ? (!away && sp.logo ? `<img src="${esc(sp.logo)}" alt="${esc(sp.name)}" style="width:100%;max-height:18px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))">` : esc(sp.name).toUpperCase()) : 'NO SPONSOR'}</div></div>`; };   const lineupsHTML = `<div class="mpVs">
+      <div class="mpTeam"><div class="mpRow">${mpKit(homeT, false)}<div class="mpCrest">${crestHTML(homeT, 36)}</div></div><b>${esc(homeT.s)}</b></div>
       <div class="mpVsBadge">VS</div>
-      <div class="mpTeam"><div class="mpKit">${bigKitSVG(awayT, true, 46)}</div><div class="mpCrest">${crestHTML(awayT, 36)}</div><b>${esc(awayT.s)}</b></div>
+      <div class="mpTeam"><div class="mpRow">${mpKit(awayT, true)}<div class="mpCrest">${crestHTML(awayT, 36)}</div></div><b>${esc(awayT.s)}</b></div>
     </div>
     <div class="mpPitches">
       <div class="mpPitchCol">
