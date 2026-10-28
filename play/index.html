@@ -5664,7 +5664,7 @@ const RESIGN_REASONS = [   { id: 'challenge', label: 'I want a new challenge' },
 $('#homeBtn').onclick = () => goTo('bathini');
 $('#backBtn').onclick = navBack;
 $('#fwdBtn').onclick = navFwd;
-$('#careerBtn').onclick = openCareerModal; function headerContinue() {   if (autoSimTimer) { stopAutoSim(); return; }   if (liveState) { goTo('match'); return; }   if (G.finished) { doEndSeason(); return; }   if (isCupDayToday()) { goTo('match'); if (G.liveMode) startCupMatchday(); else quickSimCupDay(); return; }   if (isMatchdayToday()) { goTo('match'); if (G.liveMode) startLive(); else simRounds(1); return; }   startAutoSim(); } $('#contBtn').onclick = headerContinue;
+$('#careerBtn').onclick = openCareerModal; function headerContinue() {   if (autoSimTimer) { stopAutoSim(); return; }   if (liveState) { goTo('match'); return; }   if (G.finished) { doEndSeason(); return; }   if (G.jobless) { startAutoSim(); return; }   if (isCupDayToday()) { goTo('match'); if (G.liveMode) startCupMatchday(); else { bumpCurDayForCup(G); const ties = playCupRound(G, false); afterCupMatchday({ cup: ties }); } return; }   if (isMatchdayToday()) { goTo('match'); if (G.liveMode) startLive(); else simRounds(1); return; }   startAutoSim(); } $('#contBtn').onclick = headerContinue;
 window.addEventListener('beforeunload', e => {
   if (!G || leavingApp) return;
   save();
@@ -6024,7 +6024,7 @@ function contWhy(a) {
   if (imp) return (imp.from === 'Board of Directors' ? 'Message from the board: ' : 'Important message: ') + imp.subject;
   if ($('#scrim') && !$('#scrim').hidden) return 'Something needs your attention.';
   return null;
-} function startAutoSim() {   if (autoSimTimer || isMatchdayToday() || isCupDayToday()) return;   const d0 = new Date(currentDateISO() + 'T12:00:00Z');   calY = d0.getUTCFullYear(); calM = d0.getUTCMonth();   autoSimTimer = setInterval(() => {      if (isMatchdayToday() || isCupDayToday() || G.finished) { const md = isMatchdayToday() || isCupDayToday(); stopAutoSim(); if (md) { toast('Matchday today.'); matchdayChime(); } return; }     const _cs = contSnap(); advanceOneDay(); const _cw = contWhy(_cs); if (_cw) { stopAutoSim(); toast(_cw); try { matchdayChime(); } catch (e) { } }     const d = new Date(currentDateISO() + 'T12:00:00Z');     calY = d.getUTCFullYear(); calM = d.getUTCMonth();     render();   }, 250);   goTo('calendar'); } function stopAutoSim() { if (autoSimTimer) { clearInterval(autoSimTimer); autoSimTimer = null; } render(); } function stepDayOnCalendar() {   if (autoSimTimer || isMatchdayToday() || G.finished) return;   const d0 = new Date(currentDateISO() + 'T12:00:00Z');   calY = d0.getUTCFullYear(); calM = d0.getUTCMonth();   goTo('calendar');   setTimeout(() => {     advanceOneDay();     const d = new Date(currentDateISO() + 'T12:00:00Z');     calY = d.getUTCFullYear(); calM = d.getUTCMonth();     render();     toast(isMatchdayToday() ? 'Matchday today.' : 'No match today.'); if (isMatchdayToday()) matchdayChime();   }, 300); } function renderActions() {
+} function startAutoSim() {   if (autoSimTimer || (!G.jobless && (isMatchdayToday() || isCupDayToday()))) return;   const d0 = new Date(currentDateISO() + 'T12:00:00Z');   calY = d0.getUTCFullYear(); calM = d0.getUTCMonth();   autoSimTimer = setInterval(() => {      if ((!G.jobless && (isMatchdayToday() || isCupDayToday())) || G.finished) { const md = !G.jobless && (isMatchdayToday() || isCupDayToday()); stopAutoSim(); if (md) { toast('Matchday today.'); matchdayChime(); } return; }     const _cs = contSnap(); advanceOneDay(); const _cw = contWhy(_cs); if (_cw) { stopAutoSim(); toast(_cw); try { matchdayChime(); } catch (e) { } }     const d = new Date(currentDateISO() + 'T12:00:00Z');     calY = d.getUTCFullYear(); calM = d.getUTCMonth();     render();   }, 250);   goTo('calendar'); } function stopAutoSim() { if (autoSimTimer) { clearInterval(autoSimTimer); autoSimTimer = null; } render(); } function stepDayOnCalendar() {   if (autoSimTimer || isMatchdayToday() || G.finished) return;   const d0 = new Date(currentDateISO() + 'T12:00:00Z');   calY = d0.getUTCFullYear(); calM = d0.getUTCMonth();   goTo('calendar');   setTimeout(() => {     advanceOneDay();     const d = new Date(currentDateISO() + 'T12:00:00Z');     calY = d.getUTCFullYear(); calM = d.getUTCMonth();     render();     toast(isMatchdayToday() ? 'Matchday today.' : 'No match today.'); if (isMatchdayToday()) matchdayChime();   }, 300); } function renderActions() {
   const a = $('#actions'); a.innerHTML = '';
   if (liveState) return;
   if (autoSimTimer) { const sb = el('button', 'btn', 'Stop'); sb.onclick = stopAutoSim; a.appendChild(sb); a.appendChild(el('span', 'hint', 'Simulating days…')); return; }
@@ -6032,6 +6032,11 @@ function contWhy(a) {
     const b = el('button', 'btn', `Start ${seasonLabel(G.season + 1)}`);
     b.onclick = doEndSeason; a.appendChild(b);
     a.appendChild(el('span', 'hint', 'Promotion, relegation, contracts and the academy intake are settled next.'));
+    return;
+  }
+  if (G.jobless) {
+    const jb = el('button', 'btn', 'Continue'); jb.onclick = headerContinue; a.appendChild(jb);
+    a.appendChild(el('span', 'hint', 'Looking for a new club — keep going until an offer or a response comes in.'));
     return;
   }
 const ndBtn = el('button', 'btn ghost', 'Next day'); ndBtn.disabled = isMatchdayToday(); ndBtn.title = isMatchdayToday() ? 'Play today\'s match first' : 'Advance one day'; ndBtn.disabled = false; ndBtn.title = ''; ndBtn.textContent = (isMatchdayToday() || isCupDayToday()) ? 'Play match' : 'Continue'; ndBtn.className = 'btn'; ndBtn.onclick = headerContinue; a.appendChild(ndBtn);
