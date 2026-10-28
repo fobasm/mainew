@@ -2238,7 +2238,7 @@ function dateForRound(round, season) {
 const DOW_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function currentDateISO() { return new Date(seasonStartUTC(G.season) + (G.curDay || 0) * 86400000).toISOString().slice(0, 10); }
 function isMatchdayToday() { return !G.finished && currentDateISO() === dateForRound(G.round, G.season); }
-function cupDayIdx(G) { const c = G.cup; if (!c || c.done || c.stage >= CUP_AT.length) return null; const d = new Date(dateForRound(CUP_AT[c.stage] - 1, G.season) + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 3); return Math.round((d.getTime() - seasonStartUTC(G.season)) / 86400000); } function isCupDayToday() { if (G.finished || !cupDueNow(G)) return false; const i = cupDayIdx(G); return i != null && (G.curDay || 0) >= i; } /* ---- transfer desk: clubs can also come in between matchdays while a window is open ---- */
+function cupDayIdx(G) { const c = G.cup; if (!c || c.done || c.stage >= CUP_AT.length) return null; const d = new Date(dateForRound(CUP_AT[c.stage] - 1, G.season) + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 3); return Math.round((d.getTime() - seasonStartUTC(G.season)) / 86400000); } function isDomCupDayToday() { if (G.finished || !cupDueNow(G)) return false; const i = cupDayIdx(G); return i != null && (G.curDay || 0) >= i; } function isCupDayToday() { return isDomCupDayToday() || isContDayToday(); } /* ---- transfer desk: clubs can also come in between matchdays while a window is open ---- */
 function dailyTransferDesk() {
   if (G.finished || G.jobless || !inTransferWindow(G) || (G.curDay || 0) % 3) return;
   const have = new Set((G.pendingBids || []).map(b => b.pid + ':' + b.from));
@@ -5663,7 +5663,7 @@ const RESIGN_REASONS = [   { id: 'challenge', label: 'I want a new challenge' },
 $('#homeBtn').onclick = () => goTo('bathini');
 $('#backBtn').onclick = navBack;
 $('#fwdBtn').onclick = navFwd;
-$('#careerBtn').onclick = openCareerModal; function headerContinue() {   if (autoSimTimer) { stopAutoSim(); return; }   if (liveState) { goTo('match'); return; }   if (G.finished) { doEndSeason(); return; }   if (isCupDayToday()) { goTo('match'); if (G.liveMode) startCupMatchday(); else { bumpCurDayForCup(G); const ties = playCupRound(G, false); afterCupMatchday({ cup: ties }); } return; }   if (isMatchdayToday()) { goTo('match'); if (G.liveMode) startLive(); else simRounds(1); return; }   startAutoSim(); } $('#contBtn').onclick = headerContinue;
+$('#careerBtn').onclick = openCareerModal; function headerContinue() {   if (autoSimTimer) { stopAutoSim(); return; }   if (liveState) { goTo('match'); return; }   if (G.finished) { doEndSeason(); return; }   if (isCupDayToday()) { goTo('match'); if (G.liveMode) startCupMatchday(); else quickSimCupDay(); return; }   if (isMatchdayToday()) { goTo('match'); if (G.liveMode) startLive(); else simRounds(1); return; }   startAutoSim(); } $('#contBtn').onclick = headerContinue;
 window.addEventListener('beforeunload', e => {
   if (!G || leavingApp) return;
   save();
@@ -6033,6 +6033,15 @@ function contWhy(a) {
     return;
   }
 const ndBtn = el('button', 'btn ghost', 'Next day'); ndBtn.disabled = isMatchdayToday(); ndBtn.title = isMatchdayToday() ? 'Play today\'s match first' : 'Advance one day'; ndBtn.disabled = false; ndBtn.title = ''; ndBtn.textContent = (isMatchdayToday() || isCupDayToday()) ? 'Play match' : 'Continue'; ndBtn.className = 'btn'; ndBtn.onclick = headerContinue; a.appendChild(ndBtn);
+  if (cupLikeNext() === 'cont') {
+    const L = contPending(), home = (L.stage === 3 || L.leg === 1) ? L.a : L.b, atHome = contMine(home), oppE = contMine(L.a) ? L.b : L.a;
+    const b1 = el('button', 'btn cupBtn', `🌍 ${G.liveMode ? 'Play' : 'Sim'} ${contName(L)} — ${contRoundLabel(L)}`);
+    b1.onclick = () => startCupMatchday();
+    a.appendChild(b1);
+    const b2 = el('button', 'btn ghost', 'Quick sim'); b2.onclick = () => contQuickSim(); a.appendChild(b2);
+    a.appendChild(el('span', 'hint cupHint', `🌍   ${atHome ? 'Home to' : 'Away to'} ${cafShort(G, oppE)} in the ${contName(L)}`));
+    return;
+  }
   if (cupDueNow(G)) {
     if (!G.cup.pendingTies) cupPairStage(G);
     const mine = G.cup.pendingTies.find(p => p.h === G.myTeam || p.a === G.myTeam);
@@ -6677,6 +6686,7 @@ function startLiveCup() {
 }
 /* ---- standalone cup matchday (its own day, separate from the league) ---- */
 function startCupMatchday() {
+  if (cupLikeNext() === 'cont') { startContDay(); return; }
   if (!cupDueNow(G)) return;
   bumpCurDayForCup(G);
   if (G.liveMode) {
