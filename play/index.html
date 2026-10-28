@@ -4931,7 +4931,7 @@ function kitStyleOf(t) {
   let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
   return h % 5;
 }
-function bigKitSVG(t, away, size) {
+function kitColors(t, away) { return away ? { body: t.a1 || t.c2, trim: t.a2 || t.c1 } : { body: t.c1, trim: t.c2 }; } function bigKitSVG(t, away, size) {
   const w = size || 200;
   const id = ++KIT_UID;
   const _kc = kitColors(t, away), body = _kc.body;
@@ -5118,7 +5118,7 @@ function bigKitSVG(t, away, size) {
 
 function kitSVG(t, away, size) {
   const s = size || 76, id = ++KIT_UID;
-  const body = away ? t.c2 : t.c1;
+  const _kc = kitColors(t, away), body = _kc.body;
   const trim = _kc.trim;
   let stripes = '';
   for (let x = 13; x < 47; x += 4) stripes += `<rect x="${x}" y="13" width="1.8" height="42" fill="#000" opacity=".08"/>`;
