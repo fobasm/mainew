@@ -4596,10 +4596,10 @@ function sponsorOffersCached(G) {   const t = G.teams[G.myTeam], key = G.season 
   const tierMult = [1, 0.42, 0.16, 0.06, 0.02][t.tier] || 0.02;
   const repMult = 0.6 + (t.rep / 10) * 0.8;
   const mult = {};
-  return SPONSORS.map(s => {
-    if (mult[s.base] == null) mult[s.base] = 0.85 + rnd() * 0.3;
-    const amount = Math.max(0.15, Math.round(s.base * tierMult * repMult * mult[s.base] * 100) / 100);
-    const freq = rnd() < 0.5 ? 'monthly' : 'upfront';
+  const SP_R = { 'panar.co.za': 1.0, "Wesley's Theory Holdings": 0.94, 'Sana Logistics': 0.93, 'Haibo (Pty) Ltd': 0.9, 'Ama Artist': 0.89, '@brightntuliart': 0.88, 'Fatcat Clothing': 0.87, 'Thenga X': 0.86, 'The GBVF Action Hub': 0.85, 'Football Is Life Organisation': 0.84 };   const pan = SPONSORS.filter(x => x.name === 'panar.co.za'), rest = shuffle(SPONSORS.filter(x => x.name !== 'panar.co.za'));   const pool = shuffle((rnd() < 0.8 ? pan.concat(rest.slice(0, 5)) : rest.slice(0, 6)));   return pool.map(s => {
+    const fq = rnd() < 0.5 ? 'monthly' : 'upfront', noise = 0.84 + rnd() * 0.32;
+    const amount = Math.max(0.15, Math.round(14 * (SP_R[s.name] || 0.85) * noise * (fq === 'monthly' ? 1.06 : 1) * tierMult * repMult * 100) / 100);
+    const freq = fq;
     return { name: s.name, icon: s.icon, img: s.img, c1: s.c1, c2: s.c2, amount, freq };
   });
 }
