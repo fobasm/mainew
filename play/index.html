@@ -6286,7 +6286,7 @@ function mpTick() {
     b.style.boxShadow = cur ? 'inset 0 0 0 1px var(--gold)' : '';
   });
   document.querySelectorAll('#mpList [data-md]').forEach(sp => { const x = _mdur[sp.dataset.md]; sp.textContent = x ? fmtTime(x) : '…'; });
-  return true;
+  return true; 
 }
 function openSoundModal() {
   const row = (id, label, val) => `<div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${label}</span><span class="hint" id="${id}Val">${Math.round(val * 100)}%</span></div><input type="range" id="${id}" min="0" max="100" value="${Math.round(val * 100)}" style="width:100%;accent-color:var(--gold)"></div>`;
