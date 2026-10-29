@@ -4555,7 +4555,94 @@ function contractNegotiate(cfg, cb) {
     };
   };
   draw();
-} function jobNegotiationFancy(cfg) {   if (!window.__jnErr) { window.__jnErr = 1; window.addEventListener('error', e => { try { toastWarn('Error: ' + e.message); } catch (x) { } }); }   const t = cfg.team, ext = cfg.heading === 'Contract Extension';   const wage0 = cfg.wage != null ? cfg.wage : mgrWage(t, cfg.mult || 1);   const years0 = cfg.years || 2;   let offerW = wage0, tries = 3, note = '';   const old = document.querySelector('.jnScrim'); if (old) old.remove();   const sc = document.createElement('div'); sc.className = 'jnScrim'; document.body.appendChild(sc);   const done = (k, terms) => {     sc.remove();     if (k === 'accept') { signCeremony({ manager: true, team: t, wage: terms.wage, years: terms.years, ext }, () => { window.__jobTerms = { tid: t.id, wage: terms.wage, years: terms.years }; try { cfg.onChoice('accept', terms); } finally { window.__jobTerms = null; } }); }     else if (cfg.onChoice) cfg.onChoice('reject');   };   const draw = () => {     const lo = offerW * 0.8, hi = offerW * 1.5;     sc.innerHTML = `<div class="jnCard"><div class="jnHead">${crestHTML(t, 38)}<div><h3>${esc(cfg.heading)}</h3><small>${esc(t.n)} · ${TIER_SHORT[t.tier]}</small></div><button class="jnX" aria-label="Close">×</button></div>       <div class="jnBody">         <p>${ext ? `${esc(t.n)} want to keep you.` : `${esc(t.n)} want you as their manager.`} Their offer: <b style="color:#fff">${money(offerW)}</b> a season for <b style="color:#fff">${years0} year${years0 === 1 ? '' : 's'}</b>.</p>         ${note ? `<p style="color:#f2b928">${esc(note)}</p>` : ''}         <label>Wage a season</label>         <input class="range" type="range" id="jnW" min="${lo.toFixed(2)}" max="${hi.toFixed(2)}" step="0.01" value="${offerW.toFixed(2)}">         <div class="jnVal"><span>Wage</span><b id="jnWV"></b></div>         <label>Contract length</label>         <input class="range" type="range" id="jnY" min="1" max="5" step="1" value="${years0}">         <div class="jnVal"><span>Years</span><b id="jnYV"></b></div>         <div class="jnBar"><i id="jnBar"></i></div>         <p id="jnOdds" style="margin:6px 0 0;font-size:13px;color:#8f98a2"></p>         <p style="margin:8px 0 0;font-size:12.5px;color:#6b737c">${tries} counter-offer${tries === 1 ? '' : 's'} left before they walk away.</p>       </div>       <div class="jnFoot"><button class="btn ghost sm" id="jnNo">Walk away</button><button class="btn ghost sm" id="jnAcc">Accept their offer</button><button class="btn sm" id="jnCtr">Counter-offer</button></div></div>`;     const wr = sc.querySelector('#jnW'), yr = sc.querySelector('#jnY');     const chance = (w, y) => {       let c = w <= offerW ? 1 : 1 - (w / offerW - 1) * 2.4;       c -= Math.max(0, y - years0) * 0.03; c += Math.max(0, years0 - y) * 0.02;       return clamp(c, 0.04, 0.97);     };     const upd = () => {       const w = +wr.value, y = +yr.value, c = chance(w, y);       sc.querySelector('#jnWV').textContent = money(w);       sc.querySelector('#jnYV').textContent = y + (y === 1 ? ' year' : ' years');       const bar = sc.querySelector('#jnBar'); bar.style.width = (c * 100).toFixed(0) + '%'; bar.style.background = c > 0.66 ? '#3ddc84' : c > 0.33 ? '#f2b928' : '#ff6b6b';       sc.querySelector('#jnOdds').textContent = c > 0.85 ? 'They should be happy with this.' : c > 0.5 ? 'They might go for it.' : c > 0.2 ? 'A stretch. They may refuse.' : 'Far too much. They will not pay this.';     };     wr.oninput = upd; yr.oninput = upd; try { upd(); } catch (e) { console.error(e); }     sc.querySelector('.jnX').onclick = () => done('reject');     sc.querySelector('#jnNo').onclick = () => done('reject');     sc.querySelector('#jnAcc').onclick = () => done('accept', { wage: Math.round(offerW * 100) / 100, years: years0 });     sc.querySelector('#jnCtr').onclick = () => {       const w = Math.round(+wr.value * 100) / 100, y = +yr.value;       if (Math.random() < chance(w, y)) { done('accept', { wage: w, years: y }); return; }       tries--;       if (tries <= 0) { sc.remove(); toastWarn(`${t.s} lose patience and withdraw their offer.`); if (cfg.onChoice) cfg.onChoice('reject'); return; }       offerW = Math.round(offerW * 1.02 * 100) / 100; note = `${t.s} stand firm but nudge their offer up slightly.`;       draw();     };   };   draw(); } function takeJob(G, id, wage, years) {   ensureMgr(G);   const m = G.manager, oldClub = G.teams[G.myTeam], wasJobless = !!G.jobless;   const T = window.__jobTerms && window.__jobTerms.tid === id ? window.__jobTerms : null;   if (T) { wage = T.wage; years = T.years; }   if (wage == null) wage = mgrWage(G.teams[id]);   years = years || 3;   if (!wasJobless) {     const kind = G.boardFired ? 'sacked' : 'left';     const txt = G.boardFired ? `${m.name} was sacked.` : `${m.name} left to take charge of ${G.teams[id].n}.`;     openVacancy(G, oldClub.id, kind, txt, { blocked: true });   }   G.vac = G.vac.filter(v => v.tid !== id);   G.vacApps = []; G.vacOffers = [];   G.myTeam = id; G.jobless = false;   if (G._liveBefore != null) { G.liveMode = G._liveBefore; G._liveBefore = null; }   m.clubs = m.clubs || [];   m.clubs.push({ id, from: G.season });   m.wage = wage; m.contractEnd = G.season + years - 1; m.renewal = null; m.lastWage = null;   const t = G.teams[id]; t.mgr = Object.assign(newAiMgr(t), { name: m.name, since: G.season, apptDay: G.curDay || 0 });   news(G, 'career', wasJobless ? `${m.name} is appointed manager of ${t.n}.` : `${m.name} leaves ${oldClub.s} to take charge of ${t.n}.`);   mail(G, { cat: 'career', from: 'Board of Directors', subject: `Welcome to ${t.n}`, body: [`You are the new manager of ${t.n}.`],     rows: [['Wage', money(wage) + ' a season'], ['Contract', `${years} year${years === 1 ? '' : 's'}`], ['Runs until', `June ${m.contractEnd + 1}`]] });   mail(G, { cat: 'personal', from: pick(['Mom', 'Dad', 'Your Brother', 'Your Sister', 'An Old Friend']), subject: 'Congratulations on the New Job!',     body: [`Just heard you're taking over at ${t.n} — congratulations!`, `We're all so proud of you. Go show them what you can do.`] }); } function takeJobOld(G, id, wage) {
+}
+  /* ---- contract negotiation v2: fits short phone screens, and says clearly what was agreed ---- */
+function openContractOfferOld(cfg) {
+  if (cfg.wage == null) return ctrCardRaw(cfg);
+  const years = cfg.years || 3, tries = cfg.negTries == null ? 3 : cfg.negTries, deal = ctrDealLine(cfg.wage, years, cfg.fixedYears);
+  let had = false;
+  const paragraphs = (cfg.paragraphs || []).map(p => /worth <b>/.test(p) ? (had = true, deal) : p);
+  if (!had) paragraphs.push(deal);
+  if (cfg.agreedNote) paragraphs.push(cfg.agreedNote);
+  const options = (cfg.options || []).filter(o => o.key !== 'negotiate');
+  if (tries > 0) { const i = options.findIndex(o => o.key === 'reject'); options.splice(i < 0 ? options.length : i, 0, { key: 'negotiate', label: 'Negotiate' }); }
+  ctrCardRaw(Object.assign({}, cfg, {
+    years, paragraphs, options,
+    onChoice: k => {
+      if (k === 'negotiate') {
+        contractNegotiate({ team: cfg.team, wage: cfg.wage, years, fixedYears: cfg.fixedYears, tries }, r => {
+          const note = r.agreed ? `<b>Agreed.</b> ${money(r.wage)} a season${cfg.fixedYears ? '' : ' for ' + r.years + ' year' + (r.years === 1 ? '' : 's')} (it was ${money(cfg.wage)}${cfg.fixedYears ? '' : ', ' + years + ' year' + (years === 1 ? '' : 's')}). Accept to sign.` : '';
+          openContractOfferOld(Object.assign({}, cfg, r.agreed ? { wage: r.wage, years: r.years, defaultKey: 'accept', agreedNote: note, negTries: r.tries } : { years, agreedNote: '', negTries: r.tries }));
+        });
+        return;
+      }
+      if (k === 'accept') { window.__ctrTerms = { wage: cfg.wage, years }; try { cfg.onChoice('accept', { wage: cfg.wage, years }); } finally { window.__ctrTerms = null; } }
+      else cfg.onChoice(k);
+    }
+  }));
+}
+function contractNegotiate(cfg, cb) {
+  if (!document.getElementById('cnStyle')) {
+    const st = document.createElement('style'); st.id = 'cnStyle';
+    st.textContent = `.cnRows{display:block}.cnCol{margin-top:2px}.cnNote{margin:6px 0 0;font-size:13px;color:#d13b3b;font-weight:600}
+      @media (max-height:480px){
+        body .jnCard .jnHead{padding:6px 12px}body .jnCard .jnHead h3{font-size:14px;margin:0}body .jnCard .jnHead svg,body .jnCard .jnHead img{width:28px;height:28px}
+        body .jnCard .jnBody{padding:8px 12px}body .jnCard .jnBody p{margin:0 0 4px;font-size:12px}
+        .cnRows{display:flex;gap:18px}.cnCol{flex:1;min-width:0}
+        body .jnCard .jnVal b{font-size:15px}body .jnCard .jnBar{margin-top:6px}
+        body .jnCard .jnFoot{padding:6px 12px}}`;
+    document.head.appendChild(st);
+  }
+  const t = cfg.team, base = cfg.wage, years0 = cfg.years; let offerW = base, tries = cfg.tries, note = '';
+  const old = document.querySelector('.jnScrim'); if (old) old.remove();
+  const sc = document.createElement('div'); sc.className = 'jnScrim'; document.body.appendChild(sc);
+  const fin = r => { sc.remove(); cb(Object.assign({ tries }, r)); };
+  const draw = () => {
+    const lo = base * 0.8, hi = base * 1.5;
+    sc.innerHTML = `<div class="jnCard"><div class="jnHead">${crestHTML(t, 38)}<div><h3>Negotiate</h3><small>${esc(t.n)} · ${TIER_SHORT[t.tier != null ? t.tier : t.t]}</small></div><button class="jnX" aria-label="Close">×</button></div>
+      <div class="jnBody">
+        <p>Their offer: <b>${money(offerW)}</b> a season${cfg.fixedYears ? '' : ` for <b>${years0} year${years0 === 1 ? '' : 's'}</b>`}. Move a slider, then press Counter-offer.</p>
+        <div class="cnRows">
+          <div class="cnCol"><label>Wage a season</label>
+            <input class="range" type="range" id="cnW" min="${lo.toFixed(2)}" max="${hi.toFixed(2)}" step="0.01" value="${offerW.toFixed(2)}">
+            <div class="jnVal"><span>Wage</span><b id="cnWV"></b></div></div>
+          ${cfg.fixedYears ? '' : `<div class="cnCol"><label>Contract length</label>
+            <input class="range" type="range" id="cnY" min="1" max="5" step="1" value="${years0}">
+            <div class="jnVal"><span>Years</span><b id="cnYV"></b></div></div>`}
+        </div>
+        <div class="jnBar"><i id="cnBar"></i></div>
+        <p id="cnOdds" style="margin:4px 0 0;font-size:12.5px;color:#6b7785"></p>
+        ${note ? `<p class="cnNote">${esc(note)}</p>` : ''}
+        <p style="margin:4px 0 0;font-size:12px;color:#8a95a1">${tries} counter-offer${tries === 1 ? '' : 's'} left.</p>
+      </div>
+      <div class="jnFoot"><button class="btn ghost sm" id="cnBack">Back to the offer</button><button class="btn sm" id="cnGo">Counter-offer</button></div></div>`;
+    const wr = sc.querySelector('#cnW'), yr = sc.querySelector('#cnY');
+    const chance = (w, y) => {
+      let c = w <= offerW ? 1 : 1 - (w / offerW - 1) * 2.4;
+      c -= Math.max(0, y - years0) * 0.03; c += Math.max(0, years0 - y) * 0.02;
+      return clamp(c, 0.04, 0.97);
+    };
+    const upd = () => {
+      const w = +wr.value, y = yr ? +yr.value : years0, c = chance(w, y);
+      sc.querySelector('#cnWV').textContent = money(w);
+      if (yr) sc.querySelector('#cnYV').textContent = y + (y === 1 ? ' year' : ' years');
+      const bar = sc.querySelector('#cnBar'); bar.style.width = (c * 100).toFixed(0) + '%'; bar.style.background = c > 0.66 ? '#3ddc84' : c > 0.33 ? '#f2b928' : '#ff6b6b';
+      sc.querySelector('#cnOdds').textContent = c > 0.85 ? 'They should be happy with this.' : c > 0.5 ? 'They might go for it.' : c > 0.2 ? 'A stretch. They may refuse.' : 'Far too much. They will not pay this.';
+    };
+    wr.oninput = upd; if (yr) yr.oninput = upd; upd();
+    sc.querySelector('.jnX').onclick = sc.querySelector('#cnBack').onclick = () => fin({ agreed: false });
+    sc.querySelector('#cnGo').onclick = () => {
+      const w = Math.round(+wr.value * 100) / 100, y = yr ? +yr.value : years0;
+      if (Math.abs(w - offerW) < 0.005 && y === years0) { note = 'Nothing has changed. Move the wage or the length first.'; draw(); return; }
+      if (rnd() < chance(w, y)) { tries--; fin({ agreed: true, wage: w, years: y }); return; }
+      tries--;
+      if (tries <= 0) { toastWarn(`${t.s} will not move any further.`); fin({ agreed: false }); return; }
+      offerW = Math.round(offerW * 1.02 * 100) / 100; note = `${t.s} said no, but nudged their offer up a little.`; draw();
+    };
+  };
+  draw();
+}
+  function jobNegotiationFancy(cfg) {   if (!window.__jnErr) { window.__jnErr = 1; window.addEventListener('error', e => { try { toastWarn('Error: ' + e.message); } catch (x) { } }); }   const t = cfg.team, ext = cfg.heading === 'Contract Extension';   const wage0 = cfg.wage != null ? cfg.wage : mgrWage(t, cfg.mult || 1);   const years0 = cfg.years || 2;   let offerW = wage0, tries = 3, note = '';   const old = document.querySelector('.jnScrim'); if (old) old.remove();   const sc = document.createElement('div'); sc.className = 'jnScrim'; document.body.appendChild(sc);   const done = (k, terms) => {     sc.remove();     if (k === 'accept') { signCeremony({ manager: true, team: t, wage: terms.wage, years: terms.years, ext }, () => { window.__jobTerms = { tid: t.id, wage: terms.wage, years: terms.years }; try { cfg.onChoice('accept', terms); } finally { window.__jobTerms = null; } }); }     else if (cfg.onChoice) cfg.onChoice('reject');   };   const draw = () => {     const lo = offerW * 0.8, hi = offerW * 1.5;     sc.innerHTML = `<div class="jnCard"><div class="jnHead">${crestHTML(t, 38)}<div><h3>${esc(cfg.heading)}</h3><small>${esc(t.n)} · ${TIER_SHORT[t.tier]}</small></div><button class="jnX" aria-label="Close">×</button></div>       <div class="jnBody">         <p>${ext ? `${esc(t.n)} want to keep you.` : `${esc(t.n)} want you as their manager.`} Their offer: <b style="color:#fff">${money(offerW)}</b> a season for <b style="color:#fff">${years0} year${years0 === 1 ? '' : 's'}</b>.</p>         ${note ? `<p style="color:#f2b928">${esc(note)}</p>` : ''}         <label>Wage a season</label>         <input class="range" type="range" id="jnW" min="${lo.toFixed(2)}" max="${hi.toFixed(2)}" step="0.01" value="${offerW.toFixed(2)}">         <div class="jnVal"><span>Wage</span><b id="jnWV"></b></div>         <label>Contract length</label>         <input class="range" type="range" id="jnY" min="1" max="5" step="1" value="${years0}">         <div class="jnVal"><span>Years</span><b id="jnYV"></b></div>         <div class="jnBar"><i id="jnBar"></i></div>         <p id="jnOdds" style="margin:6px 0 0;font-size:13px;color:#8f98a2"></p>         <p style="margin:8px 0 0;font-size:12.5px;color:#6b737c">${tries} counter-offer${tries === 1 ? '' : 's'} left before they walk away.</p>       </div>       <div class="jnFoot"><button class="btn ghost sm" id="jnNo">Walk away</button><button class="btn ghost sm" id="jnAcc">Accept their offer</button><button class="btn sm" id="jnCtr">Counter-offer</button></div></div>`;     const wr = sc.querySelector('#jnW'), yr = sc.querySelector('#jnY');     const chance = (w, y) => {       let c = w <= offerW ? 1 : 1 - (w / offerW - 1) * 2.4;       c -= Math.max(0, y - years0) * 0.03; c += Math.max(0, years0 - y) * 0.02;       return clamp(c, 0.04, 0.97);     };     const upd = () => {       const w = +wr.value, y = +yr.value, c = chance(w, y);       sc.querySelector('#jnWV').textContent = money(w);       sc.querySelector('#jnYV').textContent = y + (y === 1 ? ' year' : ' years');       const bar = sc.querySelector('#jnBar'); bar.style.width = (c * 100).toFixed(0) + '%'; bar.style.background = c > 0.66 ? '#3ddc84' : c > 0.33 ? '#f2b928' : '#ff6b6b';       sc.querySelector('#jnOdds').textContent = c > 0.85 ? 'They should be happy with this.' : c > 0.5 ? 'They might go for it.' : c > 0.2 ? 'A stretch. They may refuse.' : 'Far too much. They will not pay this.';     };     wr.oninput = upd; yr.oninput = upd; try { upd(); } catch (e) { console.error(e); }     sc.querySelector('.jnX').onclick = () => done('reject');     sc.querySelector('#jnNo').onclick = () => done('reject');     sc.querySelector('#jnAcc').onclick = () => done('accept', { wage: Math.round(offerW * 100) / 100, years: years0 });     sc.querySelector('#jnCtr').onclick = () => {       const w = Math.round(+wr.value * 100) / 100, y = +yr.value;       if (Math.random() < chance(w, y)) { done('accept', { wage: w, years: y }); return; }       tries--;       if (tries <= 0) { sc.remove(); toastWarn(`${t.s} lose patience and withdraw their offer.`); if (cfg.onChoice) cfg.onChoice('reject'); return; }       offerW = Math.round(offerW * 1.02 * 100) / 100; note = `${t.s} stand firm but nudge their offer up slightly.`;       draw();     };   };   draw(); } function takeJob(G, id, wage, years) {   ensureMgr(G);   const m = G.manager, oldClub = G.teams[G.myTeam], wasJobless = !!G.jobless;   const T = window.__jobTerms && window.__jobTerms.tid === id ? window.__jobTerms : null;   if (T) { wage = T.wage; years = T.years; }   if (wage == null) wage = mgrWage(G.teams[id]);   years = years || 3;   if (!wasJobless) {     const kind = G.boardFired ? 'sacked' : 'left';     const txt = G.boardFired ? `${m.name} was sacked.` : `${m.name} left to take charge of ${G.teams[id].n}.`;     openVacancy(G, oldClub.id, kind, txt, { blocked: true });   }   G.vac = G.vac.filter(v => v.tid !== id);   G.vacApps = []; G.vacOffers = [];   G.myTeam = id; G.jobless = false;   if (G._liveBefore != null) { G.liveMode = G._liveBefore; G._liveBefore = null; }   m.clubs = m.clubs || [];   m.clubs.push({ id, from: G.season });   m.wage = wage; m.contractEnd = G.season + years - 1; m.renewal = null; m.lastWage = null;   const t = G.teams[id]; t.mgr = Object.assign(newAiMgr(t), { name: m.name, since: G.season, apptDay: G.curDay || 0 });   news(G, 'career', wasJobless ? `${m.name} is appointed manager of ${t.n}.` : `${m.name} leaves ${oldClub.s} to take charge of ${t.n}.`);   mail(G, { cat: 'career', from: 'Board of Directors', subject: `Welcome to ${t.n}`, body: [`You are the new manager of ${t.n}.`],     rows: [['Wage', money(wage) + ' a season'], ['Contract', `${years} year${years === 1 ? '' : 's'}`], ['Runs until', `June ${m.contractEnd + 1}`]] });   mail(G, { cat: 'personal', from: pick(['Mom', 'Dad', 'Your Brother', 'Your Sister', 'An Old Friend']), subject: 'Congratulations on the New Job!',     body: [`Just heard you're taking over at ${t.n} — congratulations!`, `We're all so proud of you. Go show them what you can do.`] }); } function takeJobOld(G, id, wage) {
   const oldClub = G.teams[G.myTeam];
   G.myTeam = id;
   G.manager.clubs = G.manager.clubs || [];
