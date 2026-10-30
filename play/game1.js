@@ -5534,7 +5534,46 @@ function contWhy(a) {
   if (imp) return (imp.from === 'Board of Directors' ? 'Message from the board: ' : 'Important message: ') + imp.subject;
   if ($('#scrim') && !$('#scrim').hidden) return 'Something needs your attention.';
   return null;
-} function startAutoSim() {   if (autoSimTimer || isMatchdayToday() || isCupDayToday()) return;   const d0 = new Date(currentDateISO() + 'T12:00:00Z');   calY = d0.getUTCFullYear(); calM = d0.getUTCMonth();   autoSimTimer = setInterval(() => {      if (isMatchdayToday() || isCupDayToday() || G.finished) { const md = isMatchdayToday() || isCupDayToday(); stopAutoSim(); if (md) { toast('Matchday today.'); matchdayChime(); } return; }     const _cs = contSnap(); advanceOneDay(); const _cw = contWhy(_cs); if (_cw) { stopAutoSim(); toast(_cw); try { matchdayChime(); } catch (e) { } }     const d = new Date(currentDateISO() + 'T12:00:00Z');     calY = d.getUTCFullYear(); calM = d.getUTCMonth();     render();   }, 250);   if (tab === 'table' || tab === 'transfers') render(); else goTo('calendar'); } function stopAutoSim() { if (autoSimTimer) { clearInterval(autoSimTimer); autoSimTimer = null; } render(); } function stepDayOnCalendar() {   if (autoSimTimer || isMatchdayToday() || G.finished) return;   const d0 = new Date(currentDateISO() + 'T12:00:00Z');   calY = d0.getUTCFullYear(); calM = d0.getUTCMonth();   goTo('calendar');   setTimeout(() => {     advanceOneDay();     const d = new Date(currentDateISO() + 'T12:00:00Z');     calY = d.getUTCFullYear(); calM = d.getUTCMonth();     render();     toast(isMatchdayToday() ? 'Matchday today.' : 'No match today.'); if (isMatchdayToday()) matchdayChime();   }, 300); } 
+} /* while days are simulated, show only the calendar, centred: the results and fixtures panels come back when it stops */
+function calFocus(on) {
+  if (!document.getElementById('calFocusCss')) {
+    const st = document.createElement('style'); st.id = 'calFocusCss';
+    st.textContent = '#v-calendar.simming>:not(:first-child){display:none!important}#v-calendar.simming.on{display:flex;flex-direction:column;justify-content:center;min-height:calc(100vh - 190px)}';
+    document.head.appendChild(st);
+  }
+  const v = document.getElementById('v-calendar'); if (v) v.classList.toggle('simming', !!on);
+}
+/* ---- simulating days: the calendar stays put and only today moves forward ---- */
+function calCenter() {
+  const c = document.querySelector('#v-calendar .cd.today'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'center', inline: 'nearest' });
+}
+function calMark() { const v = $('#v-calendar'); if (v) { v.dataset.cy = String(calY); v.dataset.cm = String(calM); } }
+function calAdvance() {
+  const v = $('#v-calendar'); if (!v) return;
+  const d = new Date(currentDateISO() + 'T12:00:00Z'), y = d.getUTCFullYear(), m = d.getUTCMonth(), dd = d.getUTCDate();
+  if (v.dataset.cy !== String(y) || v.dataset.cm !== String(m)) { viewCalendar(); v.dataset.cy = String(y); v.dataset.cm = String(m); calCenter(); return; }
+  v.querySelectorAll('.cd').forEach(c => {
+    if (c.classList.contains('pad')) return;
+    const n = parseInt((c.querySelector('.dn') || {}).textContent, 10); if (!n) return;
+    c.classList.toggle('today', n === dd); c.classList.toggle('past', n < dd);
+  });
+}
+/* one day on: refresh only what changes (the date and the window pill) instead of rebuilding the whole screen */
+function autoTickRender() {
+  if (!autoSimTimer) return;
+  if (tab !== 'calendar') { render(); return; }
+  try {
+    const curD = new Date(currentDateISO() + 'T12:00:00Z');
+    $('#statDate').textContent = `${MONTH_NAMES[curD.getUTCMonth()]} ${curD.getUTCFullYear()}`;
+    const winOpen = inTransferWindow(G), winPill = $('#winPill'); windowTickCheck(winOpen);
+    if (winPill) {
+      winPill.className = 'winpill ' + (winOpen ? 'open' : 'shut');
+      winPill.textContent = winOpen ? `${currentWindowName(G)} open, ${windowCloses(G)} ${windowCloses(G) === 1 ? 'day' : 'days'} left` : `${currentWindowName(G)} opens in ${roundsToNextWindow(G)} ${roundsToNextWindow(G) === 1 ? 'day' : 'days'}`;
+    }
+  } catch (e) { }
+  calAdvance();
+}
+   function startAutoSim() {   if (autoSimTimer || isMatchdayToday() || isCupDayToday()) return;   const d0 = new Date(currentDateISO() + 'T12:00:00Z');   calY = d0.getUTCFullYear(); calM = d0.getUTCMonth();   autoSimTimer = setInterval(() => {      if (isMatchdayToday() || isCupDayToday() || G.finished) { const md = isMatchdayToday() || isCupDayToday(); stopAutoSim(); if (md) { toast('Matchday today.'); matchdayChime(); } return; }     const _cs = contSnap(); advanceOneDay(); const _cw = contWhy(_cs); if (_cw) { stopAutoSim(); toast(_cw); try { matchdayChime(); } catch (e) { } }     const d = new Date(currentDateISO() + 'T12:00:00Z');     calY = d.getUTCFullYear(); calM = d.getUTCMonth();     autoTickRender();   }, 250);   if (tab === 'table' || tab === 'transfers') render(); else { goTo('calendar'); calMark(); calFocus(true); setTimeout(calCenter, 150); } } function stopAutoSim() { if (autoSimTimer) { clearInterval(autoSimTimer); autoSimTimer = null; } calFocus(false); render(); } function stepDayOnCalendar() {   if (autoSimTimer || isMatchdayToday() || G.finished) return;   const d0 = new Date(currentDateISO() + 'T12:00:00Z');   calY = d0.getUTCFullYear(); calM = d0.getUTCMonth();   goTo('calendar');   setTimeout(() => {     advanceOneDay();     const d = new Date(currentDateISO() + 'T12:00:00Z');     calY = d.getUTCFullYear(); calM = d.getUTCMonth();     render();     toast(isMatchdayToday() ? 'Matchday today.' : 'No match today.'); if (isMatchdayToday()) matchdayChime();   }, 300); } 
 function renderActions() {
   const a = $('#actions'); a.innerHTML = '';
   if (liveState) return;
