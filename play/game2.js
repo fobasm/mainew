@@ -1778,7 +1778,7 @@ function txRow(p, club, opts) {
       : `<button class="btn ghost sm" data-pid="${p.id}">View</button> <button class="btn sm" data-buy="${p.id}" data-ask="${ask}" ${me().budget < ask * 0.6 ? 'disabled' : ''}>Bid</button>`}</td>
   </tr>`;
 }
-function viewTransfers() {
+/* transfer filters are kept with each save: restored when a save loads, written back on every change */ let txPrefsFor = null; function txPrefsSync() {   if (txPrefsFor !== G) {     txPrefsFor = G; const p = G.txPrefs || {};     txSection = p.section || 'search'; txFilter = p.filter || 'ALL'; txSearch = p.search || ''; txAge = p.age || 'ALL'; txSort = p.sort || 'rating';     txNat = p.nat || 'ALL'; txAgeX = p.ageX || 'ALL'; txLg = p.lg || 'ALL'; txMinR = p.minR || 0; txMinP = p.minP || 0;   }   G.txPrefs = { section: txSection, filter: txFilter, search: txSearch, age: txAge, sort: txSort, nat: txNat, ageX: txAgeX, lg: txLg, minR: txMinR, minP: txMinP }; } function viewTransfers() {   try { txPrefsSync(); } catch (e) { }
   const v = $('#v-transfers'), t = me(); v.classList.add('mmx', 'sqv');
   const ageOk = p => (txAgeX === 'ALL' || p.age === +txAgeX) && (txAge === 'ALL' || (txAge === 'U21' ? p.age <= 21 : txAge === '22-28' ? (p.age >= 22 && p.age <= 28) : p.age >= 29));
   const posOk = p => (txFilter === 'ALL' || p.pos === txFilter || POS_GROUP[p.pos] === txFilter) && p.rating >= txMinR && p.pot >= txMinP;
