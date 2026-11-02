@@ -4,8 +4,17 @@
 <script>/* works at any path: finds the site folder above /play/ so images, music and links resolve on the live site and on test sites */(function(){var p=location.pathname.replace(/[^\/]*$/,'').replace(/play\/$/,'');document.write('<base href="'+p+'">');})();</script>
 <link rel="canonical" href="https://mzansimanager.co.za/play/">
 <meta property="og:url" content="https://mzansimanager.co.za/play/">
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1748576501857716"
-     crossorigin="anonymous"></script>
+  <script>
+  (function () {
+    var inApp = /; wv\)/.test(navigator.userAgent) ||
+      (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    if (inApp) { document.documentElement.classList.add('inapp'); return; }
+    var s = document.createElement('script');
+    s.async = true; s.crossOrigin = 'anonymous';
+    s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1748576501857716';
+    document.head.appendChild(s);
+  })();
+  </script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-SP5YVYYE8Q"></script>
 <script>
