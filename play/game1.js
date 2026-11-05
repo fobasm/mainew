@@ -1897,6 +1897,15 @@ function commitMatch(G, tier, m, ctx) {
   tableUpdate(G, tier, m);
 }
 
+/* finishes the continental competitions and closes the season */
+function closeSeasonTail(G) {
+  let guard = 0;
+  while (G.africa.caf && !G.africa.caf.done && guard++ < 8) playCAFRound(G);
+  guard = 0; while (G.africa.confed && !G.africa.confed.done && guard++ < 8) playConfedRound(G);
+  while (G.africa.leagues[0].round < G.africa.leagues[0].fixtures.length) africaRound(G);
+  G.finished = true;
+}
+
 /* plays every fixture in the current round. skipMine = the user's match was played live */
 function playRound(G, skipMine) {
 if (G.round >= totalRounds(G)) return null;
