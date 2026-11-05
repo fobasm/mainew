@@ -1944,10 +1944,8 @@ if (G.round >= totalRounds(G)) return null;
     while (!G.cup.done && guard++ < 10) playCupRound(G);
     guard = 0; while (!G.super8.done && guard++ < 6) playKnockoutRound(G, G.super8, S8_ROUNDS, 6);
     guard = 0; while (!G.knockout.done && guard++ < 8) playKnockoutRound(G, G.knockout, KO_ROUNDS, 7);
-    guard = 0; while (G.africa.caf && !G.africa.caf.done && guard++ < 8) playCAFRound(G);
-    guard = 0; while (G.africa.confed && !G.africa.confed.done && guard++ < 8) playConfedRound(G);
-    while (G.africa.leagues[0].round < G.africa.leagues[0].fixtures.length) africaRound(G);
-    G.finished = true;
+    /* if your own continental final is still waiting to be played live, the season stays open until you have played it */
+    if (!contPending()) closeSeasonTail(G);
   }
   aiTransferTick(G);
   moraleTick(G);
