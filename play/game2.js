@@ -299,8 +299,9 @@ function doEndSeason2() {
   const showReview = () => {     const mineBreak = s.breakout.filter(b => b.club === G.myTeam);     if (mineBreak.length) setTimeout(() => { breakoutNote(); toast(`${mineBreak[0].name}${mineBreak.length > 1 ? ' and ' + (mineBreak.length - 1) + ' more' : ''} broke through this season.`); }, 2600);
     seasonSting(last.pos === 1 || s.cup === G.myTeam ? 'trophy' : s.promoted.includes(G.myTeam) ? 'promo' : s.relegated.includes(G.myTeam) ? 'down' : '');
     openLockedModal(`${seasonLabel(s.season)} review`, body,
-      `<button class="btn sm" id="revNext">Continue</button>`);
+      `<button class="btn ghost sm" id="revCard">Recap card</button><button class="btn sm" id="revNext">Continue</button>`);
     $('#modal').classList.add('mmx');
+    $('#revCard').onclick = () => { recapBack = showReview; openRecapCard(s.season); };
     $('#revNext').onclick = () => { closeModal(); trophyCelebrationFlow(s, last.pos, () => managerAwardFlow(s, () => postSeasonFlow(s))); };
   };
   if (totsXI.length) {
