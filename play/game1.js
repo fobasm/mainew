@@ -2987,7 +2987,7 @@ function generateBids(G, scale) {
    captain or a key starter. Genuine need only, same as transfer bids:
    it's entirely possible a week passes with no loan interest at all. */
 function loanEligible(t, p) {
-  if (p.loan) return false;
+  if (p.loan || p.notForSale) return false;
   if (t.captainId === p.id || t.viceCaptainId === p.id) return false;
   const inXI = (t.lineup || []).includes(p.id);
   return p.ll || p.reserve || !inXI || p.age <= 21;
