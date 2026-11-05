@@ -1443,14 +1443,14 @@ const CUP_ROUNDS = cupRoundNames(80);
    the January window opens again around the season's midpoint. */
 const WINDOW_SUMMER = [0, 1, 2, 3];
 const WINDOW_JAN = [18, 19, 20];
-const SEASON_MONTH_START = 6; /* July, 0-indexed */
+const SEASON_MONTH_START = 7; /* August, 0-indexed */
 function roundToMonth(round, season) {
   const monthsIn = Math.floor(round / 3);
   const m = (SEASON_MONTH_START + monthsIn) % 12;
   const y = season + Math.floor((SEASON_MONTH_START + monthsIn) / 12);
   return { m, y };
 }
-const DAYS_PER_ROUND = 10; /* real days between matchdays — keeps the grid in step with roundToMonth's 3-rounds-per-month pacing */
+const DAYS_PER_ROUND = 8; /* real days between matchdays — fits 38 rounds into an August-to-May season */
 function seasonStartUTC(season) { return Date.UTC(season, SEASON_MONTH_START, 1, 12); }
 function dateForRound(round, season) {
   return new Date(seasonStartUTC(season) + round * DAYS_PER_ROUND * 86400000).toISOString().slice(0, 10);
@@ -3264,8 +3264,8 @@ function africaSeasonEnd(G) {
 }
 
 /* ---------------- CAF Champions League ---------------- */
-const CAF_AT = [6, 12, 19, 25];
-const CONFED_AT = [7, 13, 20, 26];
+const CAF_AT = [10, 20, 30, 38]; /* final lands on round 38 — right as the league season ends */
+const CONFED_AT = [11, 21, 31, 38]; /* final lands on round 38 — right as the league season ends */
 const CAF_ROUNDS = ['Round of 16', 'Quarter-final', 'Semi-final', 'Final'];
 const CONFED_NAME = 'African Football Cup';
 
@@ -3387,7 +3387,7 @@ function playConfedRound(G) { return playContinentalRound(G, 'confed', CONFED_NA
 /* Mzansi8: last season's top eight of the Premiership, played early.
    Bayakhala Knockout: all 32 clubs of the top two divisions, mid-season. */
 const S8_AT = [2, 5, 9];
-const KO_AT = [15, 20, 24, 29];
+const KO_AT = [8, 16, 24, 32, 38]; /* 5 rounds for 32 clubs — final now explicitly lands on round 38, late in the season, instead of being mopped up */
 
 function buildExtraCups(G) {
   const st = sortTable(G, 0);
