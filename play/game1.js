@@ -4232,11 +4232,28 @@ function crestStarsSVG(t, s, h, n) {
   }
   return `<svg viewBox="0 0 ${s} ${h}" width="${s}" height="${h}" style="position:absolute;left:0;top:0;overflow:visible;pointer-events:none;z-index:2;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))">${out}</svg>`;
 }
+function crestStarsArc(sz, n) {
+  const S = Math.round(sz * 1.5), c = S / 2;
+  const st = Math.max(6, Math.round(S * 0.16)), k = st / 24;
+  const r = c + st * 0.52 + S * 0.02;
+  const dth = n > 1 ? ([0, 0, 1.75, 1.45, 1.3, 1.2][n] * st) / r : 0;
+  let out = '';
+  for (let i = 0; i < n; i++) {
+    const th = (i - (n - 1) / 2) * dth;
+    out += `<g transform="translate(${(c + r * Math.sin(th)).toFixed(2)} ${(c - r * Math.cos(th)).toFixed(2)}) rotate(${(th * 180 / Math.PI).toFixed(1)}) scale(${k.toFixed(4)}) translate(-12 -12)"><path d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.5 5.6 21.1 7 14l-5.3-5 7.2-.9z" fill="#f5c518" stroke="#8a5f10" stroke-width="1.2" stroke-linejoin="round"/></g>`;
+  }
+  return `<svg class="cst-a" viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" style="position:absolute;left:0;top:0;overflow:visible;pointer-events:none;z-index:2;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))">${out}</svg>`;
+}
 function crestHTML(t, size) {
   const base = crestBaseHTML(t, size), n = Math.min(5, cafStars(t)), sz = size || 22;
   if (!n || sz < 14) return base;
-  const h = (t.badge !== 'bright' && !t.icon) ? Math.round(sz * 1.15) : sz;
-  return `<span class="cstars" title="${cafStars(t)}x ${CAF_NAME} winners" style="position:relative;display:inline-block;flex:0 0 auto;line-height:0;vertical-align:middle">${base}${crestStarsSVG(t, sz, h, n)}</span>`;
+  const S = Math.round(sz * 1.5), p = Math.max(1, Math.round(S * 0.04));
+  const key = t.n + '|' + t.s, img = (window.CREST_EXTRA || {})[key] || CREST_IMGS[key];
+  const plain = !t.icon && t.badge !== 'bright' && !CREST_IMGS[key];
+  const inn = Math.round((S - 2 * p) / (plain ? 1.15 : 1));
+  const h = (!t.icon && t.badge !== 'bright' && !img) ? Math.round(inn * 1.15) : inn;
+  const flat = crestStarsSVG(t, inn, h, n).replace('<svg ', '<svg class="cst-b" ');
+  return `<span class="cstars" title="${cafStars(t)}x ${CAF_NAME} winners" style="position:relative;display:inline-block;flex:0 0 auto;line-height:0;vertical-align:middle">${base}${crestStarsArc(sz, n)}${flat}</span>`;
 }
 function crestBaseHTML(t, size) {   const _S = Math.round((size || 22) * 1.5), _p = Math.max(1, Math.round(_S * 0.04));   const _plain = !t.icon && t.badge !== 'bright' && !CREST_IMGS[t.n + '|' + t.s];   const _in = Math.round((_S - 2 * _p) / (_plain ? 1.15 : 1));   return `<span class="cbx" style="display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;box-sizing:border-box;width:${_S}px;height:${_S}px;padding:${_p}px;background:#fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4);vertical-align:middle">${crestRawHTML(t, _in)}</span>`; } function crestRawHTML(t, size) {
   const s = size || 22;
