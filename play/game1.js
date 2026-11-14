@@ -5179,7 +5179,7 @@ function buildTierChips() {
 function buildClubGrid() {
   const g = $('#clubGrid'); g.innerHTML = '';
   if (pickClub != null) { $('#startBtn').disabled = false; $('#startBtn').removeAttribute('disabled'); }
-  CLUBS.forEach((c, i) => {
+  CLUBS.map((c, i) => ({ c, i })).sort((a, b) => a.c.n.localeCompare(b.c.n)).forEach(({ c, i }) => {
     if (c.t !== pickTier) return;
     const b = el('button', 'club');
     b.setAttribute('aria-pressed', pickClub === i);
