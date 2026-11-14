@@ -1212,7 +1212,7 @@ function viewMatch() {
     v.innerHTML += `<div class="hero">
       <div class="meta">Matchday <b>${G.round + 1}</b> of ${totalRounds(G)} · ${TIER_NAMES[t.tier]} · ${seasonLabel(G.season)} · ${esc(stadiumName(H))}</div>
       <div class="fixture">
-        <div class="side"><div class="mdRow">${mdKit(H, false)}${crestHTML(H, 40)}</div><div<b>${esc(H.n)}</b><small>${ordinal(posOfTeam(G, H.id))} · rated ${teamOverall(H)}</small></div></div>
+        <div class="side"><div class="mdRow">${mdKit(H, false)}${crestHTML(H, 40)}</div><div><b>${esc(H.n)}</b><small>${ordinal(posOfTeam(G, H.id))} · rated ${teamOverall(H)}</small></div></div>
         <div class="vs">v</div>
         <div class="side away"><div class="mdRow">${mdKit(A, true)}${crestHTML(A, 40)}</div><div><b>${esc(A.n)}</b><small>${ordinal(posOfTeam(G, A.id))} · rated ${teamOverall(A)}</small></div></div>
       </div></div>`;
