@@ -5263,7 +5263,7 @@ function load(n) {
     G.teams.forEach(t => { t.fin = t.fin || newFin(); t.youth = t.youth || []; t.squad.forEach(p => { p.value = valueOf(p); if (p.portrait) PORTRAIT_USE[p.portrait] = (PORTRAIT_USE[p.portrait] || 0) + 1; }); ensureLineup(t); });     G.watchlist = G.watchlist || []; G.pendingBids = G.pendingBids || []; G.pendingLoanOffers = G.pendingLoanOffers || []; seedAiClauses(G); try { updateOutgoingScouting(G); } catch (e) { }
     if (!G.africa) { initAfrica(G); initAfcon(G); buildCAF(G); }
     if (!G.super8) buildExtraCups(G);     if (!G.watchlist) G.watchlist = [];
-    G.manager.rep = G.manager.rep || 40;     G.curDay = Math.max(G.curDay != null ? G.curDay : 0, Math.max(0, G.round - 1) * DAYS_PER_ROUND + (G.round > 0 ? 1 : 0));
+    G.manager.rep = G.manager.rep || 40;     G.curDay = Math.max(G.curDay != null ? G.curDay : 0, Math.max(0, G.round - 1) * DAYS_PER_ROUND + (G.round > 0 ? 1 : 0));     if (!G.finished && G.round < totalRounds(G)) G.curDay = Math.min(G.curDay, G.round * DAYS_PER_ROUND); /* saves made on the old 10-day grid: pull back so the next matchday is not skipped */
     try { localStorage.setItem(LAST_SLOT_KEY, String(slot)); } catch (e) { }
     return true;
   } catch (e) { return false; }
