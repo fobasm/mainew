@@ -1143,7 +1143,7 @@ function makeSquad(club, season) {
     let age;
     if (youthClub) age = rnd() < 0.62 ? rint(17, 21) : rint(22, 29);
     else age = rnd() < 0.18 ? rint(17, 20) : rint(21, 34);
-    const str = club.base + (i % 8 === 0 ? 0.5 : i % 7 === 6 ? -1.1 : 0) + (youthClub && age < 21 ? 0.4 : 0);
+    const str = (club.gs != null ? club.gs : club.base) + (i % 8 === 0 ? 0.5 : i % 7 === 6 ? -1.1 : 0) + (youthClub && age < 21 ? 0.4 : 0);
     return makePlayer({ nat: natFor(club, foreignSet.has(i)), pos, age, strength: str, season, tier: club.tier != null ? club.tier : club.t });
   });
 }
@@ -1200,10 +1200,10 @@ function backdateCareer(p, clubId, season) {
 }
 
 /* ---------------- world ---------------- */
-function newGame(clubIndex, manager, seed) {
+function newGame(clubIndex, manager, seed, startSeason) {
   SEED = seed || Math.floor(Math.random() * 1e9);
   PID = 1;
-  const season = 2026;
+  const season = startSeason || 2026;
   const teams = CLUBS.map((c, i) => {
     const t = {
       id: i, ...c, tier: c.t, squad: makeSquad(c, season),
@@ -2207,7 +2207,7 @@ function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('ra
   sum.fired = G.jobless ? false : updateBoard(G, sum);
   if (!G.jobless) personalSeasonMail(G, sum);
   try { updateLegends(G); } catch (e) { console.error('legends', e); }   sum.board = G.board;
-  sum.offers = G.jobless ? [] : (sum.fired ? rescueOffers(G) : jobOffers(G));   try { managerSeasonEnd(G, sum); } catch (e) { console.error('Manager season end error', e); }
+  sum.offers = G.jobless ? [] : (sum.fired ? rescueOffers(G) : jobOffers(G, { cross: true }));   try { managerSeasonEnd(G, sum); } catch (e) { console.error('Manager season end error', e); }
   G.season++;
   buildSeason(G);
   seedAiClauses(G);
@@ -2227,7 +2227,7 @@ function fillSquad(G, t) {
       const p = makePlayer({
         nat: natFor(t, wantForeign), pos,
         age: youth ? rint(17, 20) : rint(22, 29),
-        strength: t.base - (youth ? (t.youthClub ? 0.3 : 0.9) : 0.4),
+        strength: (t.gs != null ? t.gs : t.base) - (youth ? (t.youthClub ? 0.3 : 0.9) : 0.4),
         season: G.season, contract: rint(2, 4), tier: t.tier
       });
       p.clubs.push({ id: t.id, from: G.season });
@@ -2261,7 +2261,7 @@ function generateYouth(G) {
     for (let i = 0; i < n; i++) {
       const p = makePlayer({
         nat: rnd() < 0.9 ? 'ZA' : natFor(t, true), pos: pick(POS_LIST),
-        age: rint(16, 18), strength: t.base - 2 + t.academy * 0.35 + (t.youthClub ? 0.6 : 0),
+        age: rint(16, 18), strength: (t.gs != null ? t.gs : t.base) - 2 + t.academy * 0.35 + (t.youthClub ? 0.6 : 0),
         season: G.season, contract: 3, tier: t.tier
       });
       p.pot = Math.round(clamp(p.rating + rint(6, 20) + t.academy + scoutNetBonus(t, p.nat), p.rating, 94)); p.product = t.id;
@@ -3002,12 +3002,14 @@ function generateBids(G, scale) {
       }
     }
   });
+  const ovBids = [];
   me.squad.forEach(p => {   /* clubs from the other country can come in too */
     if (p.notForSale || signLockLeft(p) > 0 || p.loan) return;
-    if (rnd() >= (p.tl ? 0.2 : 0.022) * (scale || 1)) return;
-    const b = ovBidFor(G, p); if (b) bids.push(b);
+    if (rnd() >= (p.tl ? 0.4 : 0.07) * (scale || 1)) return;
+    const b = ovBidFor(G, p); if (b) ovBids.push(b);
   });
-  return bids.slice(0, 6);
+  const keepOv = Math.min(ovBids.length, 2);   /* always leave room for the other country, so offers are a mixture */
+  return shuffle(bids.slice(0, 6 - keepOv).concat(ovBids.slice(0, keepOv)));
 }
 function ovBidFor(G, p) {
   const ov = G.ov; if (!ov) return null;
@@ -3615,30 +3617,74 @@ function askForRaise(G) {
   const wage = Math.round(G.manager.wage * rise * 100) / 100;
   return { ok: true, wage };
 }
-function jobOffers(G) {
-  // Unsolicited approaches only — never a step up to a better division than
-  // the one you're already in. You earn promotion on the pitch, not a call
-  // from an agent. A club below you needs to be clearly punching above its
-  // own division's weight to make the leap worth it.
-  const my = G.teams[G.myTeam], rep = G.manager.rep || 40;
+function tid(v) { return /^\d+$/.test(String(v)) ? +v : v; }
+function globalStr(t) { return t.gs != null ? t.gs : t.base; }
+/* clubs in the other country that would take this manager: depends on his reputation and the size of the club */
+function crossCands(G, rescue) {
+  if (!G.ov) return [];
+  const my = G.teams[G.myTeam], rep = G.manager.rep || 40, L0 = globalStr(my);
+  return G.ov.teams.filter(t => {
+    const L = globalStr(t);
+    if (rescue) return L <= L0 + 0.3 && L >= L0 - 1.5;
+    const need = clamp(40 + L * 4.5, 52, 92);
+    return rep >= need && L <= L0 + 3.5 && L >= L0 - 0.5;
+  });
+}
+function jobOffers(G, opts) {
+  // Unsolicited approaches. At home you never get a step up to a better
+  // division from an agent's call: you earn that on the pitch. A club in the
+  // other country can approach you at the end of a season if your reputation
+  // is big enough for them, even if it is a bigger league.
+  const my = G.teams[G.myTeam], rep = G.manager.rep || 40, cross = !!(opts && opts.cross);
   if (rep < 58) return [];
-  if (G.round - (G.lastJobOfferRound || -99) < 10) return [];
+  if (!cross && G.round - (G.lastJobOfferRound || -99) < 10) return [];
   const cands = G.teams.filter(t => {
     if (t.id === G.myTeam) return false;
     if (t.tier < my.tier) return false;
     const gap = t.tier > my.tier ? 3.5 : 2.5;
     return t.rep > my.rep + gap;
   });
-  if (!cands.length) return [];
   shuffle(cands);
-  return cands.slice(0, rnd() < 0.7 ? 1 : 2).map(t => ({ id: t.id, wage: mgrWage(t) }));
+  const out = cands.slice(0, rnd() < 0.7 ? 1 : 2).map(t => ({ id: t.id, wage: mgrWage(t) }));
+  if (cross) {
+    const cc = shuffle(crossCands(G));
+    cc.slice(0, out.length ? 1 : (rnd() < 0.5 ? 2 : 1)).forEach(t => out.push({ id: t.id, wage: mgrWage(t), cross: true }));
+  }
+  return out.slice(0, 3);
+}
+/* moving to a club in the other country: that country becomes your home league and its world is built fresh around you */
+function crossMove(id, wage, years) {
+  const old = G, tgt = old.teams[id]; if (!tgt) return;
+  const T = window.__jobTerms && window.__jobTerms.tid === id ? window.__jobTerms : null;
+  if (T) { wage = T.wage; years = T.years; }
+  if (wage == null) wage = mgrWage(tgt);
+  years = years || 3;
+  const prev = JSON.parse(JSON.stringify(old.manager));
+  (prev.clubs || []).forEach(c => { if (!c.n) { const tt = old.teams[c.id]; if (tt) c.n = tt.n; } });
+  const season = old.season, tn = tgt.n, ts = tgt.s, oldCC = old.cc || 'ZA', oldName = old.teams[old.myTeam].n;
+  setCountry(tgt.cc);
+  const idx = CLUBS.findIndex(c => c.n === tn && c.s === ts);
+  if (idx < 0) { setCountry(oldCC); return; }
+  const NG = newGame(idx, JSON.parse(JSON.stringify(prev)), null, season);
+  const m = Object.assign({}, prev, { wage, contractEnd: season + years - 1, renewal: null, lastWage: null });
+  m.clubs = (prev.clubs || []).concat([{ id: idx, from: season, n: tn }]);
+  NG.manager = m; NG.jobless = false; NG.board = 55; NG.boardFired = false; NG.liveMode = old.liveMode !== false;
+  G = NG; window.__jobTerms = null;
+  ensureMgr(G);
+  const t = G.teams[idx]; t.mgr = Object.assign(newAiMgr(t), { name: m.name, since: season, apptDay: 0 });
+  news(G, 'career', `${m.name} leaves ${oldName} for ${t.n} and moves to ${natName(CUR_CC)}.`);
+  mail(G, { cat: 'career', from: 'Board of Directors', subject: `Welcome to ${t.n}`, body: [`You are the new manager of ${t.n}.`, `Your reputation has opened the door to football in ${natName(CUR_CC)}.`],
+    rows: [['Wage', money(wage) + ' a season'], ['Contract', `${years} year${years === 1 ? '' : 's'}`], ['Runs until', `June ${m.contractEnd + 1}`]] });
+  setTimeout(() => { try { showSponsors(); } catch (e) { } }, 1500);
 }
 function rescueOffers(G) {
   const my = G.teams[G.myTeam];
   const sameOrLower = G.teams.filter(t => t.id !== G.myTeam && t.tier >= my.tier);
   const cands = sameOrLower.filter(t => t.rep <= my.rep + 1.2).sort((a, b) => b.rep - a.rep);
   const pool = cands.length ? cands : sameOrLower;
-  return shuffle(pool.slice()).slice(0, 3).map(t => ({ id: t.id, wage: mgrWage(t, 0.92) }));
+  const outR = shuffle(pool.slice()).slice(0, 3).map(t => ({ id: t.id, wage: mgrWage(t, 0.92) }));
+  const cx = shuffle(crossCands(G, true)); if (cx.length && rnd() < 0.7) outR.splice(Math.min(1, outR.length), outR.length >= 3 ? 1 : 0, { id: cx[0].id, wage: mgrWage(cx[0], 0.92), cross: true });
+  return outR;
 }
 let CTR_STYLE_DONE = false; /* ---- contract look: a white letterhead with sky blue and black, same layout as before ---- */
 (function () {
@@ -3964,7 +4010,7 @@ function contractNegotiate(cfg, cb) {
   };
   draw();
 }
-  function jobNegotiationFancy(cfg) {   if (!window.__jnErr) { window.__jnErr = 1; window.addEventListener('error', e => { try { toastWarn('Error: ' + e.message); } catch (x) { } }); }   const t = cfg.team, ext = cfg.heading === 'Contract Extension';   const wage0 = cfg.wage != null ? cfg.wage : mgrWage(t, cfg.mult || 1);   const years0 = cfg.years || 2;   let offerW = wage0, tries = 3, note = '';   const old = document.querySelector('.jnScrim'); if (old) old.remove();   const sc = document.createElement('div'); sc.className = 'jnScrim'; document.body.appendChild(sc);   const done = (k, terms) => {     sc.remove();     if (k === 'accept') { signCeremony({ manager: true, team: t, wage: terms.wage, years: terms.years, ext }, () => { window.__jobTerms = { tid: t.id, wage: terms.wage, years: terms.years }; try { cfg.onChoice('accept', terms); } finally { window.__jobTerms = null; } }); }     else if (cfg.onChoice) cfg.onChoice('reject');   };   const draw = () => {     const lo = offerW * 0.8, hi = offerW * 1.5;     sc.innerHTML = `<div class="jnCard"><div class="jnHead">${crestHTML(t, 38)}<div><h3>${esc(cfg.heading)}</h3><small>${esc(t.n)} · ${tierShortOf(t)}</small></div><button class="jnX" aria-label="Close">×</button></div>       <div class="jnBody">         <p>${ext ? `${esc(t.n)} want to keep you.` : `${esc(t.n)} want you as their manager.`} Their offer: <b style="color:#fff">${money(offerW)}</b> a season for <b style="color:#fff">${years0} year${years0 === 1 ? '' : 's'}</b>.</p>         ${note ? `<p style="color:#f2b928">${esc(note)}</p>` : ''}         <label>Wage a season</label>         <input class="range" type="range" id="jnW" min="${lo.toFixed(2)}" max="${hi.toFixed(2)}" step="0.01" value="${offerW.toFixed(2)}">         <div class="jnVal"><span>Wage</span><b id="jnWV"></b></div>         <label>Contract length</label>         <input class="range" type="range" id="jnY" min="1" max="5" step="1" value="${years0}">         <div class="jnVal"><span>Years</span><b id="jnYV"></b></div>         <div class="jnBar"><i id="jnBar"></i></div>         <p id="jnOdds" style="margin:6px 0 0;font-size:13px;color:#8f98a2"></p>         <p style="margin:8px 0 0;font-size:12.5px;color:#6b737c">${tries} counter-offer${tries === 1 ? '' : 's'} left before they walk away.</p>       </div>       <div class="jnFoot"><button class="btn ghost sm" id="jnNo">Walk away</button><button class="btn ghost sm" id="jnAcc">Accept their offer</button><button class="btn sm" id="jnCtr">Counter-offer</button></div></div>`;     const wr = sc.querySelector('#jnW'), yr = sc.querySelector('#jnY');     const chance = (w, y) => {       let c = w <= offerW ? 1 : 1 - (w / offerW - 1) * 2.4;       c -= Math.max(0, y - years0) * 0.03; c += Math.max(0, years0 - y) * 0.02;       return clamp(c, 0.04, 0.97);     };     const upd = () => {       const w = +wr.value, y = +yr.value, c = chance(w, y);       sc.querySelector('#jnWV').textContent = money(w);       sc.querySelector('#jnYV').textContent = y + (y === 1 ? ' year' : ' years');       const bar = sc.querySelector('#jnBar'); bar.style.width = (c * 100).toFixed(0) + '%'; bar.style.background = c > 0.66 ? '#3ddc84' : c > 0.33 ? '#f2b928' : '#ff6b6b';       sc.querySelector('#jnOdds').textContent = c > 0.85 ? 'They should be happy with this.' : c > 0.5 ? 'They might go for it.' : c > 0.2 ? 'A stretch. They may refuse.' : 'Far too much. They will not pay this.';     };     wr.oninput = upd; yr.oninput = upd; try { upd(); } catch (e) { console.error(e); }     sc.querySelector('.jnX').onclick = () => done('reject');     sc.querySelector('#jnNo').onclick = () => done('reject');     sc.querySelector('#jnAcc').onclick = () => done('accept', { wage: Math.round(offerW * 100) / 100, years: years0 });     sc.querySelector('#jnCtr').onclick = () => {       const w = Math.round(+wr.value * 100) / 100, y = +yr.value;       if (Math.random() < chance(w, y)) { done('accept', { wage: w, years: y }); return; }       tries--;       if (tries <= 0) { sc.remove(); toastWarn(`${t.s} lose patience and withdraw their offer.`); if (cfg.onChoice) cfg.onChoice('reject'); return; }       offerW = Math.round(offerW * 1.02 * 100) / 100; note = `${t.s} stand firm but nudge their offer up slightly.`;       draw();     };   };   draw(); } function takeJob(G, id, wage, years) {   ensureMgr(G);   const m = G.manager, oldClub = G.teams[G.myTeam], wasJobless = !!G.jobless;   const T = window.__jobTerms && window.__jobTerms.tid === id ? window.__jobTerms : null;   if (T) { wage = T.wage; years = T.years; }   if (wage == null) wage = mgrWage(G.teams[id]);   years = years || 3;   if (!wasJobless) {     const kind = G.boardFired ? 'sacked' : 'left';     const txt = G.boardFired ? `${m.name} was sacked.` : `${m.name} left to take charge of ${G.teams[id].n}.`;     openVacancy(G, oldClub.id, kind, txt, { blocked: true });   }   G.vac = G.vac.filter(v => v.tid !== id);   G.vacApps = []; G.vacOffers = [];   G.myTeam = id; G.jobless = false;   if (G._liveBefore != null) { G.liveMode = G._liveBefore; G._liveBefore = null; }   m.clubs = m.clubs || [];   m.clubs.push({ id, from: G.season });   m.wage = wage; m.contractEnd = G.season + years - 1; m.renewal = null; m.lastWage = null;   const t = G.teams[id]; t.mgr = Object.assign(newAiMgr(t), { name: m.name, since: G.season, apptDay: G.curDay || 0 });   news(G, 'career', wasJobless ? `${m.name} is appointed manager of ${t.n}.` : `${m.name} leaves ${oldClub.s} to take charge of ${t.n}.`);   mail(G, { cat: 'career', from: 'Board of Directors', subject: `Welcome to ${t.n}`, body: [`You are the new manager of ${t.n}.`],     rows: [['Wage', money(wage) + ' a season'], ['Contract', `${years} year${years === 1 ? '' : 's'}`], ['Runs until', `June ${m.contractEnd + 1}`]] });   mail(G, { cat: 'personal', from: pick(['Mom', 'Dad', 'Your Brother', 'Your Sister', 'An Old Friend']), subject: 'Congratulations on the New Job!',     body: [`Just heard you're taking over at ${t.n} — congratulations!`, `We're all so proud of you. Go show them what you can do.`] }); } function takeJobOld(G, id, wage) {
+  function jobNegotiationFancy(cfg) {   if (!window.__jnErr) { window.__jnErr = 1; window.addEventListener('error', e => { try { toastWarn('Error: ' + e.message); } catch (x) { } }); }   const t = cfg.team, ext = cfg.heading === 'Contract Extension';   const wage0 = cfg.wage != null ? cfg.wage : mgrWage(t, cfg.mult || 1);   const years0 = cfg.years || 2;   let offerW = wage0, tries = 3, note = '';   const old = document.querySelector('.jnScrim'); if (old) old.remove();   const sc = document.createElement('div'); sc.className = 'jnScrim'; document.body.appendChild(sc);   const done = (k, terms) => {     sc.remove();     if (k === 'accept') { signCeremony({ manager: true, team: t, wage: terms.wage, years: terms.years, ext }, () => { window.__jobTerms = { tid: t.id, wage: terms.wage, years: terms.years }; try { cfg.onChoice('accept', terms); } finally { window.__jobTerms = null; } }); }     else if (cfg.onChoice) cfg.onChoice('reject');   };   const draw = () => {     const lo = offerW * 0.8, hi = offerW * 1.5;     sc.innerHTML = `<div class="jnCard"><div class="jnHead">${crestHTML(t, 38)}<div><h3>${esc(cfg.heading)}</h3><small>${esc(t.n)} · ${tierShortOf(t)}</small></div><button class="jnX" aria-label="Close">×</button></div>       <div class="jnBody">         <p>${ext ? `${esc(t.n)} want to keep you.` : `${esc(t.n)} want you as their manager.`} Their offer: <b style="color:#fff">${money(offerW)}</b> a season for <b style="color:#fff">${years0} year${years0 === 1 ? '' : 's'}</b>.</p>         ${note ? `<p style="color:#f2b928">${esc(note)}</p>` : ''}         <label>Wage a season</label>         <input class="range" type="range" id="jnW" min="${lo.toFixed(2)}" max="${hi.toFixed(2)}" step="0.01" value="${offerW.toFixed(2)}">         <div class="jnVal"><span>Wage</span><b id="jnWV"></b></div>         <label>Contract length</label>         <input class="range" type="range" id="jnY" min="1" max="5" step="1" value="${years0}">         <div class="jnVal"><span>Years</span><b id="jnYV"></b></div>         <div class="jnBar"><i id="jnBar"></i></div>         <p id="jnOdds" style="margin:6px 0 0;font-size:13px;color:#8f98a2"></p>         <p style="margin:8px 0 0;font-size:12.5px;color:#6b737c">${tries} counter-offer${tries === 1 ? '' : 's'} left before they walk away.</p>       </div>       <div class="jnFoot"><button class="btn ghost sm" id="jnNo">Walk away</button><button class="btn ghost sm" id="jnAcc">Accept their offer</button><button class="btn sm" id="jnCtr">Counter-offer</button></div></div>`;     const wr = sc.querySelector('#jnW'), yr = sc.querySelector('#jnY');     const chance = (w, y) => {       let c = w <= offerW ? 1 : 1 - (w / offerW - 1) * 2.4;       c -= Math.max(0, y - years0) * 0.03; c += Math.max(0, years0 - y) * 0.02;       return clamp(c, 0.04, 0.97);     };     const upd = () => {       const w = +wr.value, y = +yr.value, c = chance(w, y);       sc.querySelector('#jnWV').textContent = money(w);       sc.querySelector('#jnYV').textContent = y + (y === 1 ? ' year' : ' years');       const bar = sc.querySelector('#jnBar'); bar.style.width = (c * 100).toFixed(0) + '%'; bar.style.background = c > 0.66 ? '#3ddc84' : c > 0.33 ? '#f2b928' : '#ff6b6b';       sc.querySelector('#jnOdds').textContent = c > 0.85 ? 'They should be happy with this.' : c > 0.5 ? 'They might go for it.' : c > 0.2 ? 'A stretch. They may refuse.' : 'Far too much. They will not pay this.';     };     wr.oninput = upd; yr.oninput = upd; try { upd(); } catch (e) { console.error(e); }     sc.querySelector('.jnX').onclick = () => done('reject');     sc.querySelector('#jnNo').onclick = () => done('reject');     sc.querySelector('#jnAcc').onclick = () => done('accept', { wage: Math.round(offerW * 100) / 100, years: years0 });     sc.querySelector('#jnCtr').onclick = () => {       const w = Math.round(+wr.value * 100) / 100, y = +yr.value;       if (Math.random() < chance(w, y)) { done('accept', { wage: w, years: y }); return; }       tries--;       if (tries <= 0) { sc.remove(); toastWarn(`${t.s} lose patience and withdraw their offer.`); if (cfg.onChoice) cfg.onChoice('reject'); return; }       offerW = Math.round(offerW * 1.02 * 100) / 100; note = `${t.s} stand firm but nudge their offer up slightly.`;       draw();     };   };   draw(); } function takeJob(G, id, wage, years) {   if (typeof id === 'string' && /^ov\d+$/.test(id)) return crossMove(id, wage, years);   ensureMgr(G);   const m = G.manager, oldClub = G.teams[G.myTeam], wasJobless = !!G.jobless;   const T = window.__jobTerms && window.__jobTerms.tid === id ? window.__jobTerms : null;   if (T) { wage = T.wage; years = T.years; }   if (wage == null) wage = mgrWage(G.teams[id]);   years = years || 3;   if (!wasJobless) {     const kind = G.boardFired ? 'sacked' : 'left';     const txt = G.boardFired ? `${m.name} was sacked.` : `${m.name} left to take charge of ${G.teams[id].n}.`;     openVacancy(G, oldClub.id, kind, txt, { blocked: true });   }   G.vac = G.vac.filter(v => v.tid !== id);   G.vacApps = []; G.vacOffers = [];   G.myTeam = id; G.jobless = false;   if (G._liveBefore != null) { G.liveMode = G._liveBefore; G._liveBefore = null; }   m.clubs = m.clubs || [];   m.clubs.push({ id, from: G.season, n: G.teams[id].n });   m.wage = wage; m.contractEnd = G.season + years - 1; m.renewal = null; m.lastWage = null;   const t = G.teams[id]; t.mgr = Object.assign(newAiMgr(t), { name: m.name, since: G.season, apptDay: G.curDay || 0 });   news(G, 'career', wasJobless ? `${m.name} is appointed manager of ${t.n}.` : `${m.name} leaves ${oldClub.s} to take charge of ${t.n}.`);   mail(G, { cat: 'career', from: 'Board of Directors', subject: `Welcome to ${t.n}`, body: [`You are the new manager of ${t.n}.`],     rows: [['Wage', money(wage) + ' a season'], ['Contract', `${years} year${years === 1 ? '' : 's'}`], ['Runs until', `June ${m.contractEnd + 1}`]] });   mail(G, { cat: 'personal', from: pick(['Mom', 'Dad', 'Your Brother', 'Your Sister', 'An Old Friend']), subject: 'Congratulations on the New Job!',     body: [`Just heard you're taking over at ${t.n} — congratulations!`, `We're all so proud of you. Go show them what you can do.`] }); } function takeJobOld(G, id, wage) {
   const oldClub = G.teams[G.myTeam];
   G.myTeam = id;
   G.manager.clubs = G.manager.clubs || [];
@@ -4441,6 +4487,8 @@ const KIT_STYLE_OVERRIDE = {
   'Giyani FC|Giyani FC': 7
 };
 const CLUBS_EN = [{"n": "Blue Manchester", "s": "Blue Man", "nick": "The Sky Blues", "city": "Manchester", "t": 0, "base": 9.7, "fin": 150, "youth": 5, "c1": "#6cabdd", "c2": "#ffffff", "scout": "EUR"}, {"n": "Liverpool United", "s": "Liverpool", "nick": "The Reds", "city": "Liverpool", "t": 0, "base": 9.5, "fin": 120, "youth": 4, "c1": "#c8102e", "c2": "#ffffff", "scout": "EUR"}, {"n": "Red London FC", "s": "Red London", "nick": "The Gunners", "city": "London", "t": 0, "base": 9.4, "fin": 115, "youth": 5, "c1": "#d6141c", "c2": "#ffffff", "scout": "EUR"}, {"n": "Red Manchester", "s": "Red Man", "nick": "The Red Devils", "city": "Manchester", "t": 0, "base": 9.2, "fin": 105, "youth": 5, "c1": "#cf1a1a", "c2": "#111111", "scout": "EUR"}, {"n": "Blue London FC", "s": "Blue London", "nick": "The Blues", "city": "London", "t": 0, "base": 9.1, "fin": 100, "youth": 4, "c1": "#1a4fc4", "c2": "#ffffff", "scout": "EUR"}, {"n": "White London FC", "s": "White London", "nick": "The Lilywhites", "city": "London", "t": 0, "base": 8.8, "fin": 85, "youth": 4, "c1": "#ffffff", "c2": "#14224d", "scout": "EUR"}, {"n": "Newcastle Tyne FC", "s": "Newcastle", "nick": "The Magpies", "city": "Newcastle", "t": 0, "base": 8.5, "fin": 62, "youth": 3, "c1": "#ffffff", "c2": "#111111", "scout": "EUR"}, {"n": "Aston Birmingham", "s": "Aston Brum", "nick": "The Villans", "city": "Birmingham", "t": 0, "base": 8.3, "fin": 52, "youth": 3, "c1": "#7a1f3d", "c2": "#8fc3e8", "scout": "EUR"}, {"n": "Brighton Blue", "s": "Brighton", "nick": "The Seagulls", "city": "Brighton", "t": 0, "base": 7.6, "fin": 38, "youth": 3, "c1": "#0f5fb5", "c2": "#ffffff", "scout": "EUR"}, {"n": "Everton United", "s": "Everton", "nick": "The Toffees", "city": "Liverpool", "t": 0, "base": 7.5, "fin": 36, "youth": 4, "c1": "#1f4aa8", "c2": "#ffffff", "scout": "EUR"}, {"n": "The Palace", "s": "Palace", "nick": "The Eagles", "city": "London", "t": 0, "base": 7.4, "fin": 32, "youth": 3, "c1": "#1b4fa0", "c2": "#d3141c", "scout": "EUR"}, {"n": "West Fulham FC", "s": "West Fulham", "nick": "The Cottagers", "city": "London", "t": 0, "base": 7.3, "fin": 34, "youth": 3, "c1": "#ffffff", "c2": "#111111", "scout": "EUR"}, {"n": "West London", "s": "West London", "nick": "The Bees", "city": "London", "t": 0, "base": 7.2, "fin": 30, "youth": 3, "c1": "#e30613", "c2": "#ffffff", "scout": "EUR"}, {"n": "Nottingham United", "s": "Nottingham", "nick": "The Tricky Trees", "city": "Nottingham", "t": 0, "base": 7.0, "fin": 30, "youth": 3, "c1": "#d3141c", "c2": "#ffffff", "scout": "EUR"}, {"n": "New Leeds", "s": "New Leeds", "nick": "The Whites", "city": "Leeds", "t": 0, "base": 7.0, "fin": 28, "youth": 3, "c1": "#ffffff", "c2": "#1d4fa1", "scout": "EUR"}, {"n": "Old Sunderland", "s": "Sunderland", "nick": "The Black Cats", "city": "Sunderland", "t": 0, "base": 6.4, "fin": 22, "youth": 3, "c1": "#e11b22", "c2": "#ffffff", "scout": "EUR"}, {"n": "Bournemouth Red-Black", "s": "Bournemouth", "nick": "The Cherries", "city": "Bournemouth", "t": 0, "base": 6.3, "fin": 20, "youth": 3, "c1": "#d9151d", "c2": "#111111", "scout": "EUR"}, {"n": "Ipswich Blue", "s": "Ipswich", "nick": "The Tractor Boys", "city": "Ipswich", "t": 0, "base": 6.2, "fin": 20, "youth": 3, "c1": "#1b4fa0", "c2": "#ffffff", "scout": "EUR"}, {"n": "New Coventry", "s": "Coventry", "nick": "The Phoenix", "city": "Coventry", "t": 0, "base": 6.1, "fin": 18, "youth": 2, "c1": "#7fc4ee", "c2": "#ffffff", "scout": "EUR"}, {"n": "Hull Amber", "s": "Hull", "nick": "The Tigers", "city": "Hull", "t": 0, "base": 6.0, "fin": 18, "youth": 2, "c1": "#f5a800", "c2": "#111111", "scout": "EUR"}, {"n": "South of Hampton", "s": "Hampton", "nick": "The Saints", "city": "Southampton", "t": 1, "base": 6.2, "fin": 9, "youth": 4, "c1": "#d81e24", "c2": "#ffffff", "scout": "EUR"}, {"n": "Portsmouth City", "s": "Portsmouth", "nick": "Pompey", "city": "Portsmouth", "t": 1, "base": 6.0, "fin": 9, "youth": 3, "c1": "#10265f", "c2": "#ffffff", "scout": "EUR"}, {"n": "White City Rangers", "s": "White City", "nick": "The Hoops", "city": "London", "t": 1, "base": 5.9, "fin": 8, "youth": 3, "c1": "#1f56b0", "c2": "#ffffff", "scout": "EUR"}, {"n": "Millwall United", "s": "Millwall", "nick": "The Lions", "city": "London", "t": 1, "base": 5.8, "fin": 8, "youth": 2, "c1": "#0b1e47", "c2": "#ffffff", "scout": "EUR"}, {"n": "Old Norwich", "s": "Norwich", "nick": "The Canaries", "city": "Norwich", "t": 1, "base": 5.7, "fin": 8, "youth": 3, "c1": "#f4e300", "c2": "#0a8a3c", "scout": "EUR"}, {"n": "Middlesbrough Red", "s": "Middlesbrough", "nick": "Boro", "city": "Middlesbrough", "t": 1, "base": 5.6, "fin": 7, "youth": 3, "c1": "#dc1f26", "c2": "#ffffff", "scout": "EUR"}, {"n": "Cardiff Blue", "s": "Cardiff", "nick": "The Bluebirds", "city": "Cardiff", "t": 1, "base": 5.5, "fin": 7, "youth": 2, "c1": "#1f5fb0", "c2": "#ffffff", "scout": "EUR"}, {"n": "Charlton FC", "s": "Charlton", "nick": "The Addicks", "city": "London", "t": 1, "base": 5.4, "fin": 6, "youth": 3, "c1": "#d4141c", "c2": "#ffffff", "scout": "EUR"}, {"n": "Blackburn City", "s": "Blackburn", "nick": "The Riversiders", "city": "Blackburn", "t": 1, "base": 5.4, "fin": 6, "youth": 3, "c1": "#5fb3e8", "c2": "#ffffff", "scout": "EUR"}, {"n": "Bolton United", "s": "Bolton", "nick": "The Trotters", "city": "Bolton", "t": 1, "base": 5.2, "fin": 6, "youth": 2, "c1": "#ffffff", "c2": "#1c2c5b", "scout": "EUR"}, {"n": "Bristol United", "s": "Bristol", "nick": "The Robins", "city": "Bristol", "t": 1, "base": 5.2, "fin": 5, "youth": 2, "c1": "#d8141c", "c2": "#ffffff", "scout": "EUR"}, {"n": "Birmingham Blue", "s": "Birmingham", "nick": "The Bluenoses", "city": "Birmingham", "t": 1, "base": 5.1, "fin": 5, "youth": 2, "c1": "#1b4fb5", "c2": "#ffffff", "scout": "EUR"}, {"n": "Wrex of Wales", "s": "Wrex", "nick": "The Red Dragons", "city": "Wrexham", "t": 1, "base": 5.0, "fin": 5, "youth": 1, "c1": "#d3141c", "c2": "#0c6b3a", "scout": "EUR"}, {"n": "Bromwich Town", "s": "Bromwich", "nick": "The Baggies", "city": "West Bromwich", "t": 1, "base": 4.9, "fin": 5, "youth": 2, "c1": "#14285e", "c2": "#ffffff", "scout": "EUR"}, {"n": "Westham Ballers", "s": "Westham", "nick": "The Hammers", "city": "London", "t": 1, "base": 4.9, "fin": 4, "youth": 4, "c1": "#7a1f3d", "c2": "#8fc3e8", "scout": "EUR"}, {"n": "Burnley Claret", "s": "Burnley", "nick": "The Clarets", "city": "Burnley", "t": 1, "base": 4.7, "fin": 4, "youth": 2, "c1": "#6c1d45", "c2": "#8fd0ea", "scout": "EUR"}, {"n": "Da Wolves", "s": "Da Wolves", "nick": "The Wanderers", "city": "Wolverhampton", "t": 1, "base": 4.6, "fin": 4, "youth": 2, "c1": "#f5b800", "c2": "#111111", "scout": "EUR"}, {"n": "Lincoln Stars", "s": "Lincoln", "nick": "The Imps", "city": "Lincoln", "t": 1, "base": 4.5, "fin": 3.5, "youth": 1, "c1": "#d3141c", "c2": "#ffffff", "scout": "EUR"}, {"n": "New Derby", "s": "New Derby", "nick": "The Rams", "city": "Derby", "t": 1, "base": 4.4, "fin": 3.5, "youth": 2, "c1": "#ffffff", "c2": "#111111", "scout": "EUR"}, {"n": "New Sheffield", "s": "New Sheffield", "nick": "The Blades", "city": "Sheffield", "t": 1, "base": 4.3, "fin": 3, "youth": 1, "c1": "#d8141c", "c2": "#ffffff", "scout": "EUR"}];
+/* global strength (same scale for every country): English clubs sit above their South African counterparts. 'base' stays the 0-10 reputation scale */
+(function(){ const GS = [12.64, 12.31, 12.31, 11.97, 11.97, 11.63, 10.95, 10.61, 10.27, 10.1, 9.93, 9.93, 9.86, 9.8, 9.76, 9.73, 9.69, 9.66, 9.63, 9.59, 9.25, 9.17, 9.08, 8.99, 8.9, 8.81, 8.72, 8.63, 8.54, 8.45, 8.36, 8.27, 8.18, 8.09, 8.01, 7.92, 7.83, 7.74, 7.65, 7.56]; CLUBS_EN.forEach((c, i) => { c.gs = GS[i]; }); })();
 Object.assign(CREST_IMGS, {
 "Blue Manchester|Blue Man": "img/crests/en-blue-manchester-cb1877.webp",
 "Liverpool United|Liverpool": "img/crests/en-liverpool-united-0e0d93.webp",
@@ -4493,7 +4541,7 @@ const EN_HIDDEN_TABS = ['africa', 'nations', 'world', 'cities'];
    Every career also carries the other country's clubs (England in a South African career, South Africa in an
    English one). They play an abstract season, appear in the club rankings, and their players can be bought.
    English players are better, cost more and earn more: price and wage scale with OV_PREM. */
-const OV_PREM = { GB: 2.5, ZA: 1 }, OV_QUAL = { GB: 0.9, ZA: 0 };
+const OV_PREM = { GB: 2.5, ZA: 1 }, OV_QUAL = { GB: 0, ZA: 0 };
 function ovCC() { return CUR_CC === 'GB' ? 'ZA' : 'GB'; }
 function ovMult() { return OV_PREM[ovCC()] / OV_PREM[CUR_CC]; }
 function ovTierNames() { return tierShortFor(ovCC()); }
