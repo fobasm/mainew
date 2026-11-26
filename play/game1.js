@@ -13,11 +13,12 @@ const TIER_SIZE = 20;
 const TIER_NAMES_SA = TIER_NAMES.slice(), TIER_SHORT_SA = TIER_SHORT.slice();
 const TIER_NAMES_EN = ['English Super League', 'Second League of England'], TIER_SHORT_EN = ['Super League', 'Second League'];
 let CUR_CC = 'ZA', HOME_NAT = 'ZA', HOME_REGION = 'AFR';
-function tierNamesFor(cc) { return cc === 'GB' ? TIER_NAMES_EN : TIER_NAMES_SA; }
-function tierShortFor(cc) { return cc === 'GB' ? TIER_SHORT_EN : TIER_SHORT_SA; }
+const TIER_NAMES_ES = ['Spanish Premier League', 'Spanish Championship'], TIER_SHORT_ES = ['Spanish Premier', 'Spanish Championship'];
+function tierNamesFor(cc) { return cc === 'GB' ? TIER_NAMES_EN : cc === 'ES' ? TIER_NAMES_ES : TIER_NAMES_SA; }
+function tierShortFor(cc) { return cc === 'GB' ? TIER_SHORT_EN : cc === 'ES' ? TIER_SHORT_ES : TIER_SHORT_SA; }
 function tierShortOf(t) { return t && t.ov ? tierShortFor(t.cc)[t.tier] : TIER_SHORT[t && t.tier]; }
 function tierNameOf(t) { return t && t.ov ? tierNamesFor(t.cc)[t.tier] : TIER_NAMES[t && t.tier]; }
-function homeDemo() { return CUR_CC === 'GB' ? 'English' : 'South African'; }
+function homeDemo() { return CUR_CC === 'GB' ? 'English' : CUR_CC === 'ES' ? 'Spanish' : 'South African'; }
 const AUTO_PROMOTED = 2;   /* teams promoted automatically (top positions) */ const PLAYOFF_SPOTS = 4;  /* teams entering the promotion playoff, straight after the automatic spots */ const RELEGATED = 3;      /* teams relegated (bottom positions) */
 
 /* base = sporting strength 1-10 · fin = transfer kitty in millions · youth = academy level 1-5 */
@@ -345,6 +346,7 @@ const NAT_ETHNIC = {
   ZA: [['black', 70], ['coloured', 15], ['white', 12], ['indian', 3]],
   FR: [['black', 60], ['white', 40]],
   GB: [['white', 63], ['black', 34], ['asian', 3]],
+  ES: [['white', 91], ['black', 5], ['latin', 4]],
   US: [['white', 52], ['black', 30], ['latin', 14], ['asian', 4]],
   CA: [['white', 70], ['black', 12], ['asian', 10], ['indian', 8]],
   AU: [['white', 80], ['black', 6], ['asian', 8], ['coloured', 6]],
@@ -383,6 +385,7 @@ let CUP_NAME   = 'Thatbank Cup';
 const SUPER8     = 'Mzansi8';
 const KNOCKOUT   = 'Bayakhala Knockout';
 const CAF_NAME   = 'African Champions League';
+const EKC_NAME   = 'European Kings Cup', ECC_NAME = 'Euro Contender Cup';
 const AFCON_NAME = 'African Nations Cup';
 
 /* ---------------- continental leagues ----------------
@@ -1172,7 +1175,7 @@ const NAME_ALIAS = {
   add("IE", ["Chris", "Wood", "Liberato", "Cacace", "Winston", "Ryan", "Callan", "Elliot", "Joe", "Bill", "Sarpreet", "Tommy", "Matthew", "Michael", "Mathew", "Jackson", "Aiden", "Harry", "Lachlan", "Riley", "Connor", "Cooper", "Mitchell", "Jamie", "Cameron", "Thomas", "Joshua", "Alphonso", "Jonathan", "Cyle", "Tajon", "Alistair", "Stephen", "Samuel", "Maxime", "Lucas", "Jacob", "Nathan", "Taylor", "Ben", "Luke", "Ethan", "Oliver", "Jack", "James", "Noah", "Mason", "Hunter", "Tyler", "Dylan", "Aaron", "Kai", "Kyle"], ["Wood", "Cacace", "Reid", "Singh", "Boxall", "Garbett", "Just", "Old", "Bell", "Barbarouses", "Mcgregor", "Mooy", "Leckie", "Rogic", "Irvine", "Ryan", "Maclaren", "Duke", "Hrustic", "Souttar", "Boyle", "Karacic", "Atkinson", "Behich", "Goodwin", "Metcalfe", "Devlin", "Degenek", "Davies", "David", "Larin", "Buchanan", "Cornelius", "Millar", "Eustaquio", "Osorio", "Laryea", "Hoilett", "Bassong", "Hutchinson", "Nelson", "Smith", "Brown", "Wilson", "Taylor", "Campbell", "Anderson", "Stewart", "Thomson", "Scott", "Martin", "Harris", "Roberts", "Walker", "Young", "King", "Wright", "Baker", "Green", "Hall", "Murphy", "Kelly", "Walsh", "Brennan", "Doyle", "Byrne", "McCarthy"]);
 })();
 /* famous real players: a generated player never gets exactly this name */
-const REAL_NAME_BLOCK = new Set(["Aaron Ramsey", "Abedi Pele", "Achraf Hakimi", "Alan Shearer", "Alejandro Garnacho", "Alejandro Gómez", "Alessandro Del Piero", "Alex Iwobi", "Alexander Isak", "Alexis Mac Allister", "Alexis Sánchez", "Alisson Becker", "Andrea Pirlo", "Andriy Shevchenko", "André Ayew", "Andrés Guardado", "Andrés Iniesta", "Antoine Griezmann", "Arda Güler", "Arkadiusz Milik", "Arturo Vidal", "Aymeric Laporte", "Aïssa Mandi", "Baghdad Bounedjah", "Ben Davies", "Benni McCarthy", "Bernard Parker", "Bernardo Silva", "Brenden Aaronson", "Bruno Fernandes", "Bruno Guimarães", "Bryan Ruiz", "Bukayo Saka", "Cafu Marcos", "Carles Puyol", "Carlos Bocanegra", "Carlos Tevez", "Carlos Valderrama", "Casemiro Silva", "Cesc Fàbregas", "Cheick Tioté", "Christian Eriksen", "Christian Pulisic", "Claudio Bravo", "Clint Dempsey", "Cole Palmer", "Conor Gallagher", "Cristian Romero", "Cristiano Ronaldo", "Damien Duff", "Dani Alves", "Dani Carvajal", "Daniel Amokachi", "Darwin Núñez", "David Beckham", "David Luiz", "David Silva", "David Villa", "Declan Rice", "Dejan Kulusevski", "Dennis Bergkamp", "Didier Drogba", "Didier Zokora", "Diego Maradona", "Diego Simeone", "Diogo Jota", "Eberechi Eze", "Eden Hazard", "Ederson Moraes", "Edinson Cavani", "Ellyes Skhiri", "Emiliano Martínez", "Emmanuel Adebayor", "Emre Belözoğlu", "Endrick Felipe", "Enzo Fernández", "Eric Bailly", "Eric Cantona", "Eric Maxim Choupo-Moting", "Erling Haaland", "Essam El Hadary", "Eusébio Silva", "Fabinho Tavares", "Fabio Cannavaro", "Faustino Asprilla", "Federico Valverde", "Fernando Torres", "Florian Wirtz", "Francesco Totti", "Franck Kessié", "Franco Baresi", "Frank Lampard", "Franz Beckenbauer", "Frenkie De Jong", "Gabriel Batistuta", "Gabriel Jesus", "Gabriel Martinelli", "Gareth Bale", "Gary Neville", "Gavi Páez", "George Weah", "Gerard Piqué", "Gerd Müller", "Gervinho Kouassi", "Gianluigi Buffon", "Gio Reyna", "Giorgio Chiellini", "Giovani Lo Celso", "Gonzalo Higuaín", "Granit Xhaka", "Guillermo Ochoa", "Hakan Çalhanoğlu", "Hakan Şükür", "Hakim Ziyech", "Hannibal Mejbri", "Harry Kane", "Harry Maguire", "Hernanes Souza", "Hernán Crespo", "Heung-min Son", "Hidetoshi Nakata", "Hirving Lozano", "Hristo Stoichkov", "Hulk Souza", "Hwang Hee-chan", "Iker Casillas", "Ilkay Gündoğan", "Islam Slimani", "Ismaël Bennacer", "Itumeleng Khune", "Ivan Toney", "Iván Zamorano", "Jack Grealish", "Jamal Musiala", "James Rodríguez", "Javier Hernández", "Javier Mascherano", "Javier Zanetti", "Jay-Jay Okocha", "Jefferson Farfán", "Ji-sung Park", "Joelinton Cássio", "Johan Cruyff", "John Obi Mikel", "John Stones", "Jordan Ayew", "Jordan Henderson", "Jordan Pickford", "Jordi Alba", "Joshua Kimmich", "Jozy Altidore", "João Cancelo", "Juan Román Riquelme", "Jude Bellingham", "Julián Álvarez", "Kai Havertz", "Kaizer Motaung", "Kaká Leite", "Kalidou Koulibaly", "Kang-in Lee", "Kaoru Mitoma", "Karim Benzema", "Keisuke Honda", "Kevin De Bruyne", "Keylor Navas", "Khama Billiat", "Kim Min-jae", "Kobbie Mainoo", "Kolo Touré", "Kyle Walker", "Kylian Mbappé", "Lamine Yamal", "Landon Donovan", "Lautaro Martínez", "Lee Kang-in", "Leonardo Bonucci", "Leroy Sané", "Lewis Dunk", "Lionel Messi", "Lisandro Martínez", "Lothar Matthäus", "Lucas Paquetá", "Lucas Radebe", "Luis Díaz", "Luis Suárez", "Luka Modrić", "Luís Figo", "Lyle Foster", "Malcom Filipe", "Manuel Neuer", "Marc Guéhi", "Marcelo Salas", "Marco Reus", "Marco van Basten", "Marcos Acuña", "Marcus Rashford", "Marcus Thuram", "Marquinhos Corrêa", "Martin Ødegaard", "Mason Mount", "Matheus Cunha", "Mats Hummels", "Memphis Depay", "Mesut Özil", "Michael Ballack", "Michael Bradley", "Michael Essien", "Michael Owen", "Michel Platini", "Min-jae Kim", "Mohamed Aboutrika", "Mohamed Elneny", "Mohamed Salah", "N'Golo Kanté", "Naby Keïta", "Nahuel Molina", "Neymar Júnior", "Neymar da Silva", "Nicolas Pépé", "Nicolás Otamendi", "Nwankwo Kanu", "Oliver Kahn", "Olivier Giroud", "Ollie Watkins", "Oscar dos Santos", "Paolo Guerrero", "Paolo Maldini", "Park Ji-sung", "Patrick Vieira", "Paul Pogba", "Paul Scholes", "Paulo Dybala", "Pavel Nedvěd", "Pedri González", "Pelé Santos", "Percy Tau", "Petr Čech", "Phil Foden", "Pierre-Emerick Aubameyang", "Piotr Zieliński", "Radamel Falcao", "Rafael Leão", "Rafael Márquez", "Raheem Sterling", "Raphinha Dias", "Rashidi Yekini", "Raúl González", "Raúl Jiménez", "Reece James", "René Higuita", "Ricardo Quaresma", "Richarlison Andrade", "Rivaldo Ferreira", "Riyad Mahrez", "Robbie Keane", "Robert Lewandowski", "Roberto Baggio", "Roberto Carlos", "Roberto Firmino", "Rodri Hernández", "Rodrigo De Paul", "Rodrygo Goes", "Roger Milla", "Romelu Lukaku", "Romário Faria", "Ronaldinho Gaúcho", "Ronaldo Nazário", "Ronwen Williams", "Roy Keane", "Rui Costa", "Ruud Gullit", "Ryan Giggs", "Rúben Dias", "Rüştü Reçber", "Sadio Mané", "Salomon Kalou", "Samuel Eto'o", "Samuel Kuffour", "Sergio Agüero", "Sergio Busquets", "Sergio Ramos", "Sergiño Dest", "Seydou Doumbia", "Shane Long", "Shinji Kagawa", "Siphiwe Tshabalala", "Son Heung-min", "Steven Gerrard", "Steven Pienaar", "Sébastien Haller", "Takefusa Kubo", "Takehiro Tomiyasu", "Taribo West", "Teboho Mokoena", "Tendai Ndoro", "Teófilo Cubillas", "Themba Zwane", "Thembinkosi Lorch", "Thiago Alcântara", "Thiago Almada", "Thiago Silva", "Thibaut Courtois", "Thierry Henry", "Thomas Müller", "Thomas Partey", "Tim Howard", "Tomáš Rosický", "Toni Kroos", "Trent Alexander-Arnold", "Tyler Adams", "Victor Osimhen", "Vincent Enyeama", "Vinícius Júnior", "Virgil Van Dijk", "Wahbi Khazri", "Wataru Endo", "Wayne Rooney", "Weston McKennie", "Wilfred Ndidi", "Wilfried Zaha", "Willian Borges", "Wojciech Szczęsny", "Wu Lei", "Xavi Hernández", "Xherdan Shaqiri", "Yakubu Aiyegbeni", "Yassine Bounou", "Yaya Touré", "Youcef Belaïli", "Youssef Msakni", "Yunus Musah", "Zbigniew Boniek", "Zhang Linpeng", "Zico Coimbra", "Zinedine Zidane", "Zlatan Ibrahimović", "Álvaro Morata", "Álvaro Negredo", "Ángel Correa", "Ángel Di María", "Édouard Mendy"]);
+const REAL_NAME_BLOCK = new Set();
 function personName(nat, group) {
   let p;
   if (nat === 'ZA') p = NAMES['ZA_' + (group || 'black').toUpperCase()];
@@ -1259,7 +1262,7 @@ function natFor(club, foreignSlot) {
       while (i < regions.length - 1 && x > weights[i]) { x -= weights[i]; i++; }
       n = pick(SCOUT_POOLS[regions[i]]);
     }
-    if (n !== HOME_NAT) return n;
+    if (n !== (club.nat || HOME_NAT)) return n;
   }
   return 'FR';
 }
@@ -1571,6 +1574,7 @@ function blankRow(id) { return { id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 
   buildExtraCups(G);
   buildCAF(G);
   buildConfed(G);
+  buildEuro(G);
   buildMarket(G);   try { assignAiSponsors(G); } catch (e) { console.error('ai sponsors', e); }
   if (!first) { devCentreSeason(G); generateYouth(G); }
   if (!G.africa.afcon || G.africa.afcon.phase === 'done') initAfcon(G);
@@ -2051,8 +2055,7 @@ function commitMatch(G, tier, m, ctx) {
 /* finishes the continental competitions and closes the season */
 function closeSeasonTail(G) {
   let guard = 0;
-  while (G.africa.caf && !G.africa.caf.done && guard++ < 8) playCAFRound(G);
-  guard = 0; while (G.africa.confed && !G.africa.confed.done && guard++ < 8) playConfedRound(G);
+  ['caf', 'confed', 'ekc', 'ecc'].forEach(k => { guard = 0; while (G.africa[k] && !G.africa[k].done && guard++ < 8) playContRound(G, k); });
   while (G.africa.leagues[0].round < G.africa.leagues[0].fixtures.length) africaRound(G);
   try { ovFinish(G); } catch (e) { console.error('ov', e); }
   G.finished = true;
@@ -2098,8 +2101,7 @@ if (G.round >= totalRounds(G)) return null;
   africaRound(G); ovRound(G);
   if (CUR_CC === 'ZA' && S8_AT.includes(G.round)) out.s8 = playKnockoutRound(G, G.super8, S8_ROUNDS, 6);
   if (CUR_CC === 'ZA' && KO_AT.includes(G.round)) out.ko = playKnockoutRound(G, G.knockout, KO_ROUNDS, 7);
-  if (CUR_CC === 'ZA' && CAF_AT.includes(G.round) && !contHold(G, 'caf')) out.caf = playCAFRound(G);
-  if (CUR_CC === 'ZA' && CONFED_AT.includes(G.round) && !contHold(G, 'confed')) out.confed = playConfedRound(G);
+  contKeys().forEach(k => { if (CONT[k].at.includes(G.round) && !contHold(G, k)) out[k] = playContRound(G, k); });
   if (G.round >= totalRounds(G)) {
     let guard = 0;
     while (!G.cup.done && guard++ < 10) playCupRound(G);
@@ -2341,12 +2343,17 @@ function endSeason(G) {   try { snapClubRank(G); } catch (e) { console.error('ra
     cup: G.cup.winner, s8: G.super8.winner, ko: G.knockout.winner,
     caf: G.africa.caf && G.africa.caf.winner ? cafName(G, G.africa.caf.winner) : null,
     confed: G.africa.confed && G.africa.confed.winner ? cafName(G, G.africa.confed.winner) : null,
+    ekc: G.africa.ekc && G.africa.ekc.winner ? cafName(G, G.africa.ekc.winner) : null,
+    ecc: G.africa.ecc && G.africa.ecc.winner ? cafName(G, G.africa.ecc.winner) : null,
     afcon: G.africa.afcon && G.africa.afcon.winner ? G.africa.afcon.winner : null,
     awards: sum.awards
   });
   sum.caf = G.africa.caf && G.africa.caf.winner ? cafName(G, G.africa.caf.winner) : null;
   sum.confed = G.africa.confed && G.africa.confed.winner ? cafName(G, G.africa.confed.winner) : null;
+  sum.ekc = G.africa.ekc && G.africa.ekc.winner ? cafName(G, G.africa.ekc.winner) : null;
+  sum.ecc = G.africa.ecc && G.africa.ecc.winner ? cafName(G, G.africa.ecc.winner) : null;
   sum.s8 = G.super8.winner; sum.ko = G.knockout.winner;
+  try { euroSeasonEnd(G); } catch (e) { console.error('euroSeasonEnd', e); }
   africaSeasonEnd(G);
   try { ovSeasonEnd(G); } catch (e) { console.error('ovSeasonEnd', e); }
   if (CUR_CC !== 'ZA') sum.afcon = null;
@@ -2613,7 +2620,7 @@ function buildLoanMarket(G) {   G.loanMarket = [];   G.teams.forEach(t => {     
     });
   });
   for (let i = 0; i < 6; i++) {
-    const p = makePlayer({ nat: rnd() < 0.7 ? HOME_NAT : natFor({ scout: CUR_CC === 'GB' ? pick(['EUR','EUR','EUR','AFR','SAM']) : pick(['AFR','AFR','SAM','EUR','ASIA','NAM']) }, true), pos: pick(POS_LIST), strength: rint(4, 7), season: G.season, contract: 0, tier: 2 });
+    const p = makePlayer({ nat: rnd() < 0.7 ? HOME_NAT : natFor({ scout: CUR_CC !== 'ZA' ? pick(['EUR','EUR','EUR','AFR','SAM']) : pick(['AFR','AFR','SAM','EUR','ASIA','NAM']) }, true), pos: pick(POS_LIST), strength: rint(4, 7), season: G.season, contract: 0, tier: 2 });
     G.freeAgents.push(p);
   }
   G.freeAgents = G.freeAgents.slice(-24); buildLoanMarket(G);
@@ -3379,7 +3386,7 @@ function initAfrica(G) {
       table: L.clubs.map(([n], i) => ({ id: L.code + i, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 })),
       round: 0, fixtures: null, champion: null, lastChampion: null, lastRunnerUp: null
     })),
-    caf: null, confed: null, afcon: null, afconHistory: [], cafHistory: [], confedHistory: [],
+    caf: null, confed: null, ekc: null, ecc: null, afcon: null, afconHistory: [], cafHistory: [], confedHistory: [], ekcHistory: [], eccHistory: [],
     squadCache: {}
   };
   G.africa.leagues.forEach(L => L.fixtures = roundRobin(L.clubs.map(c => c.id)));
@@ -3466,6 +3473,59 @@ const CAF_AT = [10, 20, 30, 38]; /* final lands on round 38 — right as the lea
 const CONFED_AT = [11, 21, 31, 38]; /* final lands on round 38 — right as the league season ends */
 const CAF_ROUNDS = ['Round of 16', 'Quarter-final', 'Semi-final', 'Final'];
 const CONFED_NAME = 'African Football Cup';
+/* ---------------- continental registry: Africa (South African careers) and Europe (English and Spanish careers) ---------------- */
+const CONT = {
+  caf: { name: CAF_NAME, at: CAF_AT, hist: 'cafHistory', prize: 45, label: 'Champions of Africa' },
+  confed: { name: CONFED_NAME, at: CONFED_AT, hist: 'confedHistory', prize: 20, label: 'African Football Cup winners' },
+  ekc: { name: EKC_NAME, at: CAF_AT, hist: 'ekcHistory', prize: 60, label: 'Champions of Europe' },
+  ecc: { name: ECC_NAME, at: CONFED_AT, hist: 'eccHistory', prize: 25, label: 'Euro Contender Cup winners' }
+};
+function contKeys() { return CUR_CC === 'ZA' ? ['caf', 'confed'] : (isEuro(CUR_CC) ? ['ekc', 'ecc'] : []); }
+function playContRound(G, k) { const c = CONT[k]; return playContinentalRound(G, k, c.name, c.prize, c.hist, 'caf'); }
+function contHomeE(e) { return !!e && e.sa && !(typeof e.id === 'string' && e.id.indexOf('ov') === 0); }
+function contNat(e) { const t = G.teams[e.id]; return t && t.ov ? t.cc : HOME_NAT; }
+
+/* European Kings Cup: the best clubs of Spain and England, 16 teams, two legs and a one-match final; the winners earn a star.
+   Euro Contender Cup: the next tier of clubs; no star, but the winners are in the next European Kings Cup automatically. */
+const EURO_N = 16;
+function euroCCs(G) { return [CUR_CC].concat(G.ov ? (G.ov.ccs || [G.ov.cc]).filter(c => isEuro(c) && c !== CUR_CC) : []); }
+/* a division's clubs, best first: last season's final table, or club strength in the first season */
+function euroTier(G, cc, tier) {
+  const all = (cc === CUR_CC ? G.teams.filter(t => t.tier === tier) : (G.ov ? G.ov.teams.filter(t => t.cc === cc && t.tier === tier) : [])).map(t => t.id);
+  const q = G.euroQual && G.euroQual.lists && G.euroQual.lists[cc + tier];
+  if (q) { const ok = q.filter(id => G.teams[id]); if (ok.length >= Math.min(8, all.length)) return ok; }
+  return all.sort((a, b) => (globalStr(G.teams[b]) - globalStr(G.teams[a])) || (teamOverall(G.teams[b]) - teamOverall(G.teams[a])));
+}
+function buildEuro(G) {
+  const A = G.africa; if (!A) return;
+  A.ekcHistory = A.ekcHistory || []; A.eccHistory = A.eccHistory || [];
+  if (!isEuro(CUR_CC)) { A.ekc = null; A.ecc = null; return; }
+  const ccs = euroCCs(G), top = ccs.map(cc => euroTier(G, cc, 0)), sec = ccs.map(cc => euroTier(G, cc, 1));
+  const used = new Set(), ekc = [];
+  const take = id => { if (id != null && G.teams[id] && !used.has(id) && ekc.length < EURO_N) { used.add(id); ekc.push({ sa: true, id }); } };
+  for (let r = 0; r < 7; r++) top.forEach(l => take(l[r]));
+  take(G.euroHolder);   /* the Euro Contender Cup winner is in automatically */
+  for (let r = 7; ekc.length < EURO_N && r < 20; r++) top.forEach(l => take(l[r]));
+  const used2 = new Set(used), ecc = [];
+  const take2 = (id, lim) => { if (id != null && G.teams[id] && !used2.has(id) && ecc.length < lim) { used2.add(id); ecc.push({ sa: true, id }); } };
+  const nSec = sec.length * 2;
+  for (let r = 0; ecc.length < EURO_N - nSec && r < 20; r++) top.forEach(l => take2(l[r], EURO_N - nSec));
+  sec.forEach(l => { take2(l[0], EURO_N); take2(l[1], EURO_N); });
+  for (let r = 0; ecc.length < EURO_N && r < 20; r++) top.forEach(l => take2(l[r], EURO_N));
+  for (let r = 2; ecc.length < EURO_N && r < 20; r++) sec.forEach(l => take2(l[r], EURO_N));
+  A.ekc = { stage: 0, alive: shuffle(ekc.slice(0, EURO_N)), log: [], winner: null, done: false };
+  A.ecc = { stage: 0, alive: shuffle(ecc.slice(0, EURO_N)), log: [], winner: null, done: false };
+}
+/* at the end of a season: remember last season's final tables (for the next qualification) and who won the Euro Contender Cup */
+function euroSeasonEnd(G) {
+  if (!isEuro(CUR_CC)) return;
+  try { ovFinish(G); } catch (e) { }
+  const lists = {};
+  lists[CUR_CC + '0'] = sortTable(G, 0).map(r => r.id); lists[CUR_CC + '1'] = sortTable(G, 1).map(r => r.id);
+  if (G.ov) G.ov.leagues.forEach(L => { if (isEuro(L.cc)) lists[L.cc + L.tier] = afrTable(L).map(r => r.id); });
+  G.euroQual = { season: G.season, lists };
+  const e = G.africa && G.africa.ecc && G.africa.ecc.winner; G.euroHolder = e ? e.id : null;
+}
 
 function entrantSA(G, rank) {
   const prev = G.records.seasons[G.records.seasons.length - 1];
@@ -3537,6 +3597,9 @@ function cafShort(G, e) { return e.sa ? G.teams[e.id].s : afrClub(G, e.id).n; }
 function cafRating(G, e) { return e.sa ? teamOverall(G.teams[e.id]) : afrClub(G, e.id).rating; }
 
 function cafLeg(G, home, away) {
+  const ovE = e => e.sa && typeof e.id === 'string' && e.id.indexOf('ov') === 0;
+  /* two overseas clubs: nobody is watching, so the tie is simulated abstractly */
+  if (ovE(home) && ovE(away)) return simAbstract(teamOverall(G.teams[home.id]), teamOverall(G.teams[away.id]), 2.6);
   const H = home.sa ? G.teams[home.id] : buildForeignClub(G, home.id);
   const A = away.sa ? G.teams[away.id] : buildForeignClub(G, away.id);
   if (!H || !A) { const [hg, ag] = simAbstract(cafRating(G, home), cafRating(G, away), 2.6); return [hg, ag]; }
@@ -3545,6 +3608,7 @@ function cafLeg(G, home, away) {
   finishMatch(G, ctx);
   if (!home.sa) { const Hc = G.africa.squadCache[home.id]; if (Hc) Hc.squad.forEach(p => { p.inj = 0; p.pendingInj = 0; }); }
   if (!away.sa) { const Ac = G.africa.squadCache[away.id]; if (Ac) Ac.squad.forEach(p => { p.inj = 0; p.pendingInj = 0; }); }
+  [home, away].forEach(e => { if (ovE(e)) G.teams[e.id].squad.forEach(p => { p.inj = 0; p.pendingInj = 0; }); });
   return [ctx.hg, ctx.ag];
 }
 
@@ -3567,7 +3631,7 @@ function playContinentalRound(G, key, trophyName, prizeAmt, historyKey, newsKind
     } else winner = aggA > aggB ? A : B;
     ties.push({ a: A, b: B, leg1, leg2, aggA, aggB, pens, winner, stage: c.stage, single: c.stage === 3 });
   }
-  c.log.push({ stage: c.stage, ties });   ties.forEach(t => {     if (t.bye || !(t.a.sa || t.b.sa)) return;     const w = t.winner, l = w === t.a ? t.b : t.a, hi = Math.max(t.aggA, t.aggB), lo = Math.min(t.aggA, t.aggB), rd = (CAF_ROUNDS[t.stage] || 'round').toLowerCase();     news(G, newsKind, t.pens ? `${cafShort(G, w)} edge ${cafShort(G, l)} on penalties (${hi}–${lo} on aggregate) in the ${trophyName} ${rd}.` : `${cafShort(G, w)} beat ${cafShort(G, l)} ${hi}–${lo} on aggregate in the ${trophyName} ${rd}.`, {});   });   ties.forEach(t => { if (!t.bye && t.winner.sa) payPrize(G, t.winner.id, prizeAmt * 0.04 * (c.stage + 1), trophyName + ' round prize'); });
+  c.log.push({ stage: c.stage, ties });   ties.forEach(t => {     if (t.bye || !(contHomeE(t.a) || contHomeE(t.b))) return;     const w = t.winner, l = w === t.a ? t.b : t.a, hi = Math.max(t.aggA, t.aggB), lo = Math.min(t.aggA, t.aggB), rd = (CAF_ROUNDS[t.stage] || 'round').toLowerCase();     news(G, newsKind, t.pens ? `${cafShort(G, w)} edge ${cafShort(G, l)} on penalties (${hi}–${lo} on aggregate) in the ${trophyName} ${rd}.` : `${cafShort(G, w)} beat ${cafShort(G, l)} ${hi}–${lo} on aggregate in the ${trophyName} ${rd}.`, {});   });   ties.forEach(t => { if (!t.bye && t.winner.sa) payPrize(G, t.winner.id, prizeAmt * 0.04 * (c.stage + 1), trophyName + ' round prize'); });
   c.alive = ties.map(t => t.winner);
   if (c.alive.length === 1) {
     c.done = true; c.winner = c.alive[0];
@@ -3835,7 +3899,7 @@ function crossMove(id, wage, years) {
   CARRY_HOOK = NG => {
     const idMap = {};
     NG.teams.forEach((nt, k) => { const s = ovBy[key(nt)]; if (s) idMap[s.id] = k; });
-    NG.ov.teams.forEach((nt, j) => { const s = homeBy[key(nt)]; if (s) idMap[s.id] = 'ov' + j; });
+    NG.ov.teams.forEach((nt, j) => { const s = homeBy[key(nt)] || ovBy[key(nt)]; if (s) idMap[s.id] = 'ov' + j; });
     const fixP = (p, vm) => {
       (p.clubs || []).forEach(c => { if (c.id != null && idMap.hasOwnProperty(c.id)) c.id = idMap[c.id]; });
       if (p.product != null && idMap.hasOwnProperty(p.product)) p.product = idMap[p.product];
@@ -3851,13 +3915,13 @@ function crossMove(id, wage, years) {
       Object.assign(nt, cl);
       nt.wageBill = wageOf(nt); nt.wageBudget = Math.round(nt.wageBill * 1.4 * 100) / 100; ensureLineup(nt);
     });
-    /* clubs of the country you are leaving: become overseas clubs, squad and money intact */
+    /* clubs of the country you are leaving, and of any third country: overseas clubs, squad and money intact (prices re-scaled) */
     NG.ov.teams.forEach((nt, j) => {
-      const s = homeBy[key(nt)]; if (!s) return;
-      const cl = clone(s), M = nt.vm;
+      const s = homeBy[key(nt)] || ovBy[key(nt)]; if (!s) return;
+      const cl = clone(s), M = nt.vm, kk = M / (s.vm || 1);
       cl.id = 'ov' + j; cl.ov = true; cl.cc = nt.cc; cl.vm = M; cl.nat = nt.nat; cl.scoutNet = nt.scoutNet; delete cl._r; delete cl.mgr;
-      cl.squad.forEach(p => { p.wage = Math.round(p.wage * M * 100000) / 100000; fixP(p, M); p.value = valueOf(p); });
-      cl.budget = Math.round(cl.budget * M * 100) / 100; cl.finBase = nt.finBase;
+      cl.squad.forEach(p => { p.wage = Math.round(p.wage * kk * 100000) / 100000; fixP(p, M); p.value = valueOf(p); });
+      cl.budget = Math.round(cl.budget * kk * 100) / 100; cl.finBase = nt.finBase;
       Object.assign(nt, cl);
       nt.wageBill = wageOf(nt); nt.wageBudget = Math.round(nt.wageBill * 1.4 * 100) / 100; ensureLineup(nt);
     });
@@ -4524,7 +4588,7 @@ function avatarSVG(id, size) {
   return `<img class="face" src="managers/${id}.jpg" width="${s}" height="${s}" style="object-fit:cover" alt="">`;
 }
 
-function cafWinsByName(name) {   return (G && G.africa && G.africa.cafHistory) ? G.africa.cafHistory.filter(h => h.winner === name).length : 0; } function cafStars(t) {   if (!t) return 0;   let n = t.trophies ? t.trophies.filter(x => x.name === CAF_NAME).length : 0;   n = Math.max(n, cafWinsByName(t.n));   return n; } function afrStarsHTML(name) {   const n = Math.min(5, cafWinsByName(name));   if (!n) return '';   const star = '<svg viewBox="0 0 24 24" width="11" height="11" style="flex:0 0 auto"><path d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.5 5.6 21.1 7 14l-5.3-5 7.2-.9z" fill="#f5c518" stroke="#8a5f10" stroke-width="1.2" stroke-linejoin="round"/></svg>';   return `<span title="${n}x ${CAF_NAME} winners" style="display:inline-flex;gap:1px;margin-left:5px;vertical-align:middle">${star.repeat(n)}</span>`; }
+function cafWinsByName(name) {   const A = G && G.africa; if (!A) return 0;   return (A.cafHistory || []).filter(h => h.winner === name).length + (A.ekcHistory || []).filter(h => h.winner === name).length; } function cafStars(t) {   if (!t) return 0;   let n = t.trophies ? t.trophies.filter(x => x.name === CAF_NAME || x.name === EKC_NAME).length : 0;   n = Math.max(n, cafWinsByName(t.n));   return n; } function afrStarsHTML(name) {   const n = Math.min(5, cafWinsByName(name));   if (!n) return '';   const star = '<svg viewBox="0 0 24 24" width="11" height="11" style="flex:0 0 auto"><path d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.5 5.6 21.1 7 14l-5.3-5 7.2-.9z" fill="#f5c518" stroke="#8a5f10" stroke-width="1.2" stroke-linejoin="round"/></svg>';   return `<span title="${n}x continental champions" style="display:inline-flex;gap:1px;margin-left:5px;vertical-align:middle">${star.repeat(n)}</span>`; }
 function crestArcPts(cx, cy, r) {
   const pts = [];
   for (let d = -115; d <= 115; d += 5) { const a = d * Math.PI / 180; pts.push([cx + r * Math.sin(a), cy - r * Math.cos(a)]); }
@@ -4597,7 +4661,7 @@ function crestHTML(t, size) {
   const inn = Math.round((S - 2 * p) / (plain ? 1.15 : 1));
   const h = (!t.icon && t.badge !== 'bright' && !img) ? Math.round(inn * 1.15) : inn;
   const flat = crestStarsSVG(t, inn, h, n).replace('<svg ', '<svg class="cst-b" ');
-  return `<span class="cstars" title="${cafStars(t)}x ${CAF_NAME} winners" style="position:relative;display:inline-block;flex:0 0 auto;line-height:0;vertical-align:middle">${base}${crestStarsArc(sz, n)}${flat}</span>`;
+  return `<span class="cstars" title="${cafStars(t)}x continental champions" style="position:relative;display:inline-block;flex:0 0 auto;line-height:0;vertical-align:middle">${base}${crestStarsArc(sz, n)}${flat}</span>`;
 }
 function crestBaseHTML(t, size) {   const _S = Math.round((size || 22) * 1.5), _p = Math.max(1, Math.round(_S * 0.04));   const _plain = !t.icon && t.badge !== 'bright' && !CREST_IMGS[t.n + '|' + t.s];   const _in = Math.round((_S - 2 * _p) / (_plain ? 1.15 : 1));   return `<span class="cbx" style="display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;box-sizing:border-box;width:${_S}px;height:${_S}px;padding:${_p}px;background:#fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4);vertical-align:middle">${crestRawHTML(t, _in)}</span>`; } function crestRawHTML(t, size) {
   const s = size || 22;
@@ -4735,18 +4799,72 @@ Object.assign(CREST_IMGS, {
 });
 Object.assign(KIT_STYLE_OVERRIDE, {"Blue Manchester|Blue Man": 0, "Liverpool United|Liverpool": 0, "Red London FC|Red London": 12, "Red Manchester|Red Man": 0, "Blue London FC|Blue London": 0, "White London FC|White London": 0, "Newcastle Tyne FC|Newcastle": 1, "Aston Birmingham|Aston Brum": 0, "Brighton Blue|Brighton": 8, "Everton United|Everton": 0, "The Palace|Palace": 4, "West Fulham FC|West Fulham": 0, "West London|West London": 1, "Nottingham United|Nottingham": 0, "New Leeds|New Leeds": 0, "Old Sunderland|Sunderland": 1, "Bournemouth Red-Black|Bournemouth": 1, "Ipswich Blue|Ipswich": 0, "New Coventry|Coventry": 0, "Hull Amber|Hull": 0, "South of Hampton|Hampton": 1, "Portsmouth City|Portsmouth": 0, "White City Rangers|White City": 2, "Millwall United|Millwall": 0, "Old Norwich|Norwich": 0, "Middlesbrough Red|Middlesbrough": 0, "Cardiff Blue|Cardiff": 0, "Charlton FC|Charlton": 0, "Blackburn City|Blackburn": 4, "Bolton United|Bolton": 0, "Bristol United|Bristol": 0, "Birmingham Blue|Birmingham": 8, "Wrex of Wales|Wrex": 0, "Bromwich Town|Bromwich": 1, "Westham Ballers|Westham": 0, "Burnley Claret|Burnley": 4, "Da Wolves|Da Wolves": 0, "Lincoln Stars|Lincoln": 1, "New Derby|New Derby": 0, "New Sheffield|New Sheffield": 1});
 
+const CLUBS_ES = [{"n": "Royal Madrid", "s": "Royal Madrid", "nick": "The Royals", "city": "Madrid", "t": 0, "base": 9.8, "fin": 160, "youth": 5, "c1": "#ffffff", "c2": "#1c2a5c", "scout": "EUR"}, {"n": "Barcelona City", "s": "Barcelona", "nick": "The Blaugrana", "city": "Barcelona", "t": 0, "base": 9.6, "fin": 140, "youth": 5, "c1": "#a50044", "c2": "#004d98", "scout": "EUR"}, {"n": "Club Madrid", "s": "Club Madrid", "nick": "The Mattress Makers", "city": "Madrid", "t": 0, "base": 9.0, "fin": 85, "youth": 4, "c1": "#d3141c", "c2": "#ffffff", "scout": "EUR"}, {"n": "Real Sevilla", "s": "Sevilla", "nick": "The Nervión Boys", "city": "Seville", "t": 0, "base": 8.0, "fin": 50, "youth": 4, "c1": "#ffffff", "c2": "#d3141c", "scout": "EUR"}, {"n": "Club Bilbao", "s": "Bilbao", "nick": "The Lions", "city": "Bilbao", "t": 0, "base": 7.8, "fin": 45, "youth": 5, "c1": "#d3141c", "c2": "#ffffff", "scout": "EUR"}, {"n": "San Sociedad", "s": "San Sociedad", "nick": "The Basques", "city": "San Sebastián", "t": 0, "base": 7.6, "fin": 40, "youth": 4, "c1": "#1f56b0", "c2": "#ffffff", "scout": "EUR"}, {"n": "Villarreal Gran.", "s": "Villarreal", "nick": "The Yellow Submarine", "city": "Villarreal", "t": 0, "base": 7.5, "fin": 38, "youth": 3, "c1": "#f4d800", "c2": "#1f56b0", "scout": "EUR"}, {"n": "Valencia Ciudad", "s": "Valencia", "nick": "The Bats", "city": "Valencia", "t": 0, "base": 7.6, "fin": 40, "youth": 4, "c1": "#ffffff", "c2": "#f5821f", "scout": "EUR"}, {"n": "Sevil de Betis", "s": "Betis", "nick": "The Greens", "city": "Seville", "t": 0, "base": 7.7, "fin": 42, "youth": 4, "c1": "#0a8a3c", "c2": "#ffffff", "scout": "EUR"}, {"n": "Vigo Sky", "s": "Vigo Sky", "nick": "The Sky Blues", "city": "Vigo", "t": 0, "base": 6.9, "fin": 30, "youth": 3, "c1": "#7fc4ee", "c2": "#ffffff", "scout": "EUR"}, {"n": "Real Osasuna", "s": "Osasuna", "nick": "The Reds", "city": "Pamplona", "t": 0, "base": 6.6, "fin": 25, "youth": 3, "c1": "#d3141c", "c2": "#10265f", "scout": "EUR"}, {"n": "FC Español", "s": "Español", "nick": "The Parakeets", "city": "Barcelona", "t": 0, "base": 6.5, "fin": 24, "youth": 3, "c1": "#1f56b0", "c2": "#ffffff", "scout": "EUR"}, {"n": "South Getafe", "s": "Getafe", "nick": "The Azulones", "city": "Getafe", "t": 0, "base": 6.3, "fin": 22, "youth": 2, "c1": "#1b4fa0", "c2": "#ffffff", "scout": "EUR"}, {"n": "Lavante de Club", "s": "Lavante", "nick": "The Frogs", "city": "Valencia", "t": 0, "base": 6.1, "fin": 20, "youth": 3, "c1": "#a50044", "c2": "#1b4fa0", "scout": "EUR"}, {"n": "Diportivo Blues", "s": "Diportivo", "nick": "The Glorious", "city": "Vitoria", "t": 0, "base": 6.0, "fin": 19, "youth": 2, "c1": "#1b4fa0", "c2": "#ffffff", "scout": "EUR"}, {"n": "Caruña", "s": "Caruña", "nick": "The Super Dépor", "city": "A Coruña", "t": 0, "base": 6.2, "fin": 19, "youth": 3, "c1": "#1f56b0", "c2": "#ffffff", "scout": "EUR"}, {"n": "Real Santander", "s": "Santander", "nick": "The Racinguistas", "city": "Santander", "t": 0, "base": 5.9, "fin": 18, "youth": 3, "c1": "#0a8a3c", "c2": "#ffffff", "scout": "EUR"}, {"n": "Màlaga Balòn", "s": "Màlaga", "nick": "The Anchovies", "city": "Málaga", "t": 0, "base": 6.0, "fin": 18, "youth": 3, "c1": "#6cb4ee", "c2": "#ffffff", "scout": "EUR"}, {"n": "New Càdiz", "s": "Càdiz", "nick": "The Yellow Ones", "city": "Cádiz", "t": 0, "base": 5.8, "fin": 18, "youth": 3, "c1": "#f4d800", "c2": "#1b4fa0", "scout": "EUR"}, {"n": "Elche Nuevo", "s": "Elche", "nick": "The Palm Boys", "city": "Elche", "t": 0, "base": 5.7, "fin": 17, "youth": 2, "c1": "#ffffff", "c2": "#0a8a3c", "scout": "EUR"}, {"n": "Las Palmas", "s": "Las Palmas", "nick": "The Island Boys", "city": "Las Palmas", "t": 1, "base": 5.9, "fin": 9, "youth": 4, "c1": "#f4d800", "c2": "#1b4fa0", "scout": "EUR"}, {"n": "Vallecas FC", "s": "Vallecas", "nick": "The Lightning Bolts", "city": "Madrid", "t": 1, "base": 5.8, "fin": 8.5, "youth": 3, "c1": "#ffffff", "c2": "#d3141c", "scout": "EUR"}, {"n": "Mallorca Red", "s": "Mallorca", "nick": "The Islanders", "city": "Palma", "t": 1, "base": 5.8, "fin": 8, "youth": 3, "c1": "#d3141c", "c2": "#111111", "scout": "EUR"}, {"n": "Girona de Club", "s": "Girona", "nick": "The Gironins", "city": "Girona", "t": 1, "base": 5.7, "fin": 8, "youth": 3, "c1": "#d3141c", "c2": "#ffffff", "scout": "EUR"}, {"n": "Sporting Almerìa", "s": "Almerìa", "nick": "The Red-Whites", "city": "Almería", "t": 1, "base": 5.5, "fin": 7.5, "youth": 2, "c1": "#d3141c", "c2": "#ffffff", "scout": "EUR"}, {"n": "Granada Utd", "s": "Granada", "nick": "The Nasrids", "city": "Granada", "t": 1, "base": 5.5, "fin": 7, "youth": 3, "c1": "#d3141c", "c2": "#ffffff", "scout": "EUR"}, {"n": "Royal Oviedo", "s": "Oviedo", "nick": "The Carbayones", "city": "Oviedo", "t": 1, "base": 5.3, "fin": 7, "youth": 3, "c1": "#1b4fa0", "c2": "#ffffff", "scout": "EUR"}, {"n": "Las Gijòn", "s": "Gijòn", "nick": "The Sportsmen", "city": "Gijón", "t": 1, "base": 5.4, "fin": 6.5, "youth": 3, "c1": "#d3141c", "c2": "#ffffff", "scout": "EUR"}, {"n": "Royal Tenerife", "s": "Tenerife", "nick": "The Chicharreros", "city": "Tenerife", "t": 1, "base": 5.2, "fin": 6, "youth": 2, "c1": "#1b4fa0", "c2": "#ffffff", "scout": "EUR"}, {"n": "Valladolid Velvet", "s": "Valladolid", "nick": "The Violets", "city": "Valladolid", "t": 1, "base": 5.2, "fin": 6, "youth": 3, "c1": "#6a2c91", "c2": "#ffffff", "scout": "EUR"}, {"n": "Vigo Fortuna", "s": "Vigo Fortuna", "nick": "The Sea Foam", "city": "Vigo", "t": 1, "base": 5.0, "fin": 5.5, "youth": 2, "c1": "#1f56b0", "c2": "#ffffff", "scout": "EUR"}, {"n": "Eibar Grande", "s": "Eibar", "nick": "The Gunsmiths", "city": "Eibar", "t": 1, "base": 5.0, "fin": 5, "youth": 2, "c1": "#7a1f3d", "c2": "#1c2a5c", "scout": "EUR"}, {"n": "Real Còrdoba", "s": "Còrdoba", "nick": "The Caliphs", "city": "Córdoba", "t": 1, "base": 4.9, "fin": 5, "youth": 2, "c1": "#0a8a3c", "c2": "#ffffff", "scout": "EUR"}, {"n": "Leganès Nova", "s": "Leganès", "nick": "The Cucumbers", "city": "Leganés", "t": 1, "base": 4.8, "fin": 4.5, "youth": 2, "c1": "#1f56b0", "c2": "#ffffff", "scout": "EUR"}, {"n": "Real Albacete", "s": "Albacete", "nick": "The Daggers", "city": "Albacete", "t": 1, "base": 4.7, "fin": 4.5, "youth": 2, "c1": "#ffffff", "c2": "#d3141c", "scout": "EUR"}, {"n": "Sabadell UG.", "s": "Sabadell", "nick": "The Harlequins", "city": "Sabadell", "t": 1, "base": 4.6, "fin": 4, "youth": 2, "c1": "#1b4fa0", "c2": "#ffffff", "scout": "EUR"}, {"n": "Burgos City", "s": "Burgos", "nick": "The Cathedral Boys", "city": "Burgos", "t": 1, "base": 4.5, "fin": 4, "youth": 2, "c1": "#111111", "c2": "#ffffff", "scout": "EUR"}, {"n": "Ceuta SBN", "s": "Ceuta", "nick": "The Fortress", "city": "Ceuta", "t": 1, "base": 4.4, "fin": 3.5, "youth": 1, "c1": "#111111", "c2": "#ffffff", "scout": "EUR"}, {"n": "Castellòn CF", "s": "Castellòn", "nick": "The Black-Whites", "city": "Castellón", "t": 1, "base": 4.4, "fin": 3.5, "youth": 1, "c1": "#111111", "c2": "#ffffff", "scout": "EUR"}, {"n": "San Sebantiàn FC", "s": "Sebantiàn", "nick": "The Shells", "city": "San Sebastián", "t": 1, "base": 4.3, "fin": 3, "youth": 1, "c1": "#1f56b0", "c2": "#ffffff", "scout": "EUR"}];
+(function(){ const GS = [12.64, 12.47, 11.8, 10.78, 10.61, 10.44, 10.27, 10.2, 10.1, 9.93, 9.8, 9.69, 9.59, 9.53, 9.46, 9.42, 9.39, 9.36, 9.32, 9.25, 9.08, 8.92, 8.78, 8.64, 8.51, 8.37, 8.24, 8.14, 8.03, 7.93, 7.83, 7.76, 7.69, 7.63, 7.56, 7.53, 7.49, 7.46, 7.42, 7.39]; CLUBS_ES.forEach((c, i) => { c.gs = GS[i]; }); })();
+Object.assign(CREST_IMGS, {
+"Royal Madrid|Royal Madrid": "img/crests/es-royal-madrid-0e3841.webp",
+"Barcelona City|Barcelona": "img/crests/es-barcelona-city-b2067d.webp",
+"Club Madrid|Club Madrid": "img/crests/es-club-madrid-a4c43b.webp",
+"Real Sevilla|Sevilla": "img/crests/es-real-sevilla-9fa3e2.webp",
+"Club Bilbao|Bilbao": "img/crests/es-club-bilbao-2176e9.webp",
+"San Sociedad|San Sociedad": "img/crests/es-san-sociedad-d2f01c.webp",
+"Villarreal Gran.|Villarreal": "img/crests/es-villarreal-gran-0bec66.webp",
+"Valencia Ciudad|Valencia": "img/crests/es-valencia-ciudad-4912ee.webp",
+"Sevil de Betis|Betis": "img/crests/es-sevil-de-betis-fb13a5.webp",
+"Vigo Sky|Vigo Sky": "img/crests/es-vigo-sky-edac16.webp",
+"Real Osasuna|Osasuna": "img/crests/es-real-osasuna-ae7844.webp",
+"FC Español|Español": "img/crests/es-fc-espaol-21ac1e.webp",
+"South Getafe|Getafe": "img/crests/es-south-getafe-5c1abc.webp",
+"Lavante de Club|Lavante": "img/crests/es-lavante-de-club-77d415.webp",
+"Diportivo Blues|Diportivo": "img/crests/es-diportivo-blues-004bb2.webp",
+"Caruña|Caruña": "img/crests/es-carua-29bfa6.webp",
+"Real Santander|Santander": "img/crests/es-real-santander-7cab5d.webp",
+"Màlaga Balòn|Màlaga": "img/crests/es-mlaga-baln-68342e.webp",
+"New Càdiz|Càdiz": "img/crests/es-new-cdiz-2e872a.webp",
+"Elche Nuevo|Elche": "img/crests/es-elche-nuevo-db5e45.webp",
+"Las Palmas|Las Palmas": "img/crests/es-las-palmas-393e2a.webp",
+"Vallecas FC|Vallecas": "img/crests/es-vallecas-fc-cb779e.webp",
+"Mallorca Red|Mallorca": "img/crests/es-mallorca-red-75d9dd.webp",
+"Girona de Club|Girona": "img/crests/es-girona-de-club-133c6c.webp",
+"Sporting Almerìa|Almerìa": "img/crests/es-sporting-almera-c83d00.webp",
+"Granada Utd|Granada": "img/crests/es-granada-utd-212bbd.webp",
+"Royal Oviedo|Oviedo": "img/crests/es-royal-oviedo-b7e3b6.webp",
+"Las Gijòn|Gijòn": "img/crests/es-las-gijn-eb9db1.webp",
+"Royal Tenerife|Tenerife": "img/crests/es-royal-tenerife-045961.webp",
+"Valladolid Velvet|Valladolid": "img/crests/es-valladolid-velvet-f4511b.webp",
+"Vigo Fortuna|Vigo Fortuna": "img/crests/es-vigo-fortuna-ba9cbf.webp",
+"Eibar Grande|Eibar": "img/crests/es-eibar-grande-c65721.webp",
+"Real Còrdoba|Còrdoba": "img/crests/es-real-crdoba-70bc18.webp",
+"Leganès Nova|Leganès": "img/crests/es-legans-nova-b45820.webp",
+"Real Albacete|Albacete": "img/crests/es-real-albacete-6f2129.webp",
+"Sabadell UG.|Sabadell": "img/crests/es-sabadell-ug-bec329.webp",
+"Burgos City|Burgos": "img/crests/es-burgos-city-1e8c04.webp",
+"Ceuta SBN|Ceuta": "img/crests/es-ceuta-sbn-7154c1.webp",
+"Castellòn CF|Castellòn": "img/crests/es-castelln-cf-bccb71.webp",
+"San Sebantiàn FC|Sebantiàn": "img/crests/es-san-sebantin-fc-e33540.webp"
+});
+Object.assign(KIT_STYLE_OVERRIDE, {"Royal Madrid|Royal Madrid": 0, "Barcelona City|Barcelona": 1, "Club Madrid|Club Madrid": 1, "Real Sevilla|Sevilla": 0, "Club Bilbao|Bilbao": 1, "San Sociedad|San Sociedad": 1, "Villarreal Gran.|Villarreal": 0, "Valencia Ciudad|Valencia": 0, "Sevil de Betis|Betis": 1, "Vigo Sky|Vigo Sky": 0, "Real Osasuna|Osasuna": 0, "FC Español|Español": 1, "South Getafe|Getafe": 0, "Lavante de Club|Lavante": 1, "Diportivo Blues|Diportivo": 1, "Caruña|Caruña": 1, "Real Santander|Santander": 0, "Màlaga Balòn|Màlaga": 0, "New Càdiz|Càdiz": 0, "Elche Nuevo|Elche": 0, "Las Palmas|Las Palmas": 0, "Vallecas FC|Vallecas": 4, "Mallorca Red|Mallorca": 0, "Girona de Club|Girona": 1, "Sporting Almerìa|Almerìa": 1, "Granada Utd|Granada": 0, "Royal Oviedo|Oviedo": 0, "Las Gijòn|Gijòn": 1, "Royal Tenerife|Tenerife": 0, "Valladolid Velvet|Valladolid": 1, "Vigo Fortuna|Vigo Fortuna": 0, "Eibar Grande|Eibar": 0, "Real Còrdoba|Còrdoba": 1, "Leganès Nova|Leganès": 1, "Real Albacete|Albacete": 0, "Sabadell UG.|Sabadell": 0, "Burgos City|Burgos": 0, "Ceuta SBN|Ceuta": 1, "Castellòn CF|Castellòn": 1, "San Sebantiàn FC|Sebantiàn": 0});
+
 const CLUBS_SA = CLUBS.slice();
 let _menuAll = null, _cupsSubs = null;
 const EN_HIDDEN_TABS = ['africa', 'nations', 'world', 'cities'];
 
 /* ---------------- Overseas clubs ----------------
-   Every career also carries the other country's clubs (England in a South African career, South Africa in an
-   English one). They play an abstract season, appear in the club rankings, and their players can be bought.
-   English players are better, cost more and earn more: price and wage scale with OV_PREM. */
-const OV_PREM = { GB: 2.5, ZA: 1 }, OV_QUAL = { GB: 0, ZA: 0 };
-function ovCC() { return CUR_CC === 'GB' ? 'ZA' : 'GB'; }
-function ovMult() { return CUR_CC === 'GB' ? 0.7 : OV_PREM.GB; }
-function ovTierNames() { return tierShortFor(ovCC()); }
+   Every career also carries the clubs of the other countries (England and Spain in a South African career, and so on).
+   They play an abstract season, appear in the club rankings, and their players can be bought.
+   Prices and wages scale with OV_MULT, from the point of view of the country you manage in. */
+const WORLD_CCS = ['ZA', 'GB', 'ES'];
+const WORLD = {
+  ZA: { nat: 'ZA', region: 'AFR', name: 'South Africa', demo: 'South African', cup: 'Thatbank Cup', cupN: 80, scout: { AFR: 1, EUR: 0, SAM: 0, ASIA: 0, NAM: 0 }, regions: ['South Africa', 'Rest of Africa', 'Europe'] },
+  GB: { nat: 'GB', region: 'EUR', name: 'England', demo: 'English', cup: 'Cup of England', cupN: 40, scout: { EUR: 1, AFR: 0, SAM: 0, ASIA: 0, NAM: 0 }, regions: ['England', 'Africa', 'Rest of Europe'] },
+  ES: { nat: 'ES', region: 'EUR', name: 'Spain', demo: 'Spanish', cup: 'Copa de Fútbol', cupN: 40, scout: { EUR: 1, AFR: 0, SAM: 1.2, ASIA: 0, NAM: 0 }, regions: ['Spain', 'Africa', 'Rest of Europe'] }
+};
+function worldClubs(cc) { return cc === 'GB' ? CLUBS_EN : cc === 'ES' ? CLUBS_ES : CLUBS_SA; }
+function isEuro(cc) { return cc === 'GB' || cc === 'ES'; }
+const OV_MULT = { ZA: { GB: 2.5, ES: 2.3 }, GB: { ZA: 0.7, ES: 0.95 }, ES: { ZA: 0.7, GB: 1.05 } };
+function ovCCs() { return WORLD_CCS.filter(c => c !== CUR_CC); }
+function ovMultFor(cc) { return ((OV_MULT[CUR_CC] || {})[cc]) || 1; }
+function ovGroups() { return G && G.ov ? (G.ov.ccs || [G.ov.cc]).map(cc => [cc, G.ov.teams.filter(t => t.cc === cc)]) : []; }
 function linkOverseas(G) {
   if (!G || !G.ov) return;
   const ov = G.ov;
@@ -4759,18 +4877,21 @@ function ovTune(t, season) {
   const ranked = t.squad.slice().sort((a, b) => b.rating - a.rating);
   t.captainId = ranked[0] ? ranked[0].id : null; t.viceCaptainId = ranked[1] ? ranked[1].id : null;
 }
-function ovBuildLeagues(ov) {
-  const names = tierNamesFor(ov.cc);
-  ov.leagues = names.map((nm, k) => {
-    const ids = ov.teams.filter(t => t.tier === k).map(t => t.id);
-    return { tier: k, name: nm, round: 0, fixtures: roundRobin(shuffle(ids.slice())), table: ids.map(id => ({ id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 })) };
-  }).filter(L => L.table.length >= 2);
+/* one league per division of each overseas country; pass a country to build only that one */
+function ovBuildLeagues(ov, only) {
+  const ccs = only ? [only] : (ov.ccs || [ov.cc]);
+  const keep = only ? ov.leagues.filter(L => L.cc !== only) : [];
+  const fresh = [];
+  ccs.forEach(cc => tierNamesFor(cc).forEach((nm, k) => {
+    const ids = ov.teams.filter(t => t.cc === cc && t.tier === k).map(t => t.id);
+    if (ids.length >= 2) fresh.push({ cc, tier: k, name: nm, round: 0, fixtures: roundRobin(shuffle(ids.slice())), table: ids.map(id => ({ id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 })) });
+  }));
+  ov.leagues = keep.concat(fresh);
 }
-function initOverseas(G) {
-  const cc = ovCC(), src = cc === 'GB' ? CLUBS_EN : CLUBS_SA, q = OV_QUAL[cc] - OV_QUAL[CUR_CC], M = ovMult(), season = G.season;
-  const sn = cc === 'GB' ? { EUR: 1, AFR: 0, SAM: 0, ASIA: 0, NAM: 0 } : { AFR: 1, EUR: 0, SAM: 0, ASIA: 0, NAM: 0 };
-  const teams = src.map((c, i) => {
-    const base = clamp(c.base + q, 1.5, 9.9);
+function ovAddCountry(G, cc) {
+  const ov = G.ov, src = worldClubs(cc), M = ovMultFor(cc), season = G.season, sn = Object.assign({}, WORLD[cc].scout);
+  src.forEach(c => {
+    const i = ov.teams.length, base = clamp(c.base, 1.5, 9.9);
     const club = Object.assign({}, c, { base, nat: cc, tier: c.t, scoutNet: Object.assign({}, sn) });
     const t = Object.assign({}, club, {
       id: 'ov' + i, ov: true, cc, vm: M, tier: c.t, squad: makeSquad(club, season),
@@ -4778,10 +4899,23 @@ function initOverseas(G) {
       trophies: [], history: [], form: [], rep: base, youth: [], fin: newFin(), finHistory: [], captainId: null, viceCaptainId: null
     });
     ovTune(t, season);
-    return t;
+    ov.teams.push(t);
   });
-  G.ov = { cc, teams, leagues: [], season };
-  ovBuildLeagues(G.ov);
+  if (!ov.ccs) ov.ccs = [];
+  if (!ov.ccs.includes(cc)) ov.ccs.push(cc);
+  linkOverseas(G);
+  ovBuildLeagues(ov, cc);
+}
+function initOverseas(G) {
+  G.ov = { cc: ovCCs()[0], ccs: [], teams: [], leagues: [], season: G.season };
+  ovCCs().forEach(cc => ovAddCountry(G, cc));
+}
+/* saves made before a country existed get its clubs added; nothing already in the save is touched */
+function ovEnsure(G) {
+  const ov = G.ov; if (!ov) return;
+  if (!ov.ccs) ov.ccs = Array.from(new Set(ov.teams.map(t => t.cc)));
+  ov.leagues.forEach(L => { if (!L.cc) L.cc = ov.cc; });
+  ovCCs().forEach(cc => { if (!ov.ccs.includes(cc)) ovAddCountry(G, cc); });
 }
 function ovRound(G) {
   const ov = G.ov; if (!ov) return;
@@ -4799,18 +4933,22 @@ function ovRound(G) {
     L.round++;
   });
 }
-function ovFinish(G) { const ov = G.ov; if (!ov) return; let g = 0; while (ov.leagues.length && ov.leagues[0].round < ov.leagues[0].fixtures.length && g++ < 60) ovRound(G); }
+function ovFinish(G) { const ov = G.ov; if (!ov) return; let g = 0; while (ov.leagues.some(L => L.round < L.fixtures.length) && g++ < 60) ovRound(G); }
 function ovSeasonEnd(G) {
   const ov = G.ov; if (!ov) return;
   ovFinish(G);
   const st = ov.leagues.map(L => afrTable(L));
   ov.champs = ov.leagues.map((L, k) => st[k][0].id);
-  /* promotion and relegation: three swap between each pair of divisions */
+  /* promotion and relegation inside each country: three swap between each pair of divisions */
   const moves = [];
-  for (let k = 0; k < ov.leagues.length - 1; k++) {
-    const down = st[k].slice(-RELEGATED).map(r => r.id), up = st[k + 1].slice(0, 3).map(r => r.id);
-    down.forEach(id => moves.push([id, ov.leagues[k + 1].tier])); up.forEach(id => moves.push([id, ov.leagues[k].tier]));
-  }
+  (ov.ccs || [ov.cc]).forEach(cc => {
+    const ix = ov.leagues.map((L, i) => i).filter(i => ov.leagues[i].cc === cc).sort((a, b) => ov.leagues[a].tier - ov.leagues[b].tier);
+    for (let k = 0; k < ix.length - 1; k++) {
+      const A = ix[k], B = ix[k + 1];
+      const down = st[A].slice(-RELEGATED).map(r => r.id), up = st[B].slice(0, 3).map(r => r.id);
+      down.forEach(id => moves.push([id, ov.leagues[B].tier])); up.forEach(id => moves.push([id, ov.leagues[A].tier]));
+    }
+  });
   moves.forEach(([id, tier]) => { ov.teams[+id.slice(2)].tier = tier; });
   /* players: ageing, growth, retirement, new contracts, top-up */
   ov.teams.forEach(t => {
@@ -4835,20 +4973,26 @@ function ovSeasonEnd(G) {
   ovBuildLeagues(ov);
 }
 function setCountry(cc) {
-  cc = cc === 'GB' ? 'GB' : 'ZA';
+  cc = WORLD[cc] ? cc : 'ZA';
   if (!_menuAll) { _menuAll = MENU_SECTIONS.map(s => s[1].slice()); _cupsSubs = (NAV_SUBS.cups || []).slice(); }
-  CUR_CC = cc; HOME_NAT = cc === 'GB' ? 'GB' : 'ZA'; HOME_REGION = cc === 'GB' ? 'EUR' : 'AFR';
-  const src = cc === 'GB' ? CLUBS_EN : CLUBS_SA;
+  const W = WORLD[cc];
+  CUR_CC = cc; HOME_NAT = W.nat; HOME_REGION = W.region;
+  const src = worldClubs(cc);
   CLUBS.length = 0; src.forEach(c => CLUBS.push(c));
   const tn = tierNamesFor(cc), ts = tierShortFor(cc);
   TIER_NAMES.length = 0; tn.forEach(x => TIER_NAMES.push(x));
   TIER_SHORT.length = 0; ts.forEach(x => TIER_SHORT.push(x));
-  CUP_NAME = cc === 'GB' ? 'Cup of England' : 'Thatbank Cup';
-  CUP_ROUNDS.length = 0; cupRoundNames(cc === 'GB' ? 40 : 80).forEach(x => CUP_ROUNDS.push(x));
-  MENU_SECTIONS.forEach((s, k) => { s[1] = _menuAll[k].filter(it => !(cc === 'GB' && EN_HIDDEN_TABS.indexOf(it[0]) >= 0)); });
-  NAV_SUBS.cups = cc === 'GB' ? _cupsSubs.filter(x => x[0] === 'cup').map(x => [x[0], CUP_NAME]) : _cupsSubs.slice();
-  try { if (typeof SCOUT_REGIONS !== 'undefined') { SCOUT_REGIONS[0][1] = cc === 'GB' ? 'England' : 'South Africa'; SCOUT_REGIONS[1][1] = cc === 'GB' ? 'Africa' : 'Rest of Africa'; SCOUT_REGIONS[2][1] = cc === 'GB' ? 'Rest of Europe' : 'Europe'; } } catch (e) { }
+  CUP_NAME = W.cup;
+  CUP_ROUNDS.length = 0; cupRoundNames(W.cupN).forEach(x => CUP_ROUNDS.push(x));
+  MENU_SECTIONS.forEach((s, k) => { s[1] = _menuAll[k].filter(it => !(cc !== 'ZA' && EN_HIDDEN_TABS.indexOf(it[0]) >= 0)); });
+  NAV_SUBS.cups = cupList().map(x => [x[0], x[1]]);
+  try { if (typeof SCOUT_REGIONS !== 'undefined') { SCOUT_REGIONS[0][1] = W.regions[0]; SCOUT_REGIONS[1][1] = W.regions[1]; SCOUT_REGIONS[2][1] = W.regions[2]; } } catch (e) { }
   try { if (typeof buildSideNav === 'function' && document.getElementById('sideNav')) buildSideNav(); } catch (e) { }
+}
+/* the cups of the country you manage in: [key, name] */
+function cupList() {
+  if (CUR_CC === 'ZA') return [['cup', 'Thatbank Cup'], ['s8', 'Mzansi8'], ['ko', 'Bayakhala Knockout'], ['caf', 'African Champions League'], ['confed', 'African Football Cup']];
+  return [['cup', CUP_NAME], ['ekc', EKC_NAME], ['ecc', ECC_NAME]];
 }
 function kitStyleOf(t) {
   const key = (t.n || '') + '|' + (t.s || '');
@@ -5578,8 +5722,8 @@ function gsPages() {
   const out = [];
   MENU_SECTIONS.forEach(sec => sec[1].forEach(it => {
     out.push({ id: it[0], key: null, label: it[1], path: sec[0] });
-    (NAV_SUBS[it[0]] || []).forEach(sb => out.push({ id: it[0], key: sb[0], label: sb[1], path: it[1] }));     if (it[0] === 'cups') (CUR_CC === 'GB' ? [['cup', CUP_NAME]] : [['cup', 'Thatbank Cup'], ['s8', 'Mzansi8'], ['ko', 'Bayakhala Knockout'], ['caf', 'African Champions League'], ['confed', 'African Football Cup']]).forEach(c => [['bracket', 'Bracket'], ['results', 'Results'], ['history', 'History']].forEach(x => out.push({ id: 'cups', key: c[0] + '|' + x[0], label: c[1] + ' · ' + x[1], path: it[1] })));
-    if (it[0] === 'cups') (CUR_CC === 'GB' ? [['cup', CUP_NAME]] : [['cup', 'Thatbank Cup'], ['s8', 'Mzansi8'], ['ko', 'Bayakhala Knockout'], ['caf', 'African Champions League'], ['confed', 'African Football Cup']]).forEach(c => [['bracket', 'Bracket'], ['results', 'Results'], ['history', 'History']].forEach(x => out.push({ id: 'cups', key: c[0] + '|' + x[0], label: c[1] + ' · ' + x[1], path: it[1] })));
+    (NAV_SUBS[it[0]] || []).forEach(sb => out.push({ id: it[0], key: sb[0], label: sb[1], path: it[1] }));     if (it[0] === 'cups') cupList().forEach(c => [['bracket', 'Bracket'], ['results', 'Results'], ['history', 'History']].forEach(x => out.push({ id: 'cups', key: c[0] + '|' + x[0], label: c[1] + ' · ' + x[1], path: it[1] })));
+    if (it[0] === 'cups') cupList().forEach(c => [['bracket', 'Bracket'], ['results', 'Results'], ['history', 'History']].forEach(x => out.push({ id: 'cups', key: c[0] + '|' + x[0], label: c[1] + ' · ' + x[1], path: it[1] })));
   }));
   return out;
 }
@@ -5678,7 +5822,7 @@ function buildAvatars() {
 function buildTierChips() {
   const bar = $('#pickTierBar'); if (!bar) return;
   bar.innerHTML = '';
-  const chips = TIER_NAMES_SA.map((n, i) => ({ cc: 'ZA', tier: i, label: n })).concat(TIER_NAMES_EN.map((n, i) => ({ cc: 'GB', tier: i, label: n })));
+  const chips = TIER_NAMES_SA.map((n, i) => ({ cc: 'ZA', tier: i, label: n })).concat(TIER_NAMES_EN.map((n, i) => ({ cc: 'GB', tier: i, label: n })), TIER_NAMES_ES.map((n, i) => ({ cc: 'ES', tier: i, label: n })));
   const paint = () => bar.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x.dataset.cc === pickCC && +x.dataset.tier === pickTier));
   chips.forEach(ch => {
     const b = el('button', 'chip', esc(ch.label));
@@ -5694,7 +5838,7 @@ function buildTierChips() {
 function buildClubGrid() {
   const g = $('#clubGrid'); g.innerHTML = '';
   if (pickClub != null) { $('#startBtn').disabled = false; $('#startBtn').removeAttribute('disabled'); }
-  (pickCC === 'GB' ? CLUBS_EN : CLUBS_SA).map((c, i) => ({ c, i })).sort((a, b) => a.c.n.localeCompare(b.c.n)).forEach(({ c, i }) => {
+  worldClubs(pickCC).map((c, i) => ({ c, i })).sort((a, b) => a.c.n.localeCompare(b.c.n)).forEach(({ c, i }) => {
     if (c.t !== pickTier) return;
     const b = el('button', 'club');
     b.setAttribute('aria-pressed', pickClub === i);
@@ -5720,7 +5864,7 @@ buildTierChips();
 })();
 (function deepLink(){ try { const q = new URLSearchParams(location.search), c = q.get('club');
   if (c) { const find = L => L.findIndex(x => x.s.toLowerCase() === c.toLowerCase() || x.n.toLowerCase() === c.toLowerCase());
-    let cc = 'ZA', L = CLUBS_SA, i = find(L); if (i < 0) { cc = 'GB'; L = CLUBS_EN; i = find(L); }
+    let cc = 'ZA', L = CLUBS_SA, i = find(L); if (i < 0) { cc = 'GB'; L = CLUBS_EN; i = find(L); } if (i < 0) { cc = 'ES'; L = CLUBS_ES; i = find(L); }
     if (i >= 0) { pickCC = cc; pickClub = i; pickTier = L[i].t; const bar = $('#pickTierBar'); if (bar) bar.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x.dataset.cc === pickCC && +x.dataset.tier === pickTier)); buildClubGrid(); $('#startBtn').disabled = false; $('#startBtn').removeAttribute('disabled'); const h = $('#startHint'); if (h) h.textContent = L[i].n + ' - ' + tierShortFor(cc)[L[i].t] + '.'; } }
   if (c || q.has('start')) { $('#landing').style.display = 'none'; $('#start').style.display = 'block'; window.scrollTo(0, 0); } } catch (e) { } })();
 $('#startBtn').onclick = () => {
@@ -5728,7 +5872,7 @@ $('#startBtn').onclick = () => {
   const nat = ($('#mgrNat') && $('#mgrNat').value) || 'ZA';
   const dob = ($('#mgrDob') && $('#mgrDob').value) || '1988-06-15';
   if (slotInfo(slot)) slot = firstFreeSlot();
-  const c = (pickCC === 'GB' ? CLUBS_EN : CLUBS_SA)[pickClub];
+  const c = worldClubs(pickCC)[pickClub];
   const wage = Math.max(0.3, c.base * 1.1);
   openContractOffer({
     team: c, heading: 'Contract Offer', mgrName: nm, wage, years: 3, dateISO: new Date().toISOString().slice(0, 10),
@@ -5832,7 +5976,8 @@ function load(n) {
     setCountry(d.G.cc || 'ZA'); G = d.G; SEED = d.seed; PID = d.pid; slot = want; try { kitFixAll(G); } catch (e) { } try { ensureMM(G); } catch (e) { }
     G.teams.forEach(t => { t.fin = t.fin || newFin(); t.youth = t.youth || []; t.squad.forEach(p => { p.value = valueOf(p); if (p.portrait) PORTRAIT_USE[p.portrait] = (PORTRAIT_USE[p.portrait] || 0) + 1; }); ensureLineup(t); });     G.watchlist = G.watchlist || []; G.pendingBids = G.pendingBids || []; G.pendingLoanOffers = G.pendingLoanOffers || []; seedAiClauses(G); try { updateOutgoingScouting(G); } catch (e) { }
     if (!G.africa) { initAfrica(G); initAfcon(G); buildCAF(G); }
-    try { if (!G.ov) initOverseas(G); linkOverseas(G); injectRealPlayers(G); G.ov.teams.forEach(t => { t.fin = t.fin || newFin(); t.squad.forEach(p => { p.value = valueOf(p); }); ensureLineup(t); }); } catch (e) { console.error('overseas', e); }
+    try { if (!G.ov) initOverseas(G); else ovEnsure(G); linkOverseas(G); injectRealPlayers(G); G.ov.teams.forEach(t => { t.fin = t.fin || newFin(); t.squad.forEach(p => { p.value = valueOf(p); }); ensureLineup(t); }); } catch (e) { console.error('overseas', e); }
+    try { if (G.africa && G.africa.ekc === undefined) { G.africa.ekc = null; G.africa.ecc = null; G.africa.ekcHistory = G.africa.ekcHistory || []; G.africa.eccHistory = G.africa.eccHistory || []; buildEuro(G); } } catch (e) { console.error('euro', e); }
     if (!G.super8) buildExtraCups(G);     if (!G.watchlist) G.watchlist = [];
     G.manager.rep = G.manager.rep || 40;     G.curDay = Math.max(G.curDay != null ? G.curDay : 0, Math.max(0, G.round - 1) * DAYS_PER_ROUND + (G.round > 0 ? 1 : 0));     if (!G.finished && G.round < totalRounds(G)) G.curDay = Math.min(G.curDay, G.round * DAYS_PER_ROUND); /* saves made on the old 10-day grid: pull back so the next matchday is not skipped */
     try { localStorage.setItem(LAST_SLOT_KEY, String(slot)); } catch (e) { }
